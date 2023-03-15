@@ -37,10 +37,10 @@ class FINE_CM2P6_PATH_Class:
 FINE_CM2P6_PATH = FINE_CM2P6_PATH_Class()
 
 COARSE_CM2P6_PATH = os.path.join(CM2P6_PATH,'coarse_datasets')
-REPO_NAME = 'CM2P6Param'
+CODE = 'code'
 
 GRID_INFO = os.path.join(CM2P6_PATH,'GFDL_CM2_6_grid.nc')
-REPO = os.path.join(USER_PATH,REPO_NAME)
+REPO = os.path.join(USER_PATH,CODE)
 SLURM = os.path.join(REPO,'jobs')
 
 MODELIDS_JSON = os.path.join(REPO,'modelids.json')
