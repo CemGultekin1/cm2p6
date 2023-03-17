@@ -48,12 +48,6 @@ class filtering(base_transform):
     def __call__(self,x):
         norm = self.norm 
         return self.filter(x)/norm
-    # @property
-    # def wet_density(self,):
-    #     if self._wet_mask is None:
-    #         return self.filter(self.grid.area*self.grid.wet_mask)/self.filter(self.grid.area)*self.grid.wet_mask
-    #     else:
-    #         return self._wet_mask
 
 class gcm_filtering(filtering):
     def __init__(self,*args,**kwargs):

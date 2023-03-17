@@ -1,9 +1,21 @@
 import os
 
 from utils.arguments import options
-from utils.paths import GRID_INFO,FINE_CM2P6_PATH,COARSE_CM2P6_PATH,TEMPORARY_DATA
+from utils.paths import GRID_INFO,FINE_CM2P6_PATH,COARSE_CM2P6_PATH,TEMPORARY_DATA,FILTER_WEIGHTS
 
-
+def get_filter_weights_location(args,preliminary:bool = False):
+    prms,_ = options(args,key = "run")
+    if not os.path.exists(FILTER_WEIGHTS):
+        os.makedirs(FILTER_WEIGHTS)
+    filtering = prms.filtering.replace('-','_')
+    sigma = prms.sigma
+    surf_str = 'surface' if prms.depth < 1e-3 else 'beneath_surface'
+    if preliminary:
+        a,b = prms.section
+        filename = f'{filtering}_{surf_str}_{sigma}_{a}_{b}.nc'
+    else:
+        filename = f'{filtering}_{surf_str}_{sigma}.nc'
+    return os.path.join(FILTER_WEIGHTS,filename)
 
 def get_filename(sigma,depth,co2,filtering,locdir = COARSE_CM2P6_PATH):
     if sigma > 1:

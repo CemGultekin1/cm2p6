@@ -3,7 +3,6 @@ from models.index import get_dict
 from models.variations import lcnn_architecture
 import numpy as np
 from models.nets.cnn import CNN
-from data.load import physical_domains
 from models.index import update_model_info
 from models.variations import qcnn_architecture,unet_architecture
 from models.nets.others import QCNN,UNET,GAN

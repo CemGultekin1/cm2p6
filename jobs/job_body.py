@@ -1,11 +1,13 @@
+from utils.paths import ENV_PATH
 def job(argsfile,python_file,add_eval:bool = False,**kwargs):
     head = ["#!/bin/bash"]
     intro = [f"#SBATCH --{key.replace('_','-')}={val}" for key,val in kwargs.items()]
     bashline = [
         f"ARGS=$(sed -n \"$SLURM_ARRAY_TASK_ID\"p {argsfile})"
     ]
+    env = ENV_PATH
     bodystart = ["module purge",\
-        "singularity exec --nv --overlay .ext3:ro /scratch/work/public/singularity/cuda11.2.2-cudnn8-devel-ubuntu20.04.sif /bin/bash -c \"\\"]
+       f"singularity exec --nv --overlay {env}:ro /scratch/work/public/singularity/cuda11.2.2-cudnn8-devel-ubuntu20.04.sif /bin/bash -c \"\\"]
     codebody = [
         "source src.sh;",
         f"python3 {python_file} $ARGS;"

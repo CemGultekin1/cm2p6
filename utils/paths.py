@@ -2,7 +2,7 @@ import os
 USER_PATH = '/scratch/cg3306/climate'
 CM2P6_PATH = '/scratch/zanna/data/cm2.6'
 OUTPUTS_PATH = os.path.join(USER_PATH,'outputs')
-
+ENV_PATH = os.path.join(USER_PATH,'.ext3')
 AS15415_PATH = '/scratch/as15415/Data/CM26_Surface_UVT.zarr'
 class FINE_CM2P6_PATH_Class:
     one_pct_co2 = '1pct_co2'
@@ -56,6 +56,7 @@ SCALARS = os.path.join(OUTPUTS_PATH,'scalars')
 LSRP = os.path.join(OUTPUTS_PATH,'lsrp')
 PLOTS = os.path.join(OUTPUTS_PATH,'plots')
 TEMPORARY_DATA = os.path.join(OUTPUTS_PATH,'data')
+FILTER_WEIGHTS = os.path.join(OUTPUTS_PATH,'filter_weights')
 VIEW_PLOTS = os.path.join(PLOTS,'views')
 TIME_LAPSE_PLOTS = os.path.join(PLOTS,'time_lapse')
 R2_PLOTS = os.path.join(PLOTS,'r2')

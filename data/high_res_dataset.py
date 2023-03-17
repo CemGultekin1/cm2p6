@@ -200,13 +200,8 @@ class HighResCm2p6:
     def append_mask(self,ds,i):
         wetmask = self.get_mask(i)
         ds = xr.merge([ds,wetmask])
-        # ds = xr.merge([wetmask])
-        # ti,_ = self.time_depth_indices(i)
-        # ds = ds.expand_dims(dim = {"time":[ti]},axis = 0)
         return ds
     def __getitem__(self,i):
         ds = self.get_forcings(i,)
-        # ds = self.append_mask(ds,i)
-        
         nds =  tonumpydict(ds)
         return nds

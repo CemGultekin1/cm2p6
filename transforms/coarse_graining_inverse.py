@@ -1,32 +1,12 @@
 import itertools
-from transforms.coarse_graining import base_transform#,filtering, gcm_filtering, greedy_coarse_grain, greedy_scipy_filtering
+from transforms.coarse_graining import base_transform
 import numpy as np
 import xarray as xr
 
 
-# class inverse_filtering:
-#     filtering_class = None
-#     def __init__(self, *args, **kwargs):
-#         super().__init__(*args, **kwargs)
-#         self.filtering  :filtering = self.filtering_class(*args,**kwargs)
-#         self.coarse_grain = greedy_coarse_grain(*args,**kwargs)
-#         self.coarse_grained_wet_density = self.coarse_grain(self.filtering.wet_density,greedy = False)
-#         self.matmult = matmult_masked_filtering(*args,**kwargs)
-#     def __call__(self,x,inverse :bool = True):
-#         return self.matmult(x,inverse = inverse,wet_density = self.coarse_grained_wet_density)
-
-
-# class inverse_greedy_scipy_filtering(inverse_filtering):
-#     filtering_class = greedy_scipy_filtering
-
-# class inverse_gcm_filtering(inverse_filtering):
-#     filtering_class = gcm_filtering
 
 def right_inverse_matrix(mat):
-    # mat @ u = \bar{u}
     q,r = np.linalg.qr(mat.T)
-    # mat = r.T @ q.T
-    # mat @ ( q @ r^{-T}) = id
     return q @ np.linalg.inv(r).T
 
 def side_multip(mat,x,ax):
@@ -34,6 +14,30 @@ def side_multip(mat,x,ax):
         return mat @ x
     else:
         return x @ mat.T
+    
+
+def filter_weights_1d(sigma):
+    fw = filter_weights(sigma)
+    fw = fw[:,(5*sigma + 1)//2]
+    # fw = fw/sum(fw)
+    return fw
+
+def filter_weights(sigma):
+    inds = np.arange(-2*sigma,2*sigma+1)
+    w = np.exp( - inds**2/(2*(sigma/2)**2))/np.sqrt(2*np.pi*sigma)
+    w_ = w.reshape([-1,1])@w.reshape([1,-1])
+    w = np.zeros((5*sigma+1,5*sigma+1))
+    w[:w_.shape[0],:w_.shape[1]] = w_
+    ww = w*0
+    for i in itertools.product(range(sigma),range(sigma)):
+        wm = np.roll(w,i,axis=(0,1))
+        ww += wm
+    sww = np.sum(ww)
+    ww = ww/sww
+    return ww
+
+    
+
 class matmult_1d(base_transform):
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
@@ -70,12 +74,66 @@ class matmult_1d(base_transform):
         else:
             mat = self._matrix
         return side_multip(mat,x,ax)
+    
+    
+from scipy.ndimage import gaussian_filter
+def wet_density(wet_mask,area,sigma:int,dims):
+    weighting = xr.apply_ufunc(\
+            lambda data: gaussian_filter(data, sigma/2, mode='wrap'),\
+            wet_mask*area,dask='parallelized', output_dtypes=[float, ])
+    weighting = 1/weighting
+    weighting = xr.where(wet_mask,weighting,0)
+    coarsening_specs = dict({axis : sigma for axis in dims},boundary = 'trim')
+    cwet_mask = wet_mask.coarsen(**coarsening_specs).mean()*sigma**2
+    cgrain_norm = 1/cwet_mask
+    def coarse_isel(i,j):
+        return dict({axis : c for axis,c in zip(dims,[i,j])})
+    def fine_isel(i,j):
+        return dict({axis : slice(c*sigma,(c+1)*sigma) for axis,c in zip(dims,[i,j])})
 
+    ndims = [len(wet_mask[dim]) for dim in dims]
+    cndims = [len(cwet_mask[dim]) for dim in dims]
+    indices = [np.arange(ndim) for ndim in cndims]
+
+    latitudinal_weights = np.zeros((sigma,cndims[1],ndims[0]))
+    longitudinal_weights = np.zeros((sigma,cndims[0],ndims[1]))
+    for i,j in itertools.product(indices):
+        cisel = coarse_isel(i,j)
+        fisel = fine_isel(i,j)
+        wmat = weighting.isel(**fisel)
+        wmat = wmat * cgrain_norm.isel(**cisel).values.item()
+        u,s,vh = np.linalg.svd(wmat)
+        u = u @ np.sqrt(s)
+        vh = np.sqrt(s) @ vh
+        latitudinal_weights[:,j,i*sigma:(i+1)*sigma] = u.T.reshape([sigma,1,sigma])
+        longitudinal_weights[:,i,j*sigma:(j+1)*sigma] = vh.reshape([sigma,1,sigma])
+    return latitudinal_weights,longitudinal_weights
+def coordinatewise_matmultip(lw,sigma):
+    inds = np.arange(-2*sigma,2*sigma+1)
+    ws = np.zeros((sigma,lw.shape[0]))
+    ws[0,:4*sigma + 1] =  np.exp( - inds**2/(2*(sigma/2)**2))/np.sqrt(2*np.pi*sigma)
+    ws[0] = np.roll(ws[0],-2*sigma)
+    for i in range(1,sigma):
+        ws[i] = np.roll(ws[0],i)
+    q = np.zeros((lw.shape[0]//sigma,lw.shape[0]))
+    for i in range(q.shape[0]):
+        sws = lw[i*sigma:(i+1)*sigma]@ws
+        sws = np.roll(sws,sigma*i,axis = 1)
+        q[i] = sws
+    return q
+
+
+class slicewise_matmult_filtering_saver(base_transform):
+    def __init__(self,*args,**kwargs):
+        super().__init__(*args,**kwargs)
+        self.lat_area,self.lon_area = \
+            wet_density(self.grid.wet_mask,self.grid.area,self.sigma,self.dims)    
+        
 class matmult_filtering(base_transform):
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
         lon_area = self.grid.mean(dim = self.dims[0])
-        lat_area = self.grid.mean(dim = self.dims[1])
+        lat_area = self.grid.mean(dim = self.dims[1])                
         self._lonfilt = matmult_1d(self.sigma,lon_area,**kwargs)
         self._latfilt = matmult_1d(self.sigma,lat_area,**kwargs)
         coarsen_dict = {key : self.sigma for key in self.dims}
@@ -124,23 +182,4 @@ class matmult_masked_filtering(matmult_filtering):
             cx = cx/wet_density
         return cx
 
-def filter_weights_1d(sigma):
-    fw = filter_weights(sigma)
-    fw = fw[:,(5*sigma + 1)//2]
-    fw = fw/sum(fw)
-    return fw
-
-def filter_weights(sigma):
-    inds = np.arange(-2*sigma,2*sigma+1)
-    w = np.exp( - inds**2/(2*(sigma/2)**2))
-    w_ = w.reshape([-1,1])@w.reshape([1,-1])
-    w = np.zeros((5*sigma+1,5*sigma+1))
-    w[:w_.shape[0],:w_.shape[1]] = w_
-    ww = w*0
-    for i in itertools.product(range(sigma),range(sigma)):
-        wm = np.roll(w,i,axis=(0,1))
-        ww += wm
-    sww = np.sum(ww)
-    ww = ww/sww
-    return ww
 

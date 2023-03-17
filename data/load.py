@@ -7,6 +7,8 @@ from data.paths import get_high_res_data_location, get_high_res_grid_location, g
 import copy
 from data.vars import FIELD_NAMES, FORCING_NAMES, LATITUDE_NAMES,LSRP_RES_NAMES, get_var_mask_name, rename
 from data.scalars import load_scalars
+from transforms.gcm_filter_weights import GcmFilterWeights
+from transforms.grids import get_grid_vars
 import xarray as xr
 from data.coords import  DEPTHS, REGIONS, TIMES
 from utils.arguments import options
@@ -16,14 +18,11 @@ import torch
 
 def load_grid(ds:xr.Dataset,):
     grid_loc = xr.open_dataset(get_high_res_grid_location())
-    # import matplotlib.pyplot as plt
-    # grid_loc.area_u.plot()
-    # plt.savefig('area_u.png')
-
     passkeys = ['xu_ocean','yu_ocean','xt_ocean','yt_ocean','dxu','dyu','dxt','dyt']#,'area_t',]
     for key in passkeys:
         ds[key] = grid_loc[key]
     return ds
+
 
 def pass_geo_grid(ds,sigma):
     grid = xr.open_dataset(get_high_res_grid_location())
@@ -65,13 +64,6 @@ def pass_geo_grid(ds,sigma):
         else:
             return g
 
-    
-    # geolon = match_shape(geolon,rlon,1)
-    # geolon = match_shape(geolon,rlat,0)
-
-    # geolat = match_shape(geolat,rlon,1)
-    # geolat = match_shape(geolat,rlat,0)
-
     ds = ds.assign_coords(
         dict(
             geolon = (['lat','lon'],(geolon + 180 ) % 360 - 180),
@@ -94,8 +86,6 @@ def load_xr_dataset(args):
     ds_zarr= xr.open_zarr(data_address,consolidated=False )
     if runargs.mode == 'data':  
         ds_zarr = load_grid(ds_zarr)
-    # else:
-    #     ds_zarr = load_wet_mask(ds_zarr,args)
     if runargs.sanity:
         ds_zarr = ds_zarr.isel(time = slice(0,1))
     ds_zarr,scs=  preprocess_dataset(args,ds_zarr)
@@ -228,7 +218,23 @@ def get_data(args,torch_flag = False,data_loaders = True,**kwargs):
         return [torch.utils.data.DataLoader(tset_, **params) for tset_ in torchdsets]
     else:
         return dsets
-
+def get_filter_weights_generator(args,data_loaders = True,):
+    ns,_ = options(args,key = "run")
+    assert ns.filtering == 'gcm'
+    assert ns.mode == 'data'
+    ds_zarr,_ = load_xr_dataset(args)
+    ugrid,_ = get_grid_vars(ds_zarr.isel(time = 0))
+    dset_ = GcmFilterWeights(ns.sigma,ugrid,section = ns.section)
+    if data_loaders:
+        minibatch = None
+        params={'batch_size':minibatch,\
+            'shuffle': False,\
+            'num_workers':ns.num_workers,\
+            'prefetch_factor':ns.prefetch_factor}
+        torchdset = TorchDatasetWrap(dset_) 
+        return torch.utils.data.DataLoader(torchdset, **params) 
+    else:
+        return dset_
 
 def populate_dataset(dataset:MultiDomainDataset,groups = ("train","validation"),**kwargs):
     datasets = []
@@ -295,12 +301,3 @@ def preprocess_dataset(args,ds:xr.Dataset):
                 raise RequestDoesntExist
             scs = scs.isel(tr_depth = tr_ind)
     return ds,scs
-
-def physical_domains(domain:str,):
-    partition={}
-    parts = ['train','validation','test']
-    for part in parts:
-        partition[part]=copy.deepcopy(REGIONS[domain])
-        for key,val in TIMES[part].items():
-            partition[part][key] = val
-    return partition
