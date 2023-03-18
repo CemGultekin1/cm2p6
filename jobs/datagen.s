@@ -8,7 +8,7 @@
 #SBATCH --cpus-per-task=18
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-ARGS=$(sed -n "$SLURM_ARRAY_TASK_ID"p /scratch/cg3306/climate/CM2P6Param/jobs/datagen.txt)
+ARGS=$(sed -n "$JOBS_ARRAY_TASK_ID"p /scratch/cg3306/climate/CM2P6Param/jobs/datagen.txt)
 module purge
 singularity exec --nv --overlay .ext3:ro /scratch/work/public/singularity/cuda11.2.2-cudnn8-devel-ubuntu20.04.sif /bin/bash -c "\
 	source src.sh;\

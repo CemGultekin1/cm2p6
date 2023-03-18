@@ -3,7 +3,7 @@ from typing import List, Tuple
 from data.exceptions import RequestDoesntExist
 from data.low_res_dataset import MultiDomainDataset
 from data.high_res_dataset import  HighResCm2p6
-from data.paths import get_high_res_data_location, get_high_res_grid_location, get_low_res_data_location
+from data.paths import get_filter_weights_location, get_high_res_data_location, get_high_res_grid_location, get_low_res_data_location
 import copy
 from data.vars import FIELD_NAMES, FORCING_NAMES, LATITUDE_NAMES,LSRP_RES_NAMES, get_var_mask_name, rename
 from data.scalars import load_scalars
@@ -22,6 +22,12 @@ def load_grid(ds:xr.Dataset,):
     for key in passkeys:
         ds[key] = grid_loc[key]
     return ds
+
+def load_filter_weights(args):
+    path = get_filter_weights_location(args,preliminary=False)
+    fw = xr.open_dataset(path)
+    return fw
+
 
 
 def pass_geo_grid(ds,sigma):
@@ -74,9 +80,10 @@ def pass_geo_grid(ds,sigma):
 
 
 
-def load_xr_dataset(args):
+def load_xr_dataset(args,high_res = None):
     runargs,_ = options(args,'run')
-    if runargs.mode == 'data':
+    high_res = high_res if high_res is not None else runargs.mode == 'data'
+    if high_res:
         data_address = get_high_res_data_location(args)
     else:
         data_address = get_low_res_data_location(args)
@@ -84,11 +91,11 @@ def load_xr_dataset(args):
         print('RequestDoesntExist\t',data_address)
         raise RequestDoesntExist
     ds_zarr= xr.open_zarr(data_address,consolidated=False )
-    if runargs.mode == 'data':  
+    if high_res:  
         ds_zarr = load_grid(ds_zarr)
     if runargs.sanity:
         ds_zarr = ds_zarr.isel(time = slice(0,1))
-    ds_zarr,scs=  preprocess_dataset(args,ds_zarr)
+    ds_zarr,scs=  preprocess_dataset(args,ds_zarr,high_res)
     return ds_zarr,scs
 
 def get_var_grouping(args)-> Tuple[Tuple[List[str],...],Tuple[List[str],...]]:
@@ -247,9 +254,9 @@ def get_time_values(deep):
         return load_xr_dataset('--mode train --depth 5'.split())[0].time.values
     return load_xr_dataset('--mode train --depth 0'.split())[0].time.values
 
-def preprocess_dataset(args,ds:xr.Dataset):
+def preprocess_dataset(args,ds:xr.Dataset,high_res_flag:bool ):
     prms,_ = options(args,key = "run")
-    if prms.mode == 'data':
+    if high_res_flag:
         ds = rename(ds)
     coord_names = list(ds.coords.keys())
 
@@ -265,7 +272,7 @@ def preprocess_dataset(args,ds:xr.Dataset):
     if prms.depth > 1e-3:
         if 'depth' not in coord_names:
             raise RequestDoesntExist
-        if prms.mode == 'data':
+        if high_res_flag:
             depthvals_=ds.coords['depth'].values
             inds = [np.argmin(np.abs(depthvals_ - d )) for d in DEPTHS if d>1e-3]
             ds = ds.isel(depth = inds)
@@ -292,7 +299,7 @@ def preprocess_dataset(args,ds:xr.Dataset):
             raise RequestDoesntExist
         ds = ds.isel(tr_depth = tr_ind)
     
-    if prms.mode != 'scalars' and scs is not None and prms.mode != 'data' :
+    if prms.mode != 'scalars' and scs is not None and not high_res_flag :
         if 'tr_depth' in scs:
             depthval = ds.depth.values
             trd = scs.tr_depth.values

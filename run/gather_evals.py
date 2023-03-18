@@ -2,7 +2,7 @@ import itertools
 import os
 from models.nets.cnn import kernels2spread
 from plots.metrics import metrics_dataset
-from utils.paths import SLURM, EVALS, all_eval_path
+from utils.paths import JOBS, EVALS, all_eval_path
 from utils.slurm import flushed_print
 from utils.xarray import plot_ds, skipna_mean
 import xarray as xr
@@ -56,7 +56,7 @@ def kernel_size_fun(kernels):
     return kernels2spread(kernels)*2 + 1
 def main():
     root = EVALS
-    models = os.path.join(SLURM,'trainjob.txt')
+    models = os.path.join(JOBS,'trainjob.txt')
     file1 = open(models, 'r')
     lines = file1.readlines()
     file1.close()

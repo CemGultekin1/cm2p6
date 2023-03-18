@@ -46,12 +46,12 @@ class growing_orthogonals_decomposition:
         if self.qmat is None:
             return 0
         return self.qmat.shape[1]
-    def add(self,v):    
+    def add(self,v,tol = 1e-5):    
         n0 = np.linalg.norm(v)
         r,v_orth =self.q_orthogonal(v)
         n = np.linalg.norm(v_orth)
         relnorm = n/n0
-        if relnorm < 1e-5:
+        if relnorm < tol:
             return False
         v_orth = v_orth/n
         self.qmat = self.q_grow(v_orth)

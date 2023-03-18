@@ -84,7 +84,7 @@ def plot_ds(ds,imname,ncols = 3,dims = ['lat','lon'],\
             flat_vars[keyname] = u.isel(**seldict)
     vars = list(flat_vars.keys())
     nrows = int(np.ceil(len(vars)/ncols))
-    fig,axs = plt.subplots(nrows,ncols,figsize=(ncols*6,nrows*5))
+    fig,axs = plt.subplots(nrows,ncols,figsize=(ncols*18,nrows*15))
     print('nrows,ncols\t',nrows,ncols)
 
     def listify(cmap):

@@ -3,11 +3,11 @@ from models.load import load_modelsdict
 from models.save import update_modelsdict
 from models.search import is_trained
 from utils.arguments import options
-from utils.paths import MODELS, SLURM, model_logs_json_path, statedict_path
+from utils.paths import MODELS, JOBS, model_logs_json_path, statedict_path
 
 def read_job_txts():
-    fns = os.listdir(SLURM)
-    fns = [os.path.join(SLURM,f) for f in fns if '.txt' in f]
+    fns = os.listdir(JOBS)
+    fns = [os.path.join(JOBS,f) for f in fns if '.txt' in f]
     lines = []
     def read_lines(filename):
         lines = []
@@ -22,7 +22,7 @@ def read_job_txts():
 def add_trained_models():
     from jobs.trainjob import TRAINJOB
     argsfile = TRAINJOB + '.txt'
-    path = os.path.join(SLURM,argsfile)
+    path = os.path.join(JOBS,argsfile)
     with open(path,'r') as f:
         lines = f.readlines()
     modelsdict = load_modelsdict()

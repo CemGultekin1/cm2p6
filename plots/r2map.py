@@ -2,7 +2,7 @@ import itertools
 import os
 import matplotlib.pyplot as plt
 from plots.metrics import metrics_dataset
-from utils.paths import SLURM, R2_PLOTS, EVALS
+from utils.paths import JOBS, R2_PLOTS, EVALS
 from utils.xarray import skipna_mean
 import xarray as xr
 from utils.arguments import options
@@ -10,7 +10,7 @@ from utils.slurm import flushed_print
 import numpy as np
 def main():
     root = EVALS
-    models = os.path.join(SLURM,'trainjob.txt')
+    models = os.path.join(JOBS,'trainjob.txt')
     target = R2_PLOTS
     file1 = open(models, 'r')
     lines = file1.readlines()

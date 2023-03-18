@@ -1,7 +1,7 @@
 import itertools
 import os
 import matplotlib.pyplot as plt
-from utils.paths import SLURM, TIME_LAPSE_PLOTS, TIME_LAPSE
+from utils.paths import JOBS, TIME_LAPSE_PLOTS, TIME_LAPSE
 import xarray as xr
 from utils.arguments import options
 from utils.slurm import flushed_print
@@ -11,7 +11,7 @@ def main():
     target = TIME_LAPSE_PLOTS  
     #lines = ['G-0']
     
-    models = os.path.join(SLURM,'trainjob.txt')
+    models = os.path.join(JOBS,'trainjob.txt')
     file1 = open(models, 'r')
     lines = file1.readlines()
     file1.close()

@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from data.load import pass_geo_grid
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-from utils.paths import SLURM, VIEW_PLOTS, VIEWS
+from utils.paths import JOBS, VIEW_PLOTS, VIEWS
 import xarray as xr
 from utils.arguments import options
 import numpy as np
@@ -12,7 +12,7 @@ from data.coords import REGIONS
 
 def main():
     root = VIEWS
-    models = os.path.join(SLURM,'viewjob.txt')
+    models = os.path.join(JOBS,'viewjob.txt')
     target = VIEW_PLOTS
     file1 = open(models, 'r')
     lines = file1.readlines()

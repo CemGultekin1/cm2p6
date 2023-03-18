@@ -3,7 +3,7 @@ def job(argsfile,python_file,add_eval:bool = False,**kwargs):
     head = ["#!/bin/bash"]
     intro = [f"#SBATCH --{key.replace('_','-')}={val}" for key,val in kwargs.items()]
     bashline = [
-        f"ARGS=$(sed -n \"$SLURM_ARRAY_TASK_ID\"p {argsfile})"
+        f"ARGS=$(sed -n \"$JOBS_ARRAY_TASK_ID\"p {argsfile})"
     ]
     env = ENV_PATH
     bodystart = ["module purge",\

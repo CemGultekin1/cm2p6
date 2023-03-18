@@ -41,13 +41,13 @@ CODE = 'code'
 
 GRID_INFO = os.path.join(CM2P6_PATH,'GFDL_CM2_6_grid.nc')
 REPO = os.path.join(USER_PATH,CODE)
-SLURM = os.path.join(REPO,'jobs')
+JOBS = os.path.join(REPO,'jobs')
 
 MODELIDS_JSON = os.path.join(REPO,'modelids.json')
 BACKUP_MODELIDS_JSON = os.path.join(REPO,'backup_modelids.json')
 # OUTPUTS_PATH = os.path.join(REPO,'saves')
 
-SLURM_LOGS = os.path.join(OUTPUTS_PATH,'slurm_logs')
+JOBS_LOGS = os.path.join(OUTPUTS_PATH,'slurm_logs')
 EVALS = os.path.join(OUTPUTS_PATH,'evals')
 TIME_LAPSE = os.path.join(OUTPUTS_PATH,'time_lapse')
 VIEWS = os.path.join(OUTPUTS_PATH,'views')
@@ -69,7 +69,7 @@ MODELS_JSON = os.path.join(OUTPUTS_PATH,'models_info.json')
 DATA_JSON = os.path.join(OUTPUTS_PATH,'data_info.json')
 
 
-for dir in [MODELS,TRAINING_LOGS,OUTPUTS_PATH,EVALS,VIEWS,SLURM_LOGS]:
+for dir in [MODELS,TRAINING_LOGS,OUTPUTS_PATH,EVALS,VIEWS,JOBS_LOGS]:
     if not os.path.exists(dir):
         os.makedirs(dir)
 

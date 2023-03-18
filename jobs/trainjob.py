@@ -6,11 +6,11 @@ from params import get_default, replace_param
 from jobs.job_body import create_slurm_job
 from jobs.taskgen import python_args
 from utils.arguments import options
-from utils.paths import SLURM, SLURM_LOGS
+from utils.paths import JOBS, JOBS_LOGS
 from data.coords import DEPTHS
 from utils.slurm import flushed_print
 TRAINJOB = 'trainjob'
-root = SLURM
+root = JOBS
 
 NCPU = 16
 def get_arch_defaults():
@@ -165,9 +165,9 @@ def generate_training_tasks():
     path = os.path.join(root,argsfile)
     with open(path,'w') as f:
         f.write(lines)
-    slurmfile =  os.path.join(SLURM,TRAINJOB + '.s')
-    out = os.path.join(SLURM_LOGS,TRAINJOB+ '_%a_%A.out')
-    err = os.path.join(SLURM_LOGS,TRAINJOB+ '_%a_%A.err')
+    slurmfile =  os.path.join(JOBS,TRAINJOB + '.s')
+    out = os.path.join(JOBS_LOGS,TRAINJOB+ '_%a_%A.out')
+    err = os.path.join(JOBS_LOGS,TRAINJOB+ '_%a_%A.err')
     create_slurm_job(slurmfile,\
         time = "12:00:00",array = jobarray,\
         mem = "150GB",job_name = TRAINJOB,\

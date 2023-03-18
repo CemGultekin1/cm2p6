@@ -5,10 +5,10 @@ from models.search import is_trained, is_viewed
 from params import replace_param
 from jobs.job_body import create_slurm_job
 from utils.arguments import options
-from utils.paths import SLURM, SLURM_LOGS
+from utils.paths import JOBS, JOBS_LOGS
 
 JOBNAME = 'viewjob'
-root = SLURM
+root = JOBS
 
 NCPU = 2
 
@@ -36,9 +36,9 @@ def generate_eval_tasks():
         if is_trained(modelid) and not is_viewed(modelid):
             jobnums.append(str(i+1))
     jobarray = ','.join(jobnums)
-    slurmfile =  os.path.join(SLURM,JOBNAME + '.s')
-    out = os.path.join(SLURM_LOGS,JOBNAME+ '_%a_%A.out')
-    err = os.path.join(SLURM_LOGS,JOBNAME+ '_%a_%A.err')
+    slurmfile =  os.path.join(JOBS,JOBNAME + '.s')
+    out = os.path.join(JOBS_LOGS,JOBNAME+ '_%a_%A.out')
+    err = os.path.join(JOBS_LOGS,JOBNAME+ '_%a_%A.err')
     create_slurm_job(slurmfile,\
         python_file = 'run/view.py',
         time = "30:00",array = jobarray,\

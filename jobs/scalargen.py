@@ -1,10 +1,10 @@
 import itertools
 import os
 from jobs.job_body import create_slurm_job
-from utils.paths import SLURM_LOGS, SLURM
+from utils.paths import JOBS_LOGS, JOBS
 from data.coords import DEPTHS
 JobName = 'scalars'
-root = SLURM
+root = JOBS
 
 NCPU = 8
 MEM_PER_CPU = 9
@@ -28,8 +28,8 @@ def python_args():
     return njob
 def slurm(njob):
     slurmfile =  os.path.join(root,JobName + '.s')
-    out = os.path.join(SLURM_LOGS,JobName+ '_%a_%A.out')
-    err = os.path.join(SLURM_LOGS,JobName+ '_%a_%A.err')
+    out = os.path.join(JOBS_LOGS,JobName+ '_%a_%A.out')
+    err = os.path.join(JOBS_LOGS,JobName+ '_%a_%A.err')
     create_slurm_job(slurmfile,\
         python_file = 'run/scalars.py',
         time = "3:00:00",array = f"1-{njob}",\

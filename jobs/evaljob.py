@@ -7,10 +7,10 @@ from params import get_default, replace_param
 from jobs.job_body import create_slurm_job
 from jobs.taskgen import python_args
 from utils.arguments import options
-from utils.paths import SLURM, SLURM_LOGS
+from utils.paths import JOBS, JOBS_LOGS
 
 JOBNAME = 'evaljob'
-root = SLURM
+root = JOBS
 
 NCPU = 8
 
@@ -42,9 +42,9 @@ def generate_eval_tasks():
         if not is_evaluated(modelid) and is_trained(modelid):
             jobnums.append(str(i+1))
     jobarray = ','.join(jobnums)
-    slurmfile =  os.path.join(SLURM,JOBNAME + '.s')
-    out = os.path.join(SLURM_LOGS,JOBNAME+ '_%a_%A.out')
-    err = os.path.join(SLURM_LOGS,JOBNAME+ '_%a_%A.err')
+    slurmfile =  os.path.join(JOBS,JOBNAME + '.s')
+    out = os.path.join(JOBS_LOGS,JOBNAME+ '_%a_%A.out')
+    err = os.path.join(JOBS_LOGS,JOBNAME+ '_%a_%A.err')
     create_slurm_job(slurmfile,\
         python_file = 'run/eval.py',
         time = "1:00:00",array = jobarray,\

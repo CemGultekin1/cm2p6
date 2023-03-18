@@ -1,19 +1,17 @@
 import xarray as xr
 import numpy as np
 from transforms.coarse_graining import base_transform, gcm_filtering, greedy_coarse_grain
-class GcmFilterWeights(base_transform):
-    ds : xr.Dataset
-    sigma : int
+class FilterWeightsBase(base_transform):
+    def __init__(self, sigma, grid, *args, dims=..., **kwargs):
+        super().__init__(sigma, grid, *args, dims=dims, **kwargs)
+        self.left_spacing = 2*sigma
+        self.right_spacing = 3*sigma + 1
+        self.span = self.left_spacing + self.right_spacing
+class GcmFilterWeights(FilterWeightsBase):
     def __init__(self,sigma,grid,*args,dims = 'lat lon'.split(),section = (0,1),**kwargs):
         super().__init__(sigma,grid,*args,dims = dims,**kwargs)
         print(f'section = {section}')
         self.coarse_wet_mask = greedy_coarse_grain(sigma,grid).coarse_wet_mask 
-        
-        
-        self.left_spacing = 2*sigma
-        self.right_spacing = 3*sigma + 1
-        self.span = self.left_spacing + self.right_spacing
-        
         ilats,ilons = np.where(self.coarse_wet_mask.data>0)
         
         i,N = section
@@ -61,3 +59,4 @@ class GcmFilterWeights(base_transform):
             'rel_lat':np.arange(span) - self.left_spacing,'rel_lon': np.arange(span) - self.left_spacing
         })
         return coords,locs,c_eye.data.reshape([span,span])
+    

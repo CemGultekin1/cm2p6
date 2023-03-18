@@ -2,10 +2,10 @@
 import itertools
 import os
 from jobs.job_body import create_slurm_job
-from utils.paths import SLURM, SLURM_LOGS
+from utils.paths import JOBS, JOBS_LOGS
 
 JOBNAME = 'datagen'
-root = SLURM
+root = JOBS
 
 NCPU = 18
 NSEC = 10
@@ -34,9 +34,9 @@ def python_args():
         f.write(lines)
     return njob
 def slurm(njob):
-    slurmfile =  os.path.join(SLURM,JOBNAME + '.s')
-    out = os.path.join(SLURM_LOGS,JOBNAME+ '_%a_%A.out')
-    err = os.path.join(SLURM_LOGS,JOBNAME+ '_%a_%A.err')
+    slurmfile =  os.path.join(JOBS,JOBNAME + '.s')
+    out = os.path.join(JOBS_LOGS,JOBNAME+ '_%a_%A.out')
+    err = os.path.join(JOBS_LOGS,JOBNAME+ '_%a_%A.err')
     create_slurm_job(slurmfile,\
         python_file = 'run/datagen.py',
         time = "48:00:00",array = f"1-{njob}",\
