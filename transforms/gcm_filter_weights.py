@@ -52,6 +52,14 @@ class GcmFilterWeights(FilterWeightsBase):
         f_eye = filtering(eye_field)
         c_eye = coarse_graining(f_eye)
         mc = len(c_eye.lat)//2
+        
+        # import matplotlib.pyplot as plt
+        # import itertools
+        # fig,axs = plt.subplots(5,5,figsize = (60,60))
+        # for ii,jj in itertools.product(range(5),range(5)):            
+        #     np.log10(c_eye).isel(lat = ii, lon = jj).plot(ax = axs[ii,jj])
+        # fig.savefig('comparison.png')
+        # raise Exception
         c_eye = c_eye.isel(lat = mc,lon =  mc)
         locs = [self.indexes[dim][i] for dim in self.dims]
         coords = {dim:self.coarse_wet_mask[dim].values for dim in self.dims}

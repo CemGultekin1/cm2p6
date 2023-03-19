@@ -17,23 +17,23 @@ def run():
     upper_limit = (arg+1)*NSEC#40
     lower_limit = arg*NSEC #30
     flushed_print('lower_limit,upper_limit\t',lower_limit,upper_limit)
-
-    for i in range(lower_limit,upper_limit):
-        datargs = ls[i].split()   
-        path1 = get_filter_weights_location(datargs,preliminary=True)
-        if i == 0:
-            fw0 = xr.open_dataset(path1)
-        else:
-            fw1 = xr.open_dataset(path1)
-            fw0 += fw1
-        path0 = get_filter_weights_location(datargs,preliminary=False)
-        fw0.to_netcdf(path0)
-        print(i,lower_limit,upper_limit)
-    datargs,_ = options(datargs,key = 'data')
-    fwc = FilterWeightCompression(datargs.sigma,fw0.__xarray_dataarray_variable__)
-    print('ranking filters...')
-    ds = fwc.get_separable_components()
-    ds.to_netcdf(path0,mode='w',)
+    for ut_grid in 'u t'.split():
+        for i in range(lower_limit,upper_limit):
+            datargs = ls[i].split()   
+            path1 = get_filter_weights_location(datargs,preliminary=True,utgrid = ut_grid)
+            if i == 0:
+                fw0 = xr.open_dataset(path1)
+            else:
+                fw1 = xr.open_dataset(path1)
+                fw0 += fw1
+            path0 = get_filter_weights_location(datargs,preliminary=False,utgrid = ut_grid)
+            fw0.to_netcdf(path0)
+            print(i,lower_limit,upper_limit)
+        datargs,_ = options(datargs,key = 'data')
+        fwc = FilterWeightCompression(datargs.sigma,fw0.__xarray_dataarray_variable__)
+        print('ranking filters...')
+        ds = fwc.get_separable_components()
+        ds.to_netcdf(path0,mode='w',)
         
 if __name__=='__main__':
     run()

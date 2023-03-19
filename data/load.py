@@ -230,18 +230,18 @@ def get_filter_weights_generator(args,data_loaders = True,):
     assert ns.filtering == 'gcm'
     assert ns.mode == 'data'
     ds_zarr,_ = load_xr_dataset(args)
-    ugrid,_ = get_grid_vars(ds_zarr.isel(time = 0))
-    dset_ = GcmFilterWeights(ns.sigma,ugrid,section = ns.section)
+    grids = get_grid_vars(ds_zarr.isel(time = 0))
+    dsets = [GcmFilterWeights(ns.sigma,grid,section = ns.section) for grid in grids]
     if data_loaders:
         minibatch = None
         params={'batch_size':minibatch,\
             'shuffle': False,\
             'num_workers':ns.num_workers,\
             'prefetch_factor':ns.prefetch_factor}
-        torchdset = TorchDatasetWrap(dset_) 
-        return torch.utils.data.DataLoader(torchdset, **params) 
+        torchdsets = [TorchDatasetWrap(dset_)  for dset_ in dsets]
+        return [torch.utils.data.DataLoader(torchdset, **params) for torchdset in torchdsets]
     else:
-        return dset_
+        return dsets
 
 def populate_dataset(dataset:MultiDomainDataset,groups = ("train","validation"),**kwargs):
     datasets = []
