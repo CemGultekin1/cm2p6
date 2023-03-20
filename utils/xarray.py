@@ -42,7 +42,6 @@ def plot_ds(ds,imname,ncols = 3,dims = ['lat','lon'],\
             plot_ds(ds_,imname_,ncols = ncols,**kwargs)
         return
 
-    print(f'scale_grouping = {scale_grouping}')
     if isinstance(ds,dict):
         for name,var in ds.items():
             var.name = name
@@ -85,7 +84,6 @@ def plot_ds(ds,imname,ncols = 3,dims = ['lat','lon'],\
     vars = list(flat_vars.keys())
     nrows = int(np.ceil(len(vars)/ncols))
     fig,axs = plt.subplots(nrows,ncols,figsize=(ncols*18,nrows*15))
-    print('nrows,ncols\t',nrows,ncols)
 
     def listify(cmap):
         if not isinstance(cmap ,list):

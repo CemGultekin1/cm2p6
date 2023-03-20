@@ -12,7 +12,7 @@ NSEC = 10
 PERCPU = 2
 def python_args():
     def givearg(filtering,sigma,depth,section):
-        st =  f"--minibatch 1 --prefetch_factor 1 --depth {depth} --disp 100 --sigma {sigma} --section {section} --mode data --num_workers {NCPU} --filtering {filtering}"
+        st =  f"--minibatch 1 --prefetch_factor 1 --disp 50 --depth {depth} --disp 100 --sigma {sigma} --section {section} --mode data --num_workers {NCPU} --filtering {filtering}"
         return st
     
     filtering = ['gcm']

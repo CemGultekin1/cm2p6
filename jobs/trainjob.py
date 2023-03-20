@@ -49,7 +49,7 @@ def fix_minibatch(args):
     return args
 def check_training_task(args):
     runargs,_ = options(args,key = "run")
-    if runargs.lsrp==0 or runargs.lossfun == 'heteroscedastic':
+    if runargs.lsrp==1:# or runargs.lossfun == 'heteroscedastic':
         return True
     _,modelid = options(args,key = "model")
     return is_trained(modelid)
@@ -67,17 +67,16 @@ def generate_training_tasks():
         lossfun = ['heteroscedastic','MSE'],#'heteroscedastic',
     )
     kwargs = {}
-    # kwargs[0] = dict(
-    #     lsrp = 0,     
-    #     depth = 0,
-    #     sigma = 4,
-    #     filtering = 'gaussian',
-    #     temperature = False,
-    #     lossfun = ['heteroscedastic','MSE'],
-    #     latitude = False,
-    #     interior = [True,False],
-    #     domain = ['four_regions','global'],
-    # )
+    kwargs[0] = dict(
+        lsrp = 0,     
+        depth = 0,
+        sigma = 4,
+        filtering = 'gaussian',
+        temperature = False,
+        latitude = False,
+        interior = False,
+        domain = 'four_regions',
+    )
     kwargs[1] = dict(
         lsrp = 0,     
         depth = 0,

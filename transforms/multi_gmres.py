@@ -144,24 +144,18 @@ class MultiGmres:
         # coeffs = vh.T@(invs@(u.T@ymaty))
         return coeffs
 
-# class MultiGmresForFiltering(MultiGmres):
-#     def find_best_fit(self, y: np.ndarray):
-#         xmat = self.linear_ops(y,inverse = True)
-#         ymat = np.stack([self.linear_ops(x,inverse = False,separated = True) for x in xmat],axis = 1)
-#         ymatymat = ymat.T@ymat
-#         ymaty = ymat.T@y
-#         coeffs = self.solve_linear_system(ymatymat,ymaty)
-#         yopt =ymat@coeffs
-#         xopt = np.add.reduce([x*c for x,c in zip(xmat,coeffs)])
-#         return xopt.flatten(),yopt
+class AlternatingMultiGmres(MultiGmres):
+    def find_best_fit(self, y: np.ndarray, **kwargs):
+        return super().find_best_fit(y, initial_operator = self.iternum % self.rank)
 
 def main():
-    d1,r,d2 = 600,300,2400
-    m = 16
+    d1,r,d2 = 600,100,2400
+    m = 64
     np.random.seed(0)
     mats = [np.random.randn(d1,r)@np.random.randn(r,d2) for _ in range(m)]
     mlm = MultiLinearMats(mats)
-    mgmres = MultiGmres(mlm,np.random.randn(d1,),maxiter = m*2,sufficient_decay_limit=0.9)
+    mgmres = MultiGmres(mlm,np.random.randn(d1,),maxiter = m*2,sufficient_decay_limit=0.99)
+    # mgmres = AlternatingMultiGmres(mlm,np.random.randn(d1,),maxiter = m*m,sufficient_decay_limit=np.inf)
     mgmres.solve(initial_operator=0)
     
 if __name__ == '__main__':

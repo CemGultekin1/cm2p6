@@ -57,6 +57,7 @@ def prob_outputs(outputs,outfields,mask):
 
 
 def cnn_train(args):
+    # args = '--lsrp 0 --depth 0 --sigma 4 --filtering gaussian --temperature False --latitude False --interior False --domain four_regions --num_workers 1 --disp 50 --batchnorm 1 1 1 1 1 1 1 0 --lossfun heteroscedastic --widths 2 128 64 32 32 32 32 32 4 --kernels 5 5 3 3 3 3 3 3 --minibatch 4'.split()
     modelid,state_dict,net,criterion,optimizer,scheduler,logs,runargs=load_model(args)
     flushed_print('torch.cuda.is_available():\t',torch.cuda.is_available())
     flushed_print('runargs:\t',runargs)
@@ -86,11 +87,13 @@ def cnn_train(args):
             #         print(name,i,np.mean(np.abs(field[i])))
             #         ff = field[i]
             #         ff = ff[::-1]
-            #         axs[i].imshow(ff)
+            #         axs[i].imshow(ff,cmap = 'bwr')
             #     fig.savefig(name)
             #     plt.close()
-            # plot_method(np.log10(np.abs(infields)),'infields.png')
-            # plot_method(np.log10(np.abs(outfields)),'outfields.png')
+            # plot_method(np.log10(np.abs(infields)),'log10_infields.png')
+            # plot_method(np.log10(np.abs(outfields)),'log10_outfields.png')
+            # plot_method(infields,'infields.png')
+            # plot_method(outfields,'outfields.png')
             # plot_method(mask,'mask.png')
             # return
 
