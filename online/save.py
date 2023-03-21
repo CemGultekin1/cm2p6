@@ -7,8 +7,23 @@ from utils.paths import ONLINE_MODELS
 import os
 import torch
 from datetime import date
-
-
+import numpy as np
+def model_transfer(state_dict):
+    return state_dict
+    lyrnums = []
+    for key in state_dict:
+        num = int(key.split('.')[1])
+        lyrnums.append(num)
+    lyrnums = np.unique(lyrnums).tolist()
+    new_state_dict = {}
+    for key in state_dict:
+        keysp = key.split('.')
+        num = int(keysp[1])
+        i = lyrnums.index(num)
+        keysp[1] = str(i)
+        newkey = '.'.join(keysp)
+        new_state_dict[newkey] = state_dict[key]
+    return new_state_dict
 def main():
     args = '--lsrp 0 --depth 0 --sigma 4 --filtering gaussian --temperature False --latitude False --interior False --domain four_regions --num_workers 16 --disp 50 --batchnorm 1 1 1 1 1 1 1 0 --lossfun heteroscedastic --widths 2 128 64 32 32 32 32 32 4 --kernels 5 5 3 3 3 3 3 3 --minibatch 4'
     
@@ -45,7 +60,7 @@ def main():
             print(f'\t\t{name} is missing')
             models_dict.pop(name)
             continue            
-        models_dict[name] = (modelid,statedict['best_model'])
+        models_dict[name] = (modelid,model_transfer(statedict['best_model']))
     
     if not os.path.exists(ONLINE_MODELS):
         os.makedirs(ONLINE_MODELS)

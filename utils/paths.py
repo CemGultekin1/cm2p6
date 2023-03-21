@@ -1,6 +1,8 @@
 import os
 USER_PATH = '/scratch/cg3306/climate'
 CM2P6_PATH = '/scratch/zanna/data/cm2.6'
+BRANCH_NAME = 'code'
+    
 OUTPUTS_PATH = os.path.join(USER_PATH,'outputs')
 ENV_PATH = os.path.join(USER_PATH,'.ext3')
 AS15415_PATH = '/scratch/as15415/Data/CM26_Surface_UVT.zarr'
@@ -37,34 +39,46 @@ class FINE_CM2P6_PATH_Class:
 FINE_CM2P6_PATH = FINE_CM2P6_PATH_Class()
 
 COARSE_CM2P6_PATH = os.path.join(CM2P6_PATH,'coarse_datasets')
-CODE = 'code'
 
+
+class FolderTree:
+    def __init__(self) -> None:
+        self.folders_list = []
+    def join(self,*args):
+        path = os.path.join(*args)
+        if '.' not in path:
+            self.folders_list.append(path)
+    def makedirs(self,):
+        for folder in self.folders_list:
+            if not os.path.exists(folder):
+                os.makedirs(folder)
+            
 GRID_INFO = os.path.join(CM2P6_PATH,'GFDL_CM2_6_grid.nc')
-REPO = os.path.join(USER_PATH,CODE)
+REPO = os.path.join(USER_PATH,BRANCH_NAME)
 JOBS = os.path.join(REPO,'jobs')
 
 MODELIDS_JSON = os.path.join(REPO,'modelids.json')
 BACKUP_MODELIDS_JSON = os.path.join(REPO,'backup_modelids.json')
-# OUTPUTS_PATH = os.path.join(REPO,'saves')
 
 JOBS_LOGS = os.path.join(OUTPUTS_PATH,'slurm_logs')
 EVALS = os.path.join(OUTPUTS_PATH,'evals')
 TIME_LAPSE = os.path.join(OUTPUTS_PATH,'time_lapse')
 VIEWS = os.path.join(OUTPUTS_PATH,'views')
-
 SCALARS = os.path.join(OUTPUTS_PATH,'scalars')
 LSRP = os.path.join(OUTPUTS_PATH,'lsrp')
 PLOTS = os.path.join(OUTPUTS_PATH,'plots')
 TEMPORARY_DATA = os.path.join(OUTPUTS_PATH,'data')
 FILTER_WEIGHTS = os.path.join(OUTPUTS_PATH,'filter_weights')
 ONLINE_MODELS = os.path.join(OUTPUTS_PATH,'online_models')
+MODELS = os.path.join(OUTPUTS_PATH,'models')
+
 VIEW_PLOTS = os.path.join(PLOTS,'views')
 TIME_LAPSE_PLOTS = os.path.join(PLOTS,'time_lapse')
 R2_PLOTS = os.path.join(PLOTS,'r2')
 
 
 
-MODELS = os.path.join(OUTPUTS_PATH,'models')
+
 TRAINING_LOGS = os.path.join(OUTPUTS_PATH,'training_logs')
 MODELS_JSON = os.path.join(OUTPUTS_PATH,'models_info.json')
 DATA_JSON = os.path.join(OUTPUTS_PATH,'data_info.json')
