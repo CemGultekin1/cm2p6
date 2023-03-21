@@ -1,11 +1,11 @@
 #!/bin/bash
-#SBATCH --time=8:00:00
+#SBATCH --time=4:00:00
 #SBATCH --array=1
 #SBATCH --mem=30GB
 #SBATCH --job-name=fgath
 #SBATCH --output=/scratch/cg3306/climate/outputs/slurm_logs/fgath_%a_%A.out
 #SBATCH --error=/scratch/cg3306/climate/outputs/slurm_logs/fgath_%a_%A.err
-#SBATCH --cpus-per-task=1
+#SBATCH --cpus-per-task=4
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 module purge

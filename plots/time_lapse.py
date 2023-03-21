@@ -16,8 +16,8 @@ def main():
     lines = file1.readlines()
     file1.close()
 
-    # lines = [lines[i] for i in [19]]
-    lines = ['--lsrp 0 --depth 0 --sigma 4 --filtering gcm --temperature True --latitude False --domain global --num_workers 16 --disp 50 --batchnorm 1 1 1 1 1 1 1 0 --lossfun heteroscedastic --widths 3 128 64 32 32 32 32 32 6 --kernels 5 5 3 3 3 3 3 3 --minibatch 4']
+    lines = [lines[i] for i in [0]]
+    # lines = ['--lsrp 0 --depth 0 --sigma 4 --filtering gcm --temperature True --latitude False --domain global --num_workers 16 --disp 50 --batchnorm 1 1 1 1 1 1 1 0 --lossfun heteroscedastic --widths 3 128 64 32 32 32 32 32 6 --kernels 5 5 3 3 3 3 3 3 --minibatch 4']
 
     title_inc = ['sigma','domain','depth','interior','filtering','lossfun']
     title_name = ['sigma','train-domain','train-depth','interior','filtering','lossfun']

@@ -1,5 +1,4 @@
 from data.load import load_filter_weights, load_xr_dataset
-from transforms.gcm_filter_weights import FilterWeightsBase
 from transforms.coarse_graining import gcm_filtering,greedy_coarse_grain
 from transforms.grids import get_grid_vars
 from utils.arguments import options
@@ -69,12 +68,26 @@ def filtering_test():
     err.plot(ax = axs[2])
     fig.savefig('filtered.png')
     
+
+def plot_weight_maps():
+    import itertools
+    args = '--sigma 4 --filtering gcm --lsrp 1 --mode data'.split()
+    for ut in 'u t'.split():
+        fw = load_filter_weights(args,utgrid = ut).load()
+        rank = 8        
+        wmaps = {}
+        for i,j in itertools.product(range(rank),range(rank)):
+            fwij = fw.isel(lat_degree= i,lon_degree = j).drop('lat_degree').drop('lon_degree')
+            wmaps[str((i,j))] =  fwij.weight_map
+        plot_ds(wmaps,f'{ut}_wet_maps.png',ncols = 2)
+
+    
 def gcm_inversion_test():
     args = '--sigma 4 --filtering gcm --lsrp 1 --mode data'.split()
     fw = load_filter_weights(args).load()
     cisel = dict()
     fisel = dict()
-    
+
     # dx = 200
     # x = 150
     # dy = 200
@@ -86,14 +99,14 @@ def gcm_inversion_test():
     ds,_ = load_xr_dataset(args)
     ugrid,_ = get_grid_vars(ds.isel(time = 0))
     ugrid = ugrid.isel(**fisel)
-    rank = 1
+    rank = 4
     gcminv = GcmInversion(datargs.sigma,ugrid,fw,rank = rank)#,rank = 101)
     cds,_ = load_xr_dataset(args,high_res=False)
     ubar = cds.u.isel(time = 0).load().isel(**cisel)
     utrue = ds.u.isel(time = 0).load().rename(
         {f'u{dim}':dim for dim in 'lat lon'.split()}
     ).isel(**fisel)
-    uopt = gcminv.fit(ubar,maxiter = 1,sufficient_decay_limit=0.98)#,initial_operator=0)
+    uopt = gcminv.fit(ubar,maxiter = 16,sufficient_decay_limit=0.95)#,initial_operator=0)
     
     
     coords = (

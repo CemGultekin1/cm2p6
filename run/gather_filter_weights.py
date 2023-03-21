@@ -19,6 +19,8 @@ def run():
     lower_limit = arg*NSEC 
     flushed_print('lower_limit,upper_limit\t',lower_limit,upper_limit)
     for ut_grid in 'u t'.split():
+        if 'u' in ut_grid:
+            continue
         for i in range(lower_limit,upper_limit):
             datargs = ls[i].split()   
             path1 = get_filter_weights_location(datargs,preliminary=True,utgrid = ut_grid)

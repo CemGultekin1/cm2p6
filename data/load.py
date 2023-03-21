@@ -23,8 +23,8 @@ def load_grid(ds:xr.Dataset,):
         ds[key] = grid_loc[key]
     return ds
 
-def load_filter_weights(args,utgrid='u'):
-    path = get_filter_weights_location(args,preliminary=False,utgrid=utgrid)
+def load_filter_weights(args,utgrid='u',svd0213 = False):
+    path = get_filter_weights_location(args,preliminary=False,utgrid=utgrid,svd0213=svd0213)
     fw = xr.open_dataset(path)
     return fw
 

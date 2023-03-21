@@ -8,12 +8,13 @@ class FilterWeightsBase(base_transform):
         self.left_spacing = 2*sigma
         self.right_spacing = 3*sigma + 1
         self.span = self.left_spacing + self.right_spacing
-        self.fine_shape = tuple(
-            [len(grid.lat),len(grid.lon)]
-        )
-        self.coarse_shape = tuple(
-            [c//self.sigma for c in self.fine_shape]
-        )
+        if grid is not None:
+            self.fine_shape = tuple(
+                [len(grid.lat),len(grid.lon)]
+            )
+            self.coarse_shape = tuple(
+                [c//self.sigma for c in self.fine_shape]
+            )
 def continue_values(arr):
     diff = arr[1:]-arr[:-1]
     i = np.argmax(np.abs(diff))+1

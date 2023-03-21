@@ -5,6 +5,7 @@ import numpy as np
 class MultiLinearOps:
     rank:int
     def __call__(self,x:np.ndarray,inverse = False,separated = False,special:int = -1):...
+    def projection(self,x:np.ndarray,special:int = -1):...
 class MultiLinearMats(MultiLinearOps):
     def __init__(self,mats) -> None:
         self.mats = mats
@@ -44,48 +45,19 @@ class MultiGmres:
         self.rhs = rhs
         self.rank = linear_ops.rank
         self.growing_orthogonals_decomposition = growing_orthogonals_decomposition()
-        self.reg_lambda = 1e-7
+        self.reg_lambda = 1e-9
         self.reltol = reltol
         self.maxiter = maxiter
         self.sufficient_decay_limit = sufficient_decay_limit
         self.iternum = 0
-    def find_best_fit(self,y:np.ndarray,initial_operator :int = -1):
-        xmat = self.linear_ops(y,inverse = True,separated = True,special=initial_operator)
-        ymat = [self.linear_ops(x,inverse = False,) for x in xmat]
-        
-        # import matplotlib.pyplot as plt
-        # n = len(ymat)
-        # for i in range(n):
-        #     plt.imshow(np.log10(np.abs(ymat[i][::-1])),cmap = 'bwr')
-        #     plt.savefig(f'ymat_{self.iternum}_{i}.png')
-        #     plt.close()
-        # for i in range(n):
-        #     plt.imshow(np.log10(np.abs(xmat[i][::-1])),cmap = 'bwr')
-        #     plt.savefig(f'xmat_{self.iternum}_{i}.png')
-        #     plt.close()
-        # shp = ymat[0].shape
+    def find_best_fit(self,y:np.ndarray):
+        xmat = self.linear_ops(y,inverse = True,separated = True)
+        ymat = [self.linear_ops(x,inverse = False,separated = False) for x in xmat]
         ymat = np.stack([ymat_.flatten() for ymat_ in ymat],axis = 1)
         ymatymat = ymat.T@ymat
         ymaty = ymat.T@y
-        
         coeffs = self.solve_linear_system(ymatymat,ymaty)
-        yopt =ymat@coeffs
-        # print(ymatymat,ymaty,coeffs)
-        # yopt_ = yopt.reshape(shp)
-        # y_ = y.reshape(shp)
-        
-        # plt.imshow(np.log10(np.abs(yopt_[::-1])),cmap = 'bwr')
-        # plt.savefig(f'yopt_{self.iternum}.png')
-        # plt.close()
-        
-        # plt.imshow(np.log10(np.abs(y_[::-1])),cmap = 'bwr')
-        # plt.savefig(f'y_{self.iternum}.png')
-        # plt.close()
-        
-        # plt.imshow(np.log10(np.abs(y_[::-1] - yopt_[::-1])),cmap = 'bwr')
-        # plt.savefig(f'res_{self.iternum}.png')
-        # plt.close()
-            
+        yopt =ymat@coeffs 
         xopt = np.add.reduce([x*c for x,c in zip(xmat,coeffs)])
         return xopt.flatten(),yopt
     def get_solution(self,xs,ys,):
@@ -103,7 +75,7 @@ class MultiGmres:
         err = self.rhs - ystar
         relerr = np.linalg.norm(err)/np.linalg.norm(self.rhs)
         return xstar, ystar,relerr
-    def solve(self,initial_operator : int = -1):
+    def solve(self):
         e = self.rhs.copy()
         xs = []
         ys = []
@@ -111,8 +83,7 @@ class MultiGmres:
         self.iternum = 0
         while self.iternum < self.maxiter:
             self.iternum += 1
-            xopt,yopt = self.find_best_fit(e,initial_operator = initial_operator)
-            initial_operator = -1
+            xopt,yopt = self.find_best_fit(e)
             e = e - yopt
             if self.iternum < self.maxiter:
                 continue_flag =  self.growing_orthogonals_decomposition.add(e,tol = 1e-12)
@@ -124,7 +95,8 @@ class MultiGmres:
             if continue_flag:
                 e = self.growing_orthogonals_decomposition.qmat[:,-1]
             xstar,ystar,relerr = self.get_solution(xs,ys)
-            print(self.iternum,relerr,)
+            # print(self.iternum,relerr)
+            yield xstar,ystar,relerr
             relerrs.append(relerr)
             if not continue_flag:
                 break
@@ -134,19 +106,13 @@ class MultiGmres:
                 continue
             if relerrs[-1]/relerrs[-2] > self.sufficient_decay_limit:
                 break
-        return xstar,ystar,relerr
+
+    
     def solve_linear_system(self,ymatymat,ymaty):
         halfymat =np.linalg.cholesky(ymatymat + self.reg_lambda*np.eye(ymatymat.shape[0]))
         coeffs = np.linalg.solve(halfymat.T,np.linalg.solve(halfymat,ymaty))
-        
-        # u,s,vh = np.linalg.svd(ymatymat,full_matrices = False)
-        # invs = np.diag(1/np.where(s/s[0]<self.reg_lambda,np.inf,s))
-        # coeffs = vh.T@(invs@(u.T@ymaty))
         return coeffs
 
-class AlternatingMultiGmres(MultiGmres):
-    def find_best_fit(self, y: np.ndarray, **kwargs):
-        return super().find_best_fit(y, initial_operator = self.iternum % self.rank)
 
 def main():
     d1,r,d2 = 600,100,2400
