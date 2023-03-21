@@ -1,10 +1,11 @@
 import os
-USER_PATH = '/scratch/cg3306/climate'
+ROOT = '/scratch/cg3306/climate'
+ENV_PATH = '/scratch/cg3306/climate/.ext3'
 CM2P6_PATH = '/scratch/zanna/data/cm2.6'
-BRANCH_NAME = 'code'
-    
-OUTPUTS_PATH = os.path.join(USER_PATH,'outputs')
-ENV_PATH = os.path.join(USER_PATH,'.ext3')
+REPO_NAME = 'cm2p6'
+REPO = os.path.join(ROOT,REPO_NAME)
+
+OUTPUTS_PATH = os.path.join(ROOT,'outputs')
 AS15415_PATH = '/scratch/as15415/Data/CM26_Surface_UVT.zarr'
 class FINE_CM2P6_PATH_Class:
     one_pct_co2 = '1pct_co2'
@@ -41,52 +42,50 @@ FINE_CM2P6_PATH = FINE_CM2P6_PATH_Class()
 COARSE_CM2P6_PATH = os.path.join(CM2P6_PATH,'coarse_datasets')
 
 
-class FolderTree:
+class FolderTracker:
     def __init__(self) -> None:
         self.folders_list = []
     def join(self,*args):
         path = os.path.join(*args)
         if '.' not in path:
             self.folders_list.append(path)
+        return path
     def makedirs(self,):
         for folder in self.folders_list:
             if not os.path.exists(folder):
                 os.makedirs(folder)
-            
-GRID_INFO = os.path.join(CM2P6_PATH,'GFDL_CM2_6_grid.nc')
-REPO = os.path.join(USER_PATH,BRANCH_NAME)
-JOBS = os.path.join(REPO,'jobs')
+folder_tracker = FolderTracker()
 
-MODELIDS_JSON = os.path.join(REPO,'modelids.json')
-BACKUP_MODELIDS_JSON = os.path.join(REPO,'backup_modelids.json')
+GRID_INFO = folder_tracker.join(CM2P6_PATH,'GFDL_CM2_6_grid.nc')
+JOBS = folder_tracker.join(REPO,'jobs')
 
-JOBS_LOGS = os.path.join(OUTPUTS_PATH,'slurm_logs')
-EVALS = os.path.join(OUTPUTS_PATH,'evals')
-TIME_LAPSE = os.path.join(OUTPUTS_PATH,'time_lapse')
-VIEWS = os.path.join(OUTPUTS_PATH,'views')
-SCALARS = os.path.join(OUTPUTS_PATH,'scalars')
-LSRP = os.path.join(OUTPUTS_PATH,'lsrp')
-PLOTS = os.path.join(OUTPUTS_PATH,'plots')
-TEMPORARY_DATA = os.path.join(OUTPUTS_PATH,'data')
-FILTER_WEIGHTS = os.path.join(OUTPUTS_PATH,'filter_weights')
-ONLINE_MODELS = os.path.join(OUTPUTS_PATH,'online_models')
-MODELS = os.path.join(OUTPUTS_PATH,'models')
+MODELIDS_JSON = folder_tracker.join(REPO,'modelids.json')
+BACKUP_MODELIDS_JSON = folder_tracker.join(REPO,'backup_modelids.json')
 
-VIEW_PLOTS = os.path.join(PLOTS,'views')
-TIME_LAPSE_PLOTS = os.path.join(PLOTS,'time_lapse')
-R2_PLOTS = os.path.join(PLOTS,'r2')
+JOBS_LOGS = folder_tracker.join(OUTPUTS_PATH,'slurm_logs')
+EVALS = folder_tracker.join(OUTPUTS_PATH,'evals')
+TIME_LAPSE = folder_tracker.join(OUTPUTS_PATH,'time_lapse')
+VIEWS = folder_tracker.join(OUTPUTS_PATH,'views')
+SCALARS = folder_tracker.join(OUTPUTS_PATH,'scalars')
+PLOTS = folder_tracker.join(OUTPUTS_PATH,'plots')
+TEMPORARY_DATA = folder_tracker.join(OUTPUTS_PATH,'data')
+FILTER_WEIGHTS = folder_tracker.join(OUTPUTS_PATH,'filter_weights')
+ONLINE_MODELS = folder_tracker.join(OUTPUTS_PATH,'online_models')
+MODELS = folder_tracker.join(OUTPUTS_PATH,'models')
+TRAINING_LOGS = folder_tracker.join(OUTPUTS_PATH,'training_logs')
 
+VIEW_PLOTS = folder_tracker.join(PLOTS,'views')
+TIME_LAPSE_PLOTS = folder_tracker.join(PLOTS,'time_lapse')
+R2_PLOTS = folder_tracker.join(PLOTS,'r2')
 
-
-
-TRAINING_LOGS = os.path.join(OUTPUTS_PATH,'training_logs')
 MODELS_JSON = os.path.join(OUTPUTS_PATH,'models_info.json')
 DATA_JSON = os.path.join(OUTPUTS_PATH,'data_info.json')
 
+# folder_tracker.makedirs()
 
-for dir in [MODELS,TRAINING_LOGS,OUTPUTS_PATH,EVALS,VIEWS,JOBS_LOGS]:
-    if not os.path.exists(dir):
-        os.makedirs(dir)
+# for dir in [MODELS,TRAINING_LOGS,OUTPUTS_PATH,EVALS,VIEWS,JOBS_LOGS]:
+#     if not os.path.exists(dir):
+#         os.makedirs(dir)
 
 def get_view_path(modelid):
     return os.path.join(VIEWS,modelid + '.nc')
