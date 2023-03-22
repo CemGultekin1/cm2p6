@@ -23,6 +23,8 @@ class HighResCm2p6:
         self._grid_interpolation = None
         self._scipy_forcing_class = scipy_subgrid_forcing
         self.forcing_class = filtering_classes[kwargs.get('filtering')]
+        print(self.forcing_class)
+        raise Exception
         # if kwargs.get('filtering') == 'gcm':
         #     self.forcing_class = gcm_lsrp_subgrid_forcing
         # else:
