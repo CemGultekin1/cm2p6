@@ -178,35 +178,43 @@ from data.load import load_xr_dataset
 args = '--filtering gaussian --interior False'
 ds,scs = load_xr_dataset(args.split(),high_res = False)
 
-ds = ds.isel(time = 3).fillna(0)
-inputs = np.stack([np.stack([ds.u.values*u_scale,ds.v.values*v_scale],axis = 0)],axis = 0)
+ds = ds.isel(time = 3,lat = slice(100,180),lon = slice(100,180)).fillna(0)
+
+inputs = np.stack([np.stack([ds.u.values,ds.v.values],axis = 0)],axis = 0)*0 + 1
+inputs = inputs.transpose([1,2,3,0])
+Sxy = MOM6_testNN(inputs,0,0,0)
+Sxy = np.squeeze(Sxy)
+
+
+# inputs = np.stack([np.stack([ds.u.values*u_scale,ds.v.values*v_scale],axis = 0)],axis = 0)
 true_vals = np.stack([ds.Su.values,ds.Sv.values],axis = 0)
-true_vals = true_vals[:,10:-10,10:-10]
+true_vals = true_vals[:,10:-10,10:-10]*0
 
-with torch.set_grad_enabled(False):
-    outputs = nn.forward(torch.tensor(inputs,dtype = torch.float32))
-    mean,std = outputs[0,:2],outputs[0,2:]
-ssc = np.array([Su_scale,Sv_scale]).reshape([-1,1,1])
-mean,std =mean.numpy()*ssc,std.numpy()*ssc
 
-mean[true_vals == 0] = 0
-std[true_vals == 0] = 0
 
 import matplotlib.pyplot as plt
-fig,axs = plt.subplots(2,3,figsize = (35,12))
-for i in range(2):
-    for j,vec in zip(range(3),[true_vals,mean,std],):
-        val = np.log10(np.abs(vec[i,::-1]))
-        if j == 1:
-            vmax = np.amax(np.log10(np.abs(true_vals[i])))
-            vmin = -14#np.amin(np.log10(np.abs(true_vals[i])))
-        else:
-            vmax = np.amax(np.log10(np.abs(vec[i])))
-            vmin = -14#np.amin(np.log10(np.abs(vec[i])))
-        print(i,j,vmax,vmin)
-        pos = axs[i,j].imshow(val,cmap = 'bwr',vmax = vmax,vmin = vmin)
-        fig.colorbar(pos, ax=axs[i,j])
-fig.savefig('model_outputs.png')
+import itertools
+fig,axs = plt.subplots(4,2,figsize = (12,35))
+for r,(i,j) in enumerate(itertools.product(range(4),range(2))):
+    if r < len(Sxy):
+        val = Sxy[r]
+        title = f'Sxy[{r}]'
+    else:
+        r_ = r - len(Sxy)
+        val = true_vals[r_]
+        title = f'Sxy_true[{r}]'
+    # if j == 1:
+    #     vmax = np.amax(np.log10(np.abs(true_vals[i])))
+    #     vmin = -14#np.amin(np.log10(np.abs(true_vals[i])))
+    # else:
+    #     vmax = np.amax(np.log10(np.abs(vec[i])))
+    #     vmin = -14#np.amin(np.log10(np.abs(vec[i])))
+    vmax = np.amax(np.abs(val))
+    pos = axs[i,j].imshow(val,cmap = 'bwr',vmax = vmax,vmin = -vmax)
+    axs[i,j].set_title(title)
+    fig.colorbar(pos, ax=axs[i,j])
+filename = 'constant_one_input_output'
+fig.savefig(f'tobedeleted_/{filename}.png')
     
 
 

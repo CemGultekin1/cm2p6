@@ -66,7 +66,7 @@ statedict = torch.load(nn_load_main_file)
 modelid,statedict = statedict[nn_load_name]
 nn.load_state_dict(statedict)
 nn.eval()
-raise Exception
+
 # example_forward_input = torch.ones((1,2,42,40))
 # second_example_input = torch.ones((4,2,42,40))
 
