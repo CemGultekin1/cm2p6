@@ -75,32 +75,32 @@ def main():
             timer.end('data')
             timer.start('model')
             
-            # outputs = net.forward(infields)
+            outputs = net.forward(infields)
             outfields,mask = outfields.to(device),mask.to(device)
 
-            with torch.set_grad_enabled(False):
-                net.eval()
-                outputs = net.forward(infields)
-            mean,cond_var = outputs
-            yhat1 = cond_var.numpy()[0]
-            yhat = mean.numpy()[0]
-            y = outfields.numpy()[0]
-            m = mask.numpy()[0] < 0.5
-            yhat[m] = np.nan
-            y[m] = np.nan
-            yhat1[m] = np.nan
+            # with torch.set_grad_enabled(False):
+            #     net.eval()
+            #     outputs = net.forward(infields)
+            # mean,cond_var = outputs
+            # yhat1 = cond_var.numpy()[0]
+            # yhat = mean.numpy()[0]
+            # y = outfields.numpy()[0]
+            # m = mask.numpy()[0] < 0.5
+            # yhat[m] = np.nan
+            # y[m] = np.nan
+            # yhat1[m] = np.nan
             
-            nchan = yhat.shape[0]
-            import matplotlib.pyplot as plt
-            fig,axs = plt.subplots(nchan,3,figsize = (3*5,nchan*6))
-            kwargs = dict(cmap = 'bwr')
-            for chani in range(nchan):
-                for j,zh in zip(range(3),[y,yhat,yhat1]):
-                    ax = axs[chani,j]
-                    pos = ax.imshow(zh[chani,::-1],**kwargs)
-                    fig.colorbar(pos,ax = ax)
-            fig.savefig('train_intervention.png')
-            return
+            # nchan = yhat.shape[0]
+            # import matplotlib.pyplot as plt
+            # fig,axs = plt.subplots(nchan,3,figsize = (3*5,nchan*6))
+            # kwargs = dict(cmap = 'bwr')
+            # for chani in range(nchan):
+            #     for j,zh in zip(range(3),[y,yhat,yhat1]):
+            #         ax = axs[chani,j]
+            #         pos = ax.imshow(zh[chani,::-1],**kwargs)
+            #         fig.colorbar(pos,ax = ax)
+            # fig.savefig('train_intervention.png')
+            # return
 
             
 

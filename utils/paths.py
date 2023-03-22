@@ -1,5 +1,5 @@
 import os
-ROOT = '/scratch/cg3306/clone_loc'
+ROOT = '/scratch/cg3306/climate'
 ENV_PATH = '/scratch/cg3306/climate/.ext3'
 CM2P6_PATH = '/scratch/zanna/data/cm2.6'
 REPO_NAME = 'cm2p6'
