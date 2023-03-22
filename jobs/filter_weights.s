@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --time=4:00:00
-#SBATCH --array=1-80
+#SBATCH --array=1-10
 #SBATCH --mem=36GB
 #SBATCH --job-name=filter_weights
 #SBATCH --output=/scratch/cg3306/climate/outputs/slurm_logs/filter_weights_%a_%A.out

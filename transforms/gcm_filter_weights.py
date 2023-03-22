@@ -86,7 +86,7 @@ class GcmFilterWeights(GcmFilterWeightsBase):
         ilon,_ = i2%self.nlon,i2//self.nlon
         return depthi,ilat,ilon
     def __getitem__(self,i):
-        i = np.random.randint(self.indexes[1] - self.indexes[0])
+        # i = np.random.randint(self.indexes[1] - self.indexes[0])
         depth,lat,lon = self.get_index(i)
         subgrid =  self.get_subgrid(depth,lat,lon)
         wet_mask = subgrid.wet_mask.values

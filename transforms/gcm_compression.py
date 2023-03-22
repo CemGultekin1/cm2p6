@@ -31,19 +31,34 @@ class FilterWeightCompression(FilterWeightsBase):
         separated_filters = vh.T
         separated_filters = np.concatenate([filter0.reshape([-1,1]),separated_filters[:,:-1]],axis = 1)
         return separated_filters
+    
     def get_separable_components(self,):
-        weightmat = self.filter_weights.data.transpose([0,1,3,2]).reshape([-1,self.span])
+        depthvals = self.filter_weights.depth.values
+        dss = []
+        for depthi,dv in enumerate(depthvals):
+            print(f'SVD on the filter bank depth value = {dv}')
+            ds = self.get_single_depth_separable_components(depthi)
+            ds = ds.expand_dims(dim = {'depth' : [dv]},axis = 0)
+            dss.append(ds)
+        dss = xr.merge(dss)
+        return dss
+    def get_single_depth_separable_components(self,depthi):
+        dims = 'lat lon'.split()
+        dims = [len(self.filter_weights[dim]) for dim in dims]
+    
+        filter_weights = self.filter_weights.isel(depth = depthi)
+        weightmat = filter_weights.data.transpose([0,1,3,2]).reshape([-1,self.span])
         
         spfil_lat = self.svd_components(weightmat,)
         weightmat = weightmat @ spfil_lat
-        weightmat = weightmat.reshape(self.filter_weights.shape).transpose([0,1,3,2]).reshape([-1,self.span])
+        weightmat = weightmat.reshape(filter_weights.shape).transpose([0,1,3,2]).reshape([-1,self.span])
         
         spfil_lon = self.svd_components(weightmat)
         weightmat = weightmat @ spfil_lon
 
-        wmap =  weightmat.reshape(self.filter_weights.shape)
+        wmap =  weightmat.reshape(filter_weights.shape)
         
-        coords = {c:self.filter_weights[c] for c in 'lat lon'.split()}
+        coords = {c:filter_weights[c] for c in 'lat lon'.split()}
         rank = np.arange(self.span)
         rel_ind = rank - self.left_spacing
         ds = xr.Dataset(
@@ -51,7 +66,7 @@ class FilterWeightCompression(FilterWeightsBase):
                     weight_map = (('lat','lon','lat_degree','lon_degree'),wmap),
                     latitude_filters = (('rel_ind','lat_degree'),spfil_lat),
                     longitude_filters = (('rel_ind','lon_degree'),spfil_lon),
-                    filters = (('lat','lon','lat_degree','lon_degree'),self.filter_weights.values)
+                    filters = (('lat','lon','lat_degree','lon_degree'),filter_weights.values)
             ),
             coords = dict(coords,**{
                 'rel_ind' : rel_ind,
@@ -144,7 +159,7 @@ class Matmult1DFilter(FilterWeightsBase):
         # q,r = np.linalg.qr(self.filter_mat.T)
         # self.filter_mat_inverse = (np.linalg.inv(r)@q.T).T
         u,s,vh = np.linalg.svd(self.filter_mat,full_matrices = False)
-        sinv = np.diag(1/np.where(s/s[0] < 1e-3,np.inf,s))
+        sinv = np.diag(1/np.where(s/s[0] < 1e-7,np.inf,s))
         self.filter_mat_inverse = vh.T@sinv@u.T
 
     def __call__(self,x,inverse =False):

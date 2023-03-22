@@ -165,22 +165,22 @@ class GcmInversion(Variant2DMatmult,MultiLinearOps):
             cx = self.coarse_grain(self.filtering(xrx)).fillna(0)
             return cx.values
         return super().__call__(x, inverse, separated, special)
-    # def fit(self,cu:xr.DataArray,maxiter :int = 2,sufficient_decay_limit = np.inf):
-    #     rhs = cu.fillna(0).values.flatten()
-    #     gmres = MultiGmres(self,rhs,maxiter = maxiter,reltol = 1e-15,sufficient_decay_limit=sufficient_decay_limit)
-    #     uopt,_,_ = gmres.solve()
-    #     uopt = uopt.reshape(self.fine_shape)
-    #     uopt = xr.DataArray(
-    #         data = uopt,
-    #         dims = self.grid.dims,
-    #         coords = self.grid.coords
-    #     )
-    #     uopt = xr.where(self.grid.wet_mask == 0,np.nan,uopt)
-    #     return uopt
     def fit(self,cu:xr.DataArray,maxiter :int = 2,sufficient_decay_limit = np.inf):
         rhs = cu.fillna(0).values.flatten()
         gmres = MultiGmres(self,rhs,maxiter = maxiter,reltol = 1e-15,sufficient_decay_limit=sufficient_decay_limit)
-        for uopt,ubaropt,errbar in gmres.solve():
-            uopt = self.np2xr(uopt,True,fine_grid=True)
-            ubaropt = self.np2xr(ubaropt,True,fine_grid=False)
-            yield uopt,ubaropt,errbar
+        uopt,_,_ = gmres.solve()
+        uopt = uopt.reshape(self.fine_shape)
+        uopt = xr.DataArray(
+            data = uopt,
+            dims = 'lat lon'.split(),
+            coords = dict(lat = self.grid.lat,lon = self.grid.lon)
+        )
+        uopt = xr.where(self.grid.wet_mask == 0,np.nan,uopt)
+        return uopt
+    # def fit(self,cu:xr.DataArray,maxiter :int = 2,sufficient_decay_limit = np.inf):
+    #     rhs = cu.fillna(0).values.flatten()
+    #     gmres = MultiGmres(self,rhs,maxiter = maxiter,reltol = 1e-15,sufficient_decay_limit=sufficient_decay_limit)
+    #     for uopt,ubaropt,errbar in gmres.solve():
+    #         uopt = self.np2xr(uopt,True,fine_grid=True)
+    #         ubaropt = self.np2xr(ubaropt,True,fine_grid=False)
+    #         yield uopt,ubaropt,errbar

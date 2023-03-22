@@ -18,92 +18,55 @@ else:
 nn_load_main_file='/scratch/cimes/cz3321/MOM6/MOM6-examples/src/MOM6/config_src/external/ML_Forpy/Forpy_CNN_GZ21/global_model.pt'
 
 nn_load_name = 'gaussian_four_regions'
-kernels=[5, 5, 3, 3, 3, 3, 3, 3]
-widths=[2,128, 64, 32, 32, 32, 32, 32, 4]
-batchnorm = [1]*7 + [0]
-
 
 u_scale = 1/0.09439346225350978
 v_scale = 1/0.07252696573672539
 Su_scale = 4.9041400042653195e-08
 Sv_scale = 4.8550991806254025e-08
-class Layer:
-    def __init__(self,nn_layers:list,device) -> None:
-        self.device = device
-        self.nn_layers =nn_layers
-        self.section = []
-    def add(self,nn_obj):
-        self.section.append(len(self.nn_layers))
-        self.nn_layers.append(nn_obj.to(self.device))
-    def __call__(self,x):
-        for j in self.section:
-            x = self.nn_layers[j](x)
-        return x
 
-class CNN_Layer(Layer):
-    def __init__(self,nn_layers:list,device,widthin,widthout,kernel,batchnorm,nnlnr) -> None:
-        super().__init__(nn_layers,device)
-        self.add(nn.Conv2d(widthin,widthout,kernel))
-        if batchnorm:
-            self.add(nn.BatchNorm2d(widthout))
-        if nnlnr:
-            self.add(nn.ReLU(inplace = True))
-class Softmax_Layer(Layer):
-    def __init__(self,nn_layers:list,device,split) -> None:
-        super().__init__(nn_layers,device)
-        self.add(nn.Softplus())
-        self.split = split
-    def __call__(self, x):
-        if self.split>1:
-            xs = list(torch.split(x,x.shape[1]//self.split,dim=1))
-            xs[-1] = super().__call__(xs[-1])
-            return tuple(xs)
-        return super().__call__(x)
-        
-
-class Sequential(Layer):
-    def __init__(self,nn_layers,device,widths,kernels,batchnorm,softmax_layer = False,split = 1):
-        super().__init__(nn_layers,device)
-        self.sections = []
-        spread = 0
-        self.nlayers = len(kernels)
-        for i in range(self.nlayers):
-            spread+=kernels[i]-1
-        self.spread = spread//2
-        for i in range(self.nlayers):
-            self.sections.append(CNN_Layer(nn_layers,device,widths[i],widths[i+1],kernels[i],batchnorm[i], i < self.nlayers - 1))
-        if softmax_layer:
-            self.sections.append(Softmax_Layer(nn_layers,device,split))
-    def __call__(self, x):
-        for lyr in self.sections:
-            x = lyr.__call__(x)
-        return x
-
+#load the neural network
 class CNN(nn.Module):
-    def __init__(self,cuda_flag = False,widths = None,kernels = None,batchnorm = None,seed = 0,**kwargs):
+    def __init__(self,filter_size=[5, 5, 3, 3, 3, 3, 3, 3],\
+                     width=[128, 64, 32, 32, 32, 32, 32, 4],\
+                        inchan=2,cuda_flag=False):
         super(CNN, self).__init__()
-        device = "cpu" if not cuda_flag else "gpu:0"
-        self.device = device
-        torch.manual_seed(seed)
-        self.nn_layers = nn.ModuleList()        
-        self.sequence = \
-            Sequential(self.nn_layers,device, widths,kernels,batchnorm,softmax_layer=True,split = 2)
-        spread = 0
-        for k in kernels:
-            spread += (k-1)/2
-        self.spread = int(spread)
-    def forward(self,x):
-        x1 = x.to(self.device)
-        x1 = self.sequence(x1)
-        return torch.cat(x1,axis = 1)
-    
+        self.nn_layers = nn.ModuleList()
+        self.filter_size=filter_size
+        self.num_layers=len(filter_size)
+        
+        if cuda_flag:
+            device = "cuda:0" 
+        else:  
+            device = "cpu"  
+        
+        self.nn_layers.append(nn.Conv2d(inchan, width[0], filter_size[0]).to(device) )
+        for i in range(1,self.num_layers):
+            self.nn_layers.append(nn.BatchNorm2d(width[i-1]).to(device) )
+            self.nn_layers.append(nn.ReLU(inplace = True))
+            self.nn_layers.append(nn.Conv2d(width[i-1], width[i], filter_size[i]).to(device) )
+        self.nn_layers.append(nn.Softplus().to(device))
+    def forward(self, x):
+        cn=0
+        x = self.nn_layers[cn](x) # conv2d
+        cn+=1
+        while cn<len(self.nn_layers)-1:
+            x = self.nn_layers[cn](x) # batch
+            cn+=1
+            x = self.nn_layers[cn](x) # relu
+            cn+=1
+            x = self.nn_layers[cn](x) # conv2d 
+            cn+=1
+        mean,precision=torch.split(x,x.shape[1]//2,dim=1)
+        precision=self.nn_layers[-1](precision) # softplus
+        out=torch.cat([mean,precision],dim=1)
+        return out
 
-nn=CNN(cuda_flag=False,widths = widths,kernels=kernels,batchnorm=batchnorm)
+nn=CNN(cuda_flag=False,)
 statedict = torch.load(nn_load_main_file)
 modelid,statedict = statedict[nn_load_name]
 nn.load_state_dict(statedict)
 nn.eval()
-
+raise Exception
 # example_forward_input = torch.ones((1,2,42,40))
 # second_example_input = torch.ones((4,2,42,40))
 

@@ -12,10 +12,6 @@ def old_main():
     sigma = 4
     args = f'--sigma {sigma} --filtering gcm --lsrp 1 --mode data'.split()
     dfw = load_filter_weights(args,utgrid='t',svd0213 = True).load()
-    # nlon,span,sng = dfw.longitude_filters.shape
-    # lonf = dfw.longitude_filters.values
-    # lonf = lonf.reshape([sng,nlon,span]).transpose([1,2,0])
-    # dfw['longitude_filters'].data = lonf
     
     coords = dict(lat = (0,3),lon = (-140,-137))
     crs_ic = {
@@ -71,14 +67,14 @@ def zero_fill(cres,pad,sigma):
         lon = slice(pad*3*sigma,(cres.shape[1] - 3*pad)*sigma),
     )
     return cres,fslice
-def main():
+def plot_herr_cerr():
     sigma = 4
     foldername = 'tobedeleted_'
     import os
     if not os.path.exists(foldername):
         os.makedirs(foldername)
         
-    args = f'--sigma {sigma} --filtering gcm --lsrp 1 --mode data'.split()
+    args = f'--sigma {sigma} --filtering gcm --lsrp 0 --mode data'.split()
     fw = load_filter_weights(args,utgrid='u',svd0213 = True)
     datargs,_ = options(args,key = 'data')
     ds,_ = load_xr_dataset(args)
@@ -100,12 +96,15 @@ def main():
     # zero_pad = 20
     # cres,fslice = zero_fill(cres,zero_pad,sigma)
     
-    ranks = [1,2,4,8,12,16,24,32,48]
-    collect_rank_iter = {rank:([],[]) for rank in ranks}
-    for ir,rank in enumerate(ranks):
+    ranks = [1,2]
+    
+    import itertools
+    
+    for reg_lambda,(ir,rank) in itertools.product([0],enumerate(ranks)):
         gcminv = GcmInversion(datargs.sigma,ugrid,fw,rank = rank)
-        
-        for iternum,(hres_opt,cres_opt,cres_err) in enumerate(gcminv.fit(cres,maxiter = 16,sufficient_decay_limit=0.95)):
+        if ir == 0:
+            collect_rank_iter = {rank:([],[]) for rank in ranks}
+        for iternum,(hres_opt,cres_opt,cres_err) in enumerate(gcminv.fit(cres,maxiter = 16,sufficient_decay_limit=0.95,reg_lambda = reg_lambda)):
             hres_log_err = np.log10(np.abs(hres - hres_opt))
             # cres_log_err = np.log10(np.abs(cres - cres_opt))
             hresdict = dict(true = hres,pred =hres_opt,err = hres_log_err)
@@ -115,6 +114,7 @@ def main():
             collect_rank_iter[rank][0].append(cres_err)
             collect_rank_iter[rank][1].append(hres_err)
             
+        print()
         fig,axs = plt.subplots(1,2,figsize = (14,7))
         for rank_ in ranks[:ir+1]:
             for i in range(2):
@@ -124,11 +124,40 @@ def main():
             ax.legend()
             ax.grid( which='major', color='k', linestyle='--',alpha = 0.5)
             ax.grid( which='minor', color='k', linestyle='--',alpha = 0.5)
-        fig.savefig(foldername + f'/rank_iter.png')
+        str_reg_lambda = str(reg_lambda).replace('.','p')
+        fig.savefig(foldername + f'/rank_iter_{str_reg_lambda}.png')
             # plot_ds(hresdict,foldername + f'/hres_{iternum}_{rank}.png',ncols = 3)
             # plot_ds(dict(cres = cres,cres_opt =cres_opt,cres_err = cres_log_err),foldername + f'/cres_{iternum}_{rank}.png',ncols = 3)
 
     return
+def main():
+    sigma = 4
+    foldername = 'tobedeleted_'
+    import os
+    if not os.path.exists(foldername):
+        os.makedirs(foldername)
+        
+    args = f'--sigma {sigma} --filtering gcm --lsrp 0 --mode data'.split()
+    fw = load_filter_weights(args,utgrid='u',svd0213 = True)
+    datargs,_ = options(args,key = 'data')
+    ds,_ = load_xr_dataset(args)
+    cds,_ = load_xr_dataset(args,high_res=False)
+    varname = 'temp'
+    gridtype = 'u' if varname in 'u v'.split() else 't'
+    hres = ds[varname].isel(time = 0).rename(
+        {f'{gridtype}{dim}':dim for dim in 'lat lon'.split()}
+    )
+    cres = cds[varname].isel(time = 0,depth= 0)
+    
+    ugrid,tgrid = get_grid_vars(ds.isel(time = 0))
+    if gridtype == 'u':
+        grid = ugrid
+    else:
+        grid = tgrid
+    
+    rank = 1
+    gcminv = GcmInversion(datargs.sigma,grid,fw,rank = rank)
+    hres_opt = gcminv.fit(cres,maxiter = 1,sufficient_decay_limit=0.95)
     coords = (
         (-60,0,-40,20),
         (0,60,-40,20),
@@ -140,10 +169,10 @@ def main():
     sel_dicts = [
         dict(lat = slice(c[0],c[1]),lon = slice(c[2],c[3])) for c in coords
     ]
-    udict = dict(utrue = utrue,usolv = uopt, uerr = np.log10(np.abs(utrue - uopt)))
-    plot_ds(udict,f'gcm_inversion_{rank}.png',ncols = 3)
+    udict = dict(utrue = hres,usolv = hres_opt, uerr = np.log10(np.abs(hres - hres_opt)))
+    plot_ds(udict,foldername+f'/gcm_inversion_{varname}_{rank}.png',ncols = 3)
     for i,sel_dict in enumerate(sel_dicts):
         udict_ = {key:val.sel(**sel_dict) for key,val in udict.items()}
-        plot_ds(udict_,f'gcm_inversion_{i}_{rank}.png',ncols = 3)
+        plot_ds(udict_,foldername+f'/gcm_inversion_{varname}_{i}_{rank}.png',ncols = 3)
 if __name__ == '__main__':
     main()

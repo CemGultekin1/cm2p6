@@ -96,7 +96,7 @@ class MultiGmres:
                 e = self.growing_orthogonals_decomposition.qmat[:,-1]
             xstar,ystar,relerr = self.get_solution(xs,ys)
             # print(self.iternum,relerr)
-            yield xstar,ystar,relerr
+            # yield 
             relerrs.append(relerr)
             if not continue_flag:
                 break
@@ -106,8 +106,7 @@ class MultiGmres:
                 continue
             if relerrs[-1]/relerrs[-2] > self.sufficient_decay_limit:
                 break
-
-    
+        return xstar,ystar,relerr
     def solve_linear_system(self,ymatymat,ymaty):
         halfymat =np.linalg.cholesky(ymatymat + self.reg_lambda*np.eye(ymatymat.shape[0]))
         coeffs = np.linalg.solve(halfymat.T,np.linalg.solve(halfymat,ymaty))

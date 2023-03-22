@@ -18,20 +18,22 @@ def run():
     upper_limit = (arg+1)*NSEC
     lower_limit = arg*NSEC 
     flushed_print('lower_limit,upper_limit\t',lower_limit,upper_limit)
+    svd0213flag = False
     for ut_grid in 'u t'.split():
-        if 'u' in ut_grid:
-            continue
+        # if 'u' in ut_grid:
+        #     continue
         for i in range(lower_limit,upper_limit):
             datargs = ls[i].split()   
-            path1 = get_filter_weights_location(datargs,preliminary=True,utgrid = ut_grid)
+            path1 = get_filter_weights_location(datargs,preliminary=True,utgrid = ut_grid,svd0213=svd0213flag)
             if i == 0:
                 fw0 = xr.open_dataset(path1)
             else:
                 fw1 = xr.open_dataset(path1)
                 fw0 += fw1
-            path0 = get_filter_weights_location(datargs,preliminary=False,utgrid = ut_grid)
+            path0 = get_filter_weights_location(datargs,preliminary=False,utgrid = ut_grid,svd0213=svd0213flag)
             fw0.to_netcdf(path0)
             flushed_print(i,lower_limit,upper_limit)
+            # break
         datargs,_ = options(datargs,key = 'data')
         fwc = FilterWeightCompression(datargs.sigma,fw0.__xarray_dataarray_variable__)
         flushed_print('ranking filters...')

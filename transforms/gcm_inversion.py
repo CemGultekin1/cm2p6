@@ -19,17 +19,18 @@ class GcmInversion(MultiMatmult2DFilter,MultiLinearOps):
             cx = self.coarse_grain(self.filtering(xrx)).fillna(0)
             return cx.values
         return super().__call__(x, inverse, separated, special)
-    def fit(self,cu:xr.DataArray,maxiter :int = 2,initial_operator:int =  -1,sufficient_decay_limit = np.inf):
+    def fit(self,cu:xr.DataArray,maxiter :int = 2,sufficient_decay_limit = np.inf):
         rhs = cu.fillna(0).values.flatten()
         gmres = MultiGmres(self,rhs,maxiter = maxiter,reltol = 1e-15,sufficient_decay_limit=sufficient_decay_limit)
-        uopt,_,_ = gmres.solve(initial_operator=initial_operator)
+        uopt,_,_ = gmres.solve()
         uopt = uopt.reshape(self.fine_shape)
+        grid = self.grid.isel(depth = 0)
         uopt = xr.DataArray(
             data = uopt,
-            dims = self.grid.dims,
-            coords = self.grid.coords
+            dims = grid.dims,
+            coords = grid.coords
         )
-        uopt = xr.where(self.grid.wet_mask == 0,np.nan,uopt)
+        uopt = xr.where(grid.wet_mask == 0,np.nan,uopt)
         return uopt
 
         
