@@ -15,7 +15,6 @@ class Timer:
     def __init__(self,):
         self.times = {}
     def start(self,label):
-        # flushed_print(label,' got initiated')
         if label not in self.times:
             self.times[label] = []
         self.times[label].append(time.time())
@@ -29,35 +28,10 @@ class Timer:
         return "\n".join(keys)
     def reset(self,):
         self.times = {}
-def preprocess(infields,outfields,mask,device,linsupres = False,return_true_force = False):
-    if linsupres:
-        nchans = outfields.shape[1]//2
-        lsrpres = outfields[:,nchans:]
-        lsrp = outfields[:,:nchans]
-        mask = mask[:,nchans:]
-        mask = mask.to(device)
-        infields = infields.to(device)
-        lsrpres =lsrpres.to(device)
-        if return_true_force:
-            lsrp = lsrp.to(device)
-        return infields,(lsrp,lsrpres),mask
-    else:
-        forcing = outfields
-        mask = mask.to(device)
-        infields = infields.to(device)
-        forcing =forcing.to(device)
-        return infields,forcing,mask
-def prob_outputs(outputs,outfields,mask):
-    if isinstance(outputs,tuple):
-        mean,_ = outputs
-    out = mean.detach().to("cpu")
-    m = mask.detach().to("cpu")
-    return {'out-absval': torch.mean(torch.abs(out[m>0.5])).item(),
-            'true-absval': torch.mean(torch.abs(outfields[m>0.5])).item()}
 
-
-def cnn_train(args):
-    # args = '--lsrp 0 --depth 0 --sigma 4 --filtering gaussian --temperature False --latitude False --interior False --domain four_regions --num_workers 1 --disp 50 --batchnorm 1 1 1 1 1 1 1 0 --lossfun heteroscedastic --widths 2 128 64 32 32 32 32 32 4 --kernels 5 5 3 3 3 3 3 3 --minibatch 4'.split()
+def main():
+    args = sys.argv[1:]
+    # args = '--lsrp 0 --depth 0 --sigma 4 --filtering gcm --temperature False --latitude False --interior False --domain global --num_workers 1 --disp 50 --batchnorm 1 1 1 1 1 1 1 0 --lossfun MVARE --widths 2 128 64 32 32 32 32 32 4 --kernels 5 5 3 3 3 3 3 3 --minibatch 1 --model dfcnn'.split()
     modelid,state_dict,net,criterion,optimizer,scheduler,logs,runargs=load_model(args)
     flushed_print('torch.cuda.is_available():\t',torch.cuda.is_available())
     flushed_print('runargs:\t',runargs)
@@ -101,29 +75,32 @@ def cnn_train(args):
             timer.end('data')
             timer.start('model')
             
-            outputs = net.forward(infields)
+            # outputs = net.forward(infields)
             outfields,mask = outfields.to(device),mask.to(device)
 
-            # with torch.set_grad_enabled(False):
-            #     net.eval()
-            #     outputs = net.forward(infields)
-            # mean,_ = outputs
-            # yhat = mean.numpy()[0]
-            # y = outfields.numpy()[0]
-            # m = mask.numpy()[0] < 0.5
-            # yhat[m] = np.nan
-            # y[m] = np.nan
+            with torch.set_grad_enabled(False):
+                net.eval()
+                outputs = net.forward(infields)
+            mean,cond_var = outputs
+            yhat1 = cond_var.numpy()[0]
+            yhat = mean.numpy()[0]
+            y = outfields.numpy()[0]
+            m = mask.numpy()[0] < 0.5
+            yhat[m] = np.nan
+            y[m] = np.nan
+            yhat1[m] = np.nan
             
-            # nchan = yhat.shape[0]
-            # import matplotlib.pyplot as plt
-            # fig,axs = plt.subplots(nchan,2,figsize = (2*5,nchan*6))
-            # for chani in range(nchan):
-            #     ax = axs[chani,0]
-            #     ax.imshow(y[chani,::-1])
-            #     ax = axs[chani,1]
-            #     ax.imshow(yhat[chani,::-1])
-            # fig.savefig('train_intervention.png')
-            # return
+            nchan = yhat.shape[0]
+            import matplotlib.pyplot as plt
+            fig,axs = plt.subplots(nchan,3,figsize = (3*5,nchan*6))
+            kwargs = dict(cmap = 'bwr')
+            for chani in range(nchan):
+                for j,zh in zip(range(3),[y,yhat,yhat1]):
+                    ax = axs[chani,j]
+                    pos = ax.imshow(zh[chani,::-1],**kwargs)
+                    fig.colorbar(pos,ax = ax)
+            fig.savefig('train_intervention.png')
+            return
 
             
 
@@ -134,8 +111,6 @@ def cnn_train(args):
             loss.backward()
             optimizer.step()
             timer.end('model')
-            if runargs.sanity:
-                flushed_print(prob_outputs(outputs,outfields,mask))
 
 
             tt+=1
@@ -145,12 +120,8 @@ def cnn_train(args):
                         str(np.std(np.array(logs['train-loss'][-1]))))
                 flushed_print(timer)
             timer.start('data')
-            # if len(logs['train-loss'][-1]) == 4:
-            #     break
 
         timer.reset()
-        # if runargs.sanity:
-        #     continue
         with torch.set_grad_enabled(False):
             net.eval()
             val_loss=0.
@@ -186,10 +157,6 @@ def cnn_train(args):
         if logs['lr'][-1]<1e-7:
             break
 
-
-def main():
-    args = sys.argv[1:]
-    cnn_train(args)
 
 if __name__=='__main__':
     main()

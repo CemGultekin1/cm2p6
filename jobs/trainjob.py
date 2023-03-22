@@ -2,7 +2,7 @@ import os
 from typing import Dict
 from models.nets.cnn import adjustcnn
 from models.search import is_trained
-from params import get_default, replace_param
+from params import get_default, replace_param,replace_params
 from jobs.job_body import create_slurm_job
 from jobs.taskgen import python_args
 from utils.arguments import options
@@ -13,6 +13,7 @@ TRAINJOB = 'trainjob'
 root = JOBS
 
 NCPU = 16
+
 def get_arch_defaults():
     nms = ('widths','kernels','batchnorm','seed','model')
     return {nm : get_default(nm) for nm in nms}
@@ -51,20 +52,34 @@ def check_training_task(args):
     runargs,_ = options(args,key = "run")
     if runargs.lsrp==1:# or runargs.lossfun == 'heteroscedastic':
         return True
+    if runargs.lossfun == 'MVARE':
+        mse_model_args = replace_params(args.copy(),'model','fcnn','lossfun','MSE')
+        _,modelid = options(mse_model_args,key = "model")
+        if not is_trained(modelid):
+            return True
+        if '--seed' in args:
+            if runargs.seed > 0:
+                return True
     _,modelid = options(args,key = "model")
     return is_trained(modelid)
 
+def fix_model_type(args):
+    if 'MVARE' in args:
+        args = replace_param(args,'model','dfcnn')
+    return args
 def combine_all(kwargs:Dict[int,dict],base_kwargs):
     argslist = []
     for kwarg in kwargs.values():
         argslist =  argslist + python_args(**kwarg,**base_kwargs)
     return argslist
+
+
 def generate_training_tasks():
     base_kwargs = dict(
         num_workers = NCPU,
         disp = 50,
         batchnorm = tuple([1]*7 + [0]),
-        lossfun = ['heteroscedastic','MSE'],#'heteroscedastic',
+        lossfun = ['heteroscedastic','MSE','MVARE'],
     )
     kwargs = {}
     kwargs[0] = dict(
@@ -114,6 +129,7 @@ def generate_training_tasks():
     for i in range(len(argslist)):
         args = fix_architecture(argslist[i].split())
         args = fix_minibatch(args)
+        args = fix_model_type(args)
         argslist[i] = ' '.join(args)
 
 
@@ -135,6 +151,7 @@ def generate_training_tasks():
         for i in range(len(argslist)):
             args = fix_architecture(argslist[i].split(),kernel_factor = kernelscale)
             args = fix_minibatch(args)
+            args = fix_model_type(args)
             argslist[i] = ' '.join(args)
         return argslist
     kernel_factors = [float(f)/21. for f in [21,15,11,9,7,5,4,3,2,1]]

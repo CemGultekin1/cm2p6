@@ -64,33 +64,26 @@ class CNN(nn.Module):
         self.device = device
         torch.manual_seed(seed)
         self.nn_layers = nn.ModuleList()
-        # self.sequence :Dict[str,Layer] = dict()
         
         self.sequence = \
             Sequential(self.nn_layers,device, widths,kernels,batchnorm,softmax_layer=True,split = 2)
-        # self.actives = list(self.sequence.keys())
-
         spread = 0
         for k in kernels:
             spread += (k-1)/2
         self.spread = int(spread)
-    # def set_actives(self,sts:list):
-    #     actives = list(self.sequence.keys())
-    #     new_actives = []
-    #     for st in sts:
-    #         if isinstance(st,int):
-    #             st = actives[st]
-    #         assert st in self.sequence
-    #         new_actives.append(st)
-    #     self.actives = new_actives
-    # def copy_if_needed(self,x,i):
-    #     if len(self.sequence)>1:
-    #         return torch.clone(x)
-    #     return x
     def forward(self,x):
         x1 = x.to(self.device)
-        x1 = self.sequence(x1)
-        return x1
+        return self.sequence(x1)
+class DoubleCNN(CNN):
+    def __init__(self, cnn1:CNN,widths=None, kernels=None, batchnorm=None, seed=None, **kwargs):
+        super().__init__(widths, kernels, batchnorm, seed, **kwargs)
+        self.cnn1 = cnn1
+        self.cnn1.eval()
+        assert self.spread == cnn1.spread
+    def forward(self,x):
+        conditional_mean,_ = self.cnn1.forward(x)
+        _,conditional_var = super().forward(x)
+        return conditional_mean,conditional_var
         
 
 def count_parameters(model):

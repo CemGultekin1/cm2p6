@@ -51,6 +51,12 @@ def MSE(output, target,):
     l2 =  1 / 2 * (target - mean)**2
     l2=torch.mean(l2)
     return l2
+@mask_decorator
+def MVARE(output,target,):
+    conditional_mean, conditional_var =output
+    err = 1/2*((target - conditional_mean)**2 - conditional_var)**2
+    return torch.mean(err)
+
 
 @mask_decorator
 def heteroscedasticGaussianLoss(output, target,eps=1e-5):

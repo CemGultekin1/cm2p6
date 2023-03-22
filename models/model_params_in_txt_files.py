@@ -1,9 +1,8 @@
 import os
-from utils.paths import JOBS,  EVALS,statedict_path
+from utils.paths import JOBS,statedict_path
 from utils.arguments import options
 import os 
 def main():
-    root = EVALS
     models = os.path.join(JOBS,'trainjob.txt')
     file1 = open(models, 'r')
     lines = file1.readlines()

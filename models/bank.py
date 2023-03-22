@@ -2,7 +2,7 @@ from argparse import Namespace
 from models.index import get_dict
 from models.variations import lcnn_architecture
 import numpy as np
-from models.nets.cnn import CNN
+from models.nets.cnn import CNN,DoubleCNN
 from models.index import update_model_info
 from models.variations import qcnn_architecture,unet_architecture
 from models.nets.others import QCNN,UNET,GAN
@@ -20,8 +20,12 @@ def chan_nums(modelargs):
         ninchans += 2
     return ninchans,noutchans
 def init_architecture(archargs:Namespace)->CNN:
-    net=CNN(**archargs.__dict__)
+    net= CNN(**archargs.__dict__)
     net = net.to(get_device())
+    if archargs.model == 'dfcnn':
+        net = DoubleCNN(net,**archargs.__dict__)
+        net.to(get_device())
+    
     return net
 
 

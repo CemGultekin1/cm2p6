@@ -1,8 +1,9 @@
 import json
 import os
 from models.bank import init_architecture
-from models.lossfuns import MSE, heteroscedasticGaussianLoss
-from models.nets.cnn import LCNN, DoubleLCNNWrapper
+from models.lossfuns import MSE, heteroscedasticGaussianLoss,MVARE
+from models.nets.cnn import LCNN, DoubleCNN, DoubleLCNNWrapper
+from params import replace_param
 import torch
 from utils.arguments import options
 from utils.parallel import get_device
@@ -67,7 +68,12 @@ def load_old_model(model_id:int):
     state_dict = torch.load(file_location,map_location=torch.device(get_device()))
     net = load_double_lcnn(state_dict,archargs)
     return f'G-{model_id}',net
-
+def get_conditional_mean_state_dict(args):
+    new_args = replace_param(args.copy(),'lossfun','MSE')
+    new_args = replace_param(new_args,'model','fcnn')
+    print(' '.join(new_args))
+    _,state_dict,_,_,_,_,_,_ = load_model(new_args)
+    return state_dict
 def load_model(args):
     archargs,_ = options(args,key = "arch")
     net = init_architecture(archargs)
@@ -77,16 +83,14 @@ def load_model(args):
         criterion = heteroscedasticGaussianLoss
     elif modelargs.lossfun == "MSE":
         criterion = MSE
+    elif modelargs.lossfun == "MVARE":
+        criterion = MVARE
+        assert isinstance(net,DoubleCNN)
+        state_dict1 = get_conditional_mean_state_dict(args)
+        assert state_dict1 is not None
+        net.cnn1.load_state_dict(state_dict1["best_model"])
     runargs,_ = options(args,key = "run")
-    # if state_dict is None:
-    #     warmuptime = 50
-    #     strlr = 1e-8
-    #     optimizer = torch.optim.Adam(net.parameters(), lr=strlr)
-    #     curlr = runargs.lr
-    #     gamma = torch.exp(torch.log(torch.tensor([curlr/strlr]))/warmuptime).item()
-    # else:
     optimizer = torch.optim.Adam(net.parameters(), lr=runargs.lr)
-        # gamma = 1.
 
     scheduler=torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer,factor=0.5,patience=2)
     rerun_flag = runargs.reset_model and runargs.mode == 'train'
@@ -94,10 +98,8 @@ def load_model(args):
         # net.load_state_dict(state_dict["last_model"])
         if runargs.mode == "train":
             net.load_state_dict(state_dict["last_model"])
-            net.train()
         else:
             net.load_state_dict(state_dict["best_model"])
-            net.eval()
         print(f"Loaded an existing model")
         if "optimizer" in state_dict and not runargs.reset_optimizer:
             optimizer.load_state_dict(state_dict["optimizer"])

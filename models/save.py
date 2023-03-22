@@ -12,7 +12,7 @@ def save_statedict(modelid,statedict,logs):
     if logs is not None:
         with open(logfile,'w') as f:
             json.dump(logs,f)
-
+    return statedictfile
 def only_fully_trained_modelsdict():
     md = load_modelsdict()
     md = {key: val for key,val in md.items() if is_trained(key)}

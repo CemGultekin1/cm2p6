@@ -26,7 +26,7 @@ DATA_PARAMS = {
 
 TRAIN_PARAMS = {
     "lr" : {"type": float, "default" : 1e-2},
-    "lossfun" : {"type":str, "choices":["heteroscedastic","MSE"]}
+    "lossfun" : {"type":str, "choices":["heteroscedastic","MSE","MVARE"]}
 }
 
 
@@ -46,7 +46,7 @@ ARCH_PARAMS = {
     "skipconn" : {"type":int,"nargs":'+',"default":tuple([0]*8)},
     "batchnorm" : {"type":int,"nargs":'+',"default":tuple([1]*8)},
     "seed" : {"type":int,"default":0},
-    "model" : {"type":str, "choices":["fcnn","dfcnn","lsrp:0","lsrp:1"]}
+    "model" : {"type":str, "choices":["fcnn","dfcnn","lsrp:0"]}
 }
 
 
@@ -73,8 +73,7 @@ PARAMS = dict(TRAIN_PARAMS,**DATA_PARAMS,**RUN_PARAMS,**ARCH_PARAMS,**SCALAR_PAR
 DATA_PARAMS = dict(DATA_PARAMS,**SCALAR_PARAMS)
 TRAIN_PARAMS = dict(TRAIN_PARAMS,**DATA_PARAMS)
 MODEL_PARAMS = dict(TRAIN_PARAMS,**ARCH_PARAMS)
-RUN_PARAMS = dict(TRAIN_PARAMS,**RUN_PARAMS)
-
+RUN_PARAMS = dict(MODEL_PARAMS,**RUN_PARAMS)
 
 
 
@@ -121,6 +120,10 @@ def get_default(key,instr = False):
         return return_val
 
 
+def replace_params(args,*ARGS):
+    for i in range(len(ARGS)//2):
+        args = replace_param(args,ARGS[2*i],ARGS[2*i+1])
+    return args
 
 
 def replace_param(args,param,newval):

@@ -1,11 +1,11 @@
 import os
-ROOT = '/scratch/cg3306/climate'
+ROOT = '/scratch/cg3306/clone_loc'
 ENV_PATH = '/scratch/cg3306/climate/.ext3'
 CM2P6_PATH = '/scratch/zanna/data/cm2.6'
 REPO_NAME = 'cm2p6'
 REPO = os.path.join(ROOT,REPO_NAME)
 
-OUTPUTS_PATH = os.path.join(ROOT,'outputs')
+OUTPUTS_PATH = '/scratch/cg3306/climate/outputs'
 AS15415_PATH = '/scratch/as15415/Data/CM26_Surface_UVT.zarr'
 class FINE_CM2P6_PATH_Class:
     one_pct_co2 = '1pct_co2'
@@ -98,36 +98,5 @@ def statedict_path(modelid):
 def model_logs_json_path(modelid):
     return os.path.join(TRAINING_LOGS,f"{modelid}.json")
 
-def search_compressed_lsrp_paths(sigma:int,):
-    fns = os.listdir(LSRP)
-    fns = [fn for fn in fns if f'compressed_conv_weights_{sigma}' in fn]
-    spns = []
-    for fn in fns:
-        lstprt = fn.split('_')[-1]
-        span_ = int(lstprt.split('.')[0])
-        spns.append(span_)
-    return fns,spns
-def convolutional_lsrp_weights_path(sigma:int,span :int = -1):
-    if span < 0:
-        return os.path.join(LSRP,f"conv_weights_{sigma}.nc")
-    else:
-        return os.path.join(LSRP,f'compressed_conv_weights_{sigma}_{span}.nc')
-
 def all_eval_path():
     return os.path.join(EVALS,'all.nc')
-def inverse_coarse_graining_weights_path(sigma:int):
-    return os.path.join(LSRP,f'inv_weights_{sigma}.nc')
-def coarse_graining_projection_weights_path(sigma:int):
-    return os.path.join(LSRP,f'proj_weights_{sigma}.nc')
-
-def average_lowhres_fields_path(sigma:int,isdeep):
-    if isdeep:
-        return os.path.join(LSRP,f'average_lowhres_{sigma}_3D.nc')
-    else:
-        return os.path.join(LSRP,f'average_lowhres_{sigma}_surface.nc')
-
-def average_highres_fields_path(isdeep):
-    if isdeep:
-        return os.path.join(LSRP,f'average_highres_3D.nc')
-    else:
-        return os.path.join(LSRP,f'average_highres_surface.nc')
