@@ -2,3 +2,4 @@
 *.nc
 *.npy
 utils/paths.py
+*.pyc
