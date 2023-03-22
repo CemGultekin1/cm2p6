@@ -9,14 +9,23 @@ class FilterWeightSpaceVariantCompression(FilterWeightsBase):
         super().__init__(sigma,None,)
         self.filter_weights = filter_weights
         self.ranked_matmult_filter = []
-   
     def get_separable_components(self,):
+        depthvals = self.filter_weights.depth.values
+        dss = []
+        for depthi,dv in enumerate(depthvals):
+            print(f'SVD on gcm-filters depth value = {dv}')
+            ds = self.get_single_depth_separable_components(depthi)
+            ds = ds.expand_dims(dim = {'depth' : [dv]},axis = 0)
+            dss.append(ds)
+        dss = xr.merge(dss)
+        return dss
+    def get_single_depth_separable_components(self,depthi):
         dims = 'lat lon'.split()
         dims = [len(self.filter_weights[dim]) for dim in dims]
         latdims= dims[0]*self.span
         londims= dims[1]*self.span
         
-        weightmat = self.filter_weights.data.transpose([0,2,1,3]).reshape([latdims,londims])
+        weightmat = self.filter_weights.isel(depth = depthi).data.transpose([0,2,1,3]).reshape([latdims,londims])
         
         u,s,vh = np.linalg.svd(weightmat,full_matrices = False)
         vlat,vlon = u @ np.sqrt(np.diag(s)), np.sqrt(np.diag(s))@vh
@@ -73,7 +82,7 @@ class VariantMatmult(FilterWeightsBase):
         else:
             return x @ mat.T
 class Variant2DMatmult(FilterWeightsBase):
-    def __init__(self, sigma, grid, filter_weights,*args, dims=..., rank:int = 2,**kwargs):
+    def __init__(self, sigma, grid, filter_weights,*args, dims=..., rank:int = 1,**kwargs):
         super().__init__(sigma, grid, *args, dims=dims, **kwargs)
         self.filter_weights = filter_weights
         clat,clon = len(filter_weights.lat),len(filter_weights.lon)
@@ -151,7 +160,6 @@ class GcmInversion(Variant2DMatmult,MultiLinearOps):
         Variant2DMatmult.__init__(self,sigma, grid, filter_weights, rank =rank)
         self.filtering, self.coarse_grain = gcm_filtering(sigma,grid,),greedy_coarse_grain(sigma,grid)
     def __call__(self, x, inverse=False, separated=False, special: int = -1):
-        # print(f'GcmInverseion.__call__({x.shape},inverse={inverse}, separated={separated}, special = {special})')
         if not inverse and not separated and special < 0:
             xrx = self.np2xr(x.copy(),True,fine_grid=True)            
             cx = self.coarse_grain(self.filtering(xrx)).fillna(0)
