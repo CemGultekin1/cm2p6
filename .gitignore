@@ -1,3 +1,4 @@
 *.png
 *.nc
 *.npy
+utils/paths.py

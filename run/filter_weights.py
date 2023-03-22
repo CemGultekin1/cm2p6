@@ -10,8 +10,8 @@ import numpy as np
 
 def disp(fw,wm,coords,t):
     coords.pop('lat')
+    coords.pop('depth')
     coords.pop('lon')
-    shp = [len(v) for v in coords.values()]
 
     fweights = xr.DataArray(
         data = fw.numpy(),
@@ -26,9 +26,10 @@ def disp(fw,wm,coords,t):
     plot_ds(dict(fweights = fweights,wet_mask = wet_mask),f'fweights_{t}.png',ncols = 2,dims = fweights.dims)
     return t == 32
 
-def run():
-    # datargs = '--minibatch 1 --prefetch_factor 1 --disp 1 --depth 0 --disp 100 --sigma 4 --section 5 10 --mode data --num_workers 1 --filtering gcm'.split()
+def main():
     datargs = sys.argv[1:]
+    # datargs = '--minibatch 1 --prefetch_factor 1 --disp 1 --depth 5 --disp 100 --sigma 12 --section 5 10 --mode data --num_workers 1 --filtering gcm'.split()
+   
     generators = get_filter_weights_generator(datargs,data_loaders = True)
     for ut,grid_gen in zip('u t'.split(),generators):
         filename = get_filter_weights_location(datargs,preliminary=True,utgrid = ut)
@@ -52,13 +53,14 @@ def run():
                     dims = list(coords.keys()),
                     coords = {key:val.numpy() for key,val in coords.items()}
                 )
-            fweights.data[locs[0],locs[1]] = fw.numpy()
+            fweights.data[locs[0],locs[1],locs[2]] = fw.numpy()
             if t%args.disp == 0:
                 flushed_print(t,str(time))
             if t % 128 == 0:
                 fweights.to_netcdf(filename)
             time.start('data')
+        flushed_print(f'filtering type = {ut} has finished, now saving...')        
         fweights.to_netcdf(filename)
-    
+        flushed_print(f'done')
 if __name__=='__main__':
-    run()
+    main()

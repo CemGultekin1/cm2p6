@@ -168,17 +168,17 @@ class landfilling_krylov_lsrp_subgrid_forcing(base_lsrp_subgrid_forcing):
 
 
 
-# class gcm_subgrid_forcing(base_subgrid_forcing):
-#     filtering_class = gcm_filtering
-#     coarse_grain_class = greedy_coarse_grain
+class gcm_subgrid_forcing(base_subgrid_forcing):
+    filtering_class = gcm_filtering
+    coarse_grain_class = greedy_coarse_grain
 
 class scipy_subgrid_forcing(base_subgrid_forcing):
     filtering_class = scipy_filtering
     coarse_grain_class =  plain_coarse_grain
 
-# class greedy_scipy_subgrid_forcing(scipy_subgrid_forcing):
-#     filtering_class = greedy_scipy_filtering
-#     coarse_grain_class =  greedy_coarse_grain
+class greedy_scipy_subgrid_forcing(scipy_subgrid_forcing):
+    filtering_class = greedy_scipy_filtering
+    coarse_grain_class =  greedy_coarse_grain
 
 
 
@@ -204,7 +204,7 @@ class gcm_lsrp_subgrid_forcing(landfilling_krylov_lsrp_subgrid_forcing):
 
         
 filtering_classes = {
-    "gcm":gcm_lsrp_subgrid_forcing,\
-    "gaussian":scipy_lsrp_subgrid_forcing,\
-    "greedy_gaussian":greedy_scipy_lsrp_subgrid_forcing
+    "gcm":gcm_subgrid_forcing,\
+    "gaussian":scipy_subgrid_forcing,\
+    "greedy_gaussian":greedy_scipy_subgrid_forcing
 }

@@ -163,7 +163,7 @@ def get_grid_vars(grid:xr.Dataset,):
         name_lat = f"{prefix}lat"
         kwargs = dict(
             coords = dict(
-                lat = grid[name_lat].values,lon = grid[name_lon].values
+                lat = grid[name_lat].values,lon = grid[name_lon].values,
             ),
         )
         dx = xr.DataArray(
@@ -176,11 +176,15 @@ def get_grid_vars(grid:xr.Dataset,):
         )
         area = dx*dy
         area.name = 'area'
-        wet_mask = xr.DataArray(
-            data = xr.where(np.isnan(grid[wetvar]), 0,1).values,
-            **kwargs,name = 'wet_mask'
-        )
-        var1 =  xr.merge([dx,dy,area,wet_mask])
+        wet_mask = xr.where(np.isnan(grid[wetvar]), 0,1)
+        wet_mask = wet_mask.rename(**{
+            name_lon : 'lon',name_lat : 'lat'
+        })
+        wet_mask.name = 'wet_mask'
+        
+        var1 =  xr.merge([dx,dy,area,wet_mask])        
+        if 'depth' not in var1.coords:
+            var1['depth'] = [0]
         vars.append(var1)
     return vars
 

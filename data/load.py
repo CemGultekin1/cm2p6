@@ -231,6 +231,7 @@ def get_filter_weights_generator(args,data_loaders = True,):
     assert ns.mode == 'data'
     ds_zarr,_ = load_xr_dataset(args)
     grids = get_grid_vars(ds_zarr.isel(time = 0))
+
     dsets = [GcmFilterWeights(ns.sigma,grid,section = ns.section) for grid in grids]
     if data_loaders:
         minibatch = None

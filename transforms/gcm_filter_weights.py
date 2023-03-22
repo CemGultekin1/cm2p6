@@ -32,8 +32,11 @@ class GcmFilterWeightsBase(FilterWeightsBase):
     def __init__(self,sigma,grid,*args,dims = 'lat lon'.split(),**kwargs):
         super().__init__(sigma,grid,*args,dims = dims,**kwargs)
         self.coarse_wet_mask = greedy_coarse_grain(sigma,grid).coarse_wet_mask 
-    def get_subgrid(self,coarse_index):
-        fine_index = [i*self.sigma for i in coarse_index]
+        self.ndepth = len(self.grid.depth)
+        self.nlon = len(self.coarse_wet_mask.lon)
+        self.nlat = len(self.coarse_wet_mask.lat)
+    def get_subgrid(self,idepth,ilat,ilon):
+        fine_index = [i*self.sigma for i in (ilat,ilon)]
         coords = [self.grid[dim].data[ic] for dim,ic in zip(self.dims,fine_index)]
         mcs = {dim :  len(self.grid[dim])//2  - ic  for  dim,ic in zip(self.dims,fine_index)}
         subgrid = self.grid.roll(shifts = mcs,roll_coords=True)
@@ -41,7 +44,7 @@ class GcmFilterWeightsBase(FilterWeightsBase):
         isel_dict = {
             dim : slice(ic - self.left_spacing,ic + self.right_spacing) for dim,ic in zip(self.dims,fine_index)
         }
-        subgrid = subgrid.isel(**isel_dict)
+        subgrid = subgrid.isel(**isel_dict,depth = idepth)
         for dim in self.dims:
             subgrid[dim] = continue_values(subgrid[dim].values)
         return subgrid
@@ -66,7 +69,7 @@ class GcmFilterWeights(GcmFilterWeightsBase):
     def __init__(self,sigma,grid,*args,dims = 'lat lon'.split(),section = (0,1),**kwargs):
         super().__init__(sigma,grid,*args,dims = dims,**kwargs)
         print(f'section = {section}')
-        M = (len(self.grid.lat)*len(self.grid.lon))//(self.sigma**2)
+        M = self.nlon*self.nlat*self.ndepth
         i,N = section
         n = M//N
         n0 = n*i
@@ -76,11 +79,16 @@ class GcmFilterWeights(GcmFilterWeightsBase):
     def __len__(self,):
         n0,n1 = self.indexes
         return n1 - n0
-    def __getitem__(self,i):
+    def get_index(self,i:int):
         i = i + self.indexes[0]
-        # i = np.random.randint(0,len(self))
-        lat,lon = i%self.coarse_shape[0],i//self.coarse_shape[0]
-        subgrid =  self.get_subgrid((lat,lon))
+        depthi,i1 = i%self.ndepth,i//self.ndepth
+        ilat,i2 = i1%self.nlat,i1//self.nlat
+        ilon,_ = i2%self.nlon,i2//self.nlon
+        return depthi,ilat,ilon
+    def __getitem__(self,i):
+        i = np.random.randint(self.indexes[1] - self.indexes[0])
+        depth,lat,lon = self.get_index(i)
+        subgrid =  self.get_subgrid(depth,lat,lon)
         wet_mask = subgrid.wet_mask.values
         ocean_flag = np.any(wet_mask > 0)
         if ocean_flag:
@@ -99,10 +107,12 @@ class GcmFilterWeights(GcmFilterWeightsBase):
             land_mask = filter_weights != filter_weights
             filter_weights[land_mask] = wet_filter_weights[land_mask]
             # filter_weights = wet_filter_weights
-        locs = [lat,lon]
-        coords = {dim:self.coarse_wet_mask[dim].values for dim in self.dims}
-        coords = dict(coords,**{
-            'rel_lat':np.arange(self.span) - self.left_spacing,'rel_lon': np.arange(self.span) - self.left_spacing
+        locs = [depth,lat,lon]
+        coords = dict(depth = self.grid.depth.values,\
+            **{dim:self.coarse_wet_mask[dim].values for dim in self.dims},\
+            **{
+            'rel_lat':np.arange(self.span) - self.left_spacing,
+            'rel_lon': np.arange(self.span) - self.left_spacing,
         })
         return coords,locs,filter_weights,wet_mask
     
