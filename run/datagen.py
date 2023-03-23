@@ -28,7 +28,7 @@ def drop_timeless(ds:xr.Dataset):
 
 def run():
     datargs = sys.argv[1:]
-    datargs = '--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 4 --section 1 10 --mode data --num_workers 1 --filtering gaussian'.split()
+    # datargs = '--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 4 --section 1 10 --mode data --num_workers 1 --filtering gaussian'.split()
     generator,= get_data(datargs,half_spread = 0, torch_flag = False, data_loaders = True,groups = ('all',))
     filename = get_preliminary_low_res_data_location(datargs)#.replace('.','_base.')
     print(f'filename = {filename}')

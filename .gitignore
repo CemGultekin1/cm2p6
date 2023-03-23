@@ -1,6 +1,7 @@
 *.png
 *.nc
 *.npy
-utils/paths.py
+/utils/paths.py
+*/__pycache__
 *.pyc
 __pycache__
