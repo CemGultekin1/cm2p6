@@ -8,6 +8,7 @@ import copy
 from data.vars import FIELD_NAMES, FORCING_NAMES, LATITUDE_NAMES,LSRP_RES_NAMES, get_var_mask_name, rename
 from data.scalars import load_scalars
 from transforms.gcm_filter_weights import GcmFilterWeights
+from transforms.learned_deconv import SectionedL2Fit
 from transforms.grids import get_grid_vars
 import xarray as xr
 from data.coords import  DEPTHS, REGIONS, TIMES
@@ -76,8 +77,6 @@ def pass_geo_grid(ds,sigma):
             geolat = (['lat','lon'],geolat)))    
     return ds
         
-
-
 
 
 def load_xr_dataset(args,high_res = None):
@@ -232,10 +231,27 @@ def get_filter_weights_generator(args,data_loaders = True,):
     ds_zarr,_ = load_xr_dataset(args)
     grids = get_grid_vars(ds_zarr.isel(time = 0))
 
-    dsets = [GcmFilterWeights(ns.sigma,grid,section = ns.section) for grid in grids]
+    dsets =[GcmFilterWeights(ns.sigma,grid,section = ns.section) for grid in grids]
     if data_loaders:
         minibatch = None
         params={'batch_size':minibatch,\
+            'shuffle': False,\
+            'num_workers':ns.num_workers,\
+            'prefetch_factor':ns.prefetch_factor}
+        torchdsets = [TorchDatasetWrap(dset_)  for dset_ in dsets]
+        return [torch.utils.data.DataLoader(torchdset, **params) for torchdset in torchdsets]
+    else:
+        return dsets
+    
+def get_deconvolution_generator(args,data_loaders = True,):
+    ns,_ = options(args,key = "run")
+    assert ns.filtering == 'gcm'
+    assert ns.mode == 'data'
+    fds,_ = load_xr_dataset(args,high_res=True)
+    cds,_ = load_xr_dataset(args,high_res=False)
+    dsets = [SectionedL2Fit(ns.sigma,cds.copy(),fds.copy(),section = ns.section, )]
+    if data_loaders:
+        params={'batch_size':None,\
             'shuffle': False,\
             'num_workers':ns.num_workers,\
             'prefetch_factor':ns.prefetch_factor}

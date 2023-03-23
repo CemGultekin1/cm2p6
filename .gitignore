@@ -3,3 +3,4 @@
 *.npy
 utils/paths.py
 *.pyc
+__pycache__

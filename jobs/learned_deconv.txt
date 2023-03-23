@@ -1,0 +1,1 @@
+--minibatch 1 --prefetch_factor 1 --disp 1 --depth 0 --disp 100 --sigma 4 --section 0 1 --mode data --num_workers 18 --filtering gcm

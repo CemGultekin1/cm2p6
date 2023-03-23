@@ -20,6 +20,20 @@ def get_filter_weights_location(args,preliminary:bool = False,utgrid = 'u',svd02
         filename = f'{filtering}_{surf_str}_{sigma}{utgrid_tag}{svd_tag}.nc'
     return os.path.join(FILTER_WEIGHTS,filename).replace('.nc','_.nc')
 
+def get_learned_deconvolution_weights(args,preliminary:bool = False,):
+    prms,_ = options(args,key = "run")
+    if not os.path.exists(FILTER_WEIGHTS):
+        os.makedirs(FILTER_WEIGHTS)
+    filtering = prms.filtering.replace('-','_')
+    sigma = prms.sigma
+    surf_str = 'surface' if prms.depth < 1e-3 else 'beneath_surface'
+    if preliminary:
+        a,b = prms.section
+        filename = f'l2fit_{filtering}_{surf_str}_{sigma}_{a}_{b}.nc'
+    else:
+        filename = f'l2fit_{filtering}_{surf_str}_{sigma}.nc'
+    return os.path.join(FILTER_WEIGHTS,filename)
+
 def get_filename(sigma,depth,co2,filtering,locdir = COARSE_CM2P6_PATH):
     if sigma > 1:
         co2_str = '1pct_co2' if co2 else ''

@@ -95,7 +95,7 @@ class MultiGmres:
             if continue_flag:
                 e = self.growing_orthogonals_decomposition.qmat[:,-1]
             xstar,ystar,relerr = self.get_solution(xs,ys)
-            # print(self.iternum,relerr)
+            print(self.iternum,relerr)
             # yield 
             relerrs.append(relerr)
             if not continue_flag:

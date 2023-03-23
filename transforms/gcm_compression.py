@@ -201,6 +201,10 @@ class MultiMatmult2DFilter(FilterWeightsBase):
             filter_weights.longitude_filters.isel(lon_degree = i,).data,sigma,clon)
                      for i in range(self.span)]
         energy = np.square(filter_weights.weight_map).sum(dim = 'lat lon'.split()).values
+        # import  matplotlib.pyplot as plt
+        # plt.semilogy(energy)
+        # plt.savefig('invariant_energy.png')
+        # raise Exception
         sorted_degrees = np.argsort(-energy.flatten())
         self.rank = int(np.minimum(len(sorted_degrees),rank))
         sorted_degrees = sorted_degrees[:self.rank]

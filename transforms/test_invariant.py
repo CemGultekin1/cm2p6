@@ -40,7 +40,7 @@ def test():
     if not os.path.exists(foldername):
         os.makedirs(foldername)
         
-    args = f'--sigma {sigma} --filtering gcm --lsrp 0 --mode data'.split()
+    args = f'--sigma {sigma} --filtering gcm --lsrp 1 --mode data'.split()
     fw = load_filter_weights(args,utgrid='u',svd0213 = False)
     datargs,_ = options(args,key = 'data')
     ds,_ = load_xr_dataset(args)
@@ -59,8 +59,8 @@ def test():
         grid = tgrid
     
     rank = 1
-    gcminv = GcmInversion(datargs.sigma,grid,fw,rank = rank)
-    hres_opt = gcminv.fit(cres,maxiter = 1,sufficient_decay_limit=0.95)
+    gcminv = GcmInversion(datargs.sigma,grid.isel(depth = 0),fw.isel(depth = 0),rank = rank)
+    hres_opt = gcminv.fit(cres,maxiter = 8,sufficient_decay_limit=0.95)
     coords = (
         (-60,0,-40,20),
         (0,60,-40,20),
@@ -78,4 +78,4 @@ def test():
         udict_ = {key:val.sel(**sel_dict) for key,val in udict.items()}
         plot_ds(udict_,foldername+f'/gcm_invariant_inversion_{varname}_{i}_{rank}.png',ncols = 3)
 if __name__ == '__main__':
-    main()
+    test()

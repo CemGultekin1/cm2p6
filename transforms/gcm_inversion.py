@@ -14,23 +14,22 @@ class GcmInversion(MultiMatmult2DFilter,MultiLinearOps):
         super().__init__(sigma, grid, filter_weights, rank)
         self.filtering, self.coarse_grain = gcm_filtering(sigma,grid,),greedy_coarse_grain(sigma,grid)
     def __call__(self, x, inverse=False, separated=False, special: int = -1):
-        if not inverse and not separated and special < 0:
-            xrx = self.np2xr(x.copy(),True,fine_grid=True)            
-            cx = self.coarse_grain(self.filtering(xrx)).fillna(0)
-            return cx.values
+        # if not inverse and not separated and special < 0:
+        #     xrx = self.np2xr(x.copy(),True,fine_grid=True)            
+        #     cx = self.coarse_grain(self.filtering(xrx)).fillna(0)
+        #     return cx.values
         return super().__call__(x, inverse, separated, special)
     def fit(self,cu:xr.DataArray,maxiter :int = 2,sufficient_decay_limit = np.inf):
         rhs = cu.fillna(0).values.flatten()
         gmres = MultiGmres(self,rhs,maxiter = maxiter,reltol = 1e-15,sufficient_decay_limit=sufficient_decay_limit)
         uopt,_,_ = gmres.solve()
         uopt = uopt.reshape(self.fine_shape)
-        grid = self.grid.isel(depth = 0)
         uopt = xr.DataArray(
             data = uopt,
-            dims = grid.dims,
-            coords = grid.coords
+            dims = self.grid.dims,
+            coords = self.grid.coords
         )
-        uopt = xr.where(grid.wet_mask == 0,np.nan,uopt)
+        uopt = xr.where(self.grid.wet_mask == 0,np.nan,uopt)
         return uopt
 
         
