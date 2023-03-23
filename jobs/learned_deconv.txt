@@ -1,1 +1,10 @@
---minibatch 1 --prefetch_factor 1 --disp 1 --depth 0 --disp 100 --sigma 4 --section 0 1 --mode data --num_workers 18 --filtering gcm
+--minibatch 1 --prefetch_factor 1 --disp 1 --depth 0 --disp 100 --sigma 4 --section 0 10 --mode data --num_workers 5 --filtering gcm
+--minibatch 1 --prefetch_factor 1 --disp 1 --depth 0 --disp 100 --sigma 4 --section 1 10 --mode data --num_workers 5 --filtering gcm
+--minibatch 1 --prefetch_factor 1 --disp 1 --depth 0 --disp 100 --sigma 4 --section 2 10 --mode data --num_workers 5 --filtering gcm
+--minibatch 1 --prefetch_factor 1 --disp 1 --depth 0 --disp 100 --sigma 4 --section 3 10 --mode data --num_workers 5 --filtering gcm
+--minibatch 1 --prefetch_factor 1 --disp 1 --depth 0 --disp 100 --sigma 4 --section 4 10 --mode data --num_workers 5 --filtering gcm
+--minibatch 1 --prefetch_factor 1 --disp 1 --depth 0 --disp 100 --sigma 4 --section 5 10 --mode data --num_workers 5 --filtering gcm
+--minibatch 1 --prefetch_factor 1 --disp 1 --depth 0 --disp 100 --sigma 4 --section 6 10 --mode data --num_workers 5 --filtering gcm
+--minibatch 1 --prefetch_factor 1 --disp 1 --depth 0 --disp 100 --sigma 4 --section 7 10 --mode data --num_workers 5 --filtering gcm
+--minibatch 1 --prefetch_factor 1 --disp 1 --depth 0 --disp 100 --sigma 4 --section 8 10 --mode data --num_workers 5 --filtering gcm
+--minibatch 1 --prefetch_factor 1 --disp 1 --depth 0 --disp 100 --sigma 4 --section 9 10 --mode data --num_workers 5 --filtering gcm

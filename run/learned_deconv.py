@@ -1,12 +1,12 @@
 import sys
-from data.paths import get_filter_weights_location, get_learned_deconvolution_weights
-from data.load import  get_deconvolution_generator, get_filter_weights_generator
+from data.paths import get_learned_deconvolution_weights
+from data.load import  get_deconvolution_generator
 from run.train import Timer
 from utils.arguments import options
 from utils.slurm import flushed_print
 from utils.xarray import plot_ds
 import xarray as xr
-import numpy as np
+
 
 def disp(fw,wm,coords,t):
     coords.pop('lat')
@@ -50,14 +50,13 @@ def main():
             data_vars = data_vars,
             coords = coords
         )
-        # print('\n',subfield,'\n')
         if fields is None:
             fields = subfield
         else:
             fields += subfield
         if t%args.disp == 0:
             flushed_print(t,str(time))
-        if t % 128 == 0:
+        if t % 256 == 0:
             fields.to_netcdf(filename)
         time.start('data')
     flushed_print(f'now saving...')        
