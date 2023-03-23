@@ -3,7 +3,7 @@ from typing import List, Tuple
 from data.exceptions import RequestDoesntExist
 from data.low_res_dataset import MultiDomainDataset
 from data.high_res_dataset import  HighResCm2p6
-from data.paths import get_filter_weights_location, get_high_res_data_location, get_high_res_grid_location, get_low_res_data_location
+from data.paths import get_filter_weights_location, get_high_res_data_location, get_high_res_grid_location, get_learned_deconvolution_location, get_low_res_data_location
 import copy
 from data.vars import FIELD_NAMES, FORCING_NAMES, LATITUDE_NAMES,LSRP_RES_NAMES, get_var_mask_name, rename
 from data.scalars import load_scalars
@@ -26,6 +26,11 @@ def load_grid(ds:xr.Dataset,):
 
 def load_filter_weights(args,utgrid='u',svd0213 = False):
     path = get_filter_weights_location(args,preliminary=False,utgrid=utgrid,svd0213=svd0213)
+    fw = xr.open_dataset(path)
+    return fw
+
+def load_learned_deconv(args,):
+    path = get_learned_deconvolution_location(args,preliminary = False)
     fw = xr.open_dataset(path)
     return fw
 
@@ -252,7 +257,7 @@ def get_deconvolution_generator(args,data_loaders = True,):
     dsets = [SectionedL2Fit(ns.sigma,cds.copy(),fds.copy(),section = ns.section, )]
     if data_loaders:
         params={'batch_size':None,\
-            'shuffle': False,\
+            'shuffle': True,\
             'num_workers':ns.num_workers,\
             'prefetch_factor':ns.prefetch_factor}
         torchdsets = [TorchDatasetWrap(dset_)  for dset_ in dsets]

@@ -1,5 +1,5 @@
 import sys
-from data.paths import get_learned_deconvolution_weights
+from data.paths import get_learned_deconvolution_location
 from data.load import  get_deconvolution_generator
 from run.train import Timer
 from utils.arguments import options
@@ -27,11 +27,11 @@ def disp(fw,wm,coords,t):
     return t == 32
 
 def main():
-    datargs = sys.argv[1:]
-    # datargs = '--minibatch 1 --prefetch_factor 1 --disp 1 --depth 0 --disp 100 --sigma 4 --section 0 1 --mode data --num_workers 1 --filtering gcm'.split()
+    # datargs = sys.argv[1:]
+    datargs = '--minibatch 1 --prefetch_factor 1 --disp 1 --depth 0 --disp 100 --sigma 4 --section 0 1 --mode data --num_workers 1 --filtering gcm'.split()
    
     generators, = get_deconvolution_generator(datargs,data_loaders = True)
-    filename = get_learned_deconvolution_weights(datargs,preliminary=True)
+    filename = get_learned_deconvolution_location(datargs,preliminary=True)
     flushed_print(f'filename = {filename}')
     args,_ = options(datargs,key = "run")
     time = Timer()

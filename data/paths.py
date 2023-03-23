@@ -20,7 +20,7 @@ def get_filter_weights_location(args,preliminary:bool = False,utgrid = 'u',svd02
         filename = f'{filtering}_{surf_str}_{sigma}{utgrid_tag}{svd_tag}.nc'
     return os.path.join(FILTER_WEIGHTS,filename).replace('.nc','_.nc')
 
-def get_learned_deconvolution_weights(args,preliminary:bool = False,):
+def get_learned_deconvolution_location(args,preliminary:bool = False,):
     prms,_ = options(args,key = "run")
     if not os.path.exists(FILTER_WEIGHTS):
         os.makedirs(FILTER_WEIGHTS)

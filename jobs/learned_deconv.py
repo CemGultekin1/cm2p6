@@ -7,7 +7,7 @@ from utils.paths import JOBS, JOBS_LOGS
 JOBNAME = 'learned_deconv'
 root = JOBS
 
-NCPU = 5
+NCPU = 10
 NSEC = 10
 PERCPU = 10
 def python_args():

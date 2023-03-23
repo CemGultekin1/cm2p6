@@ -1,15 +1,14 @@
 
 
-from transforms.coarse_graining import base_transform, plain_coarse_grain
-# from transforms.grids import get_grid_vars
-# from utils.xarray import plot_ds
+from transforms.coarse_graining import base_transform
 import xarray as xr
 import numpy as np
 import itertools
+import matplotlib.pyplot as plt
 
     
 class L2Fit(base_transform):
-    def __init__(self, sigma, cds:xr.Dataset,fds:xr.Dataset,degree:int = 8):
+    def __init__(self, sigma, cds:xr.Dataset,fds:xr.Dataset,degree:int = 4):
         super().__init__(sigma,None,)
         self.dims = 'lat lon ulat ulon tlat tlon'.split()
         self.fine_spread = sigma
@@ -19,15 +18,16 @@ class L2Fit(base_transform):
         self.coarse_shape = shpfun(self.coarse_spread)
         self.cds,self.fds = cds,fds
         self.degree = degree
-        self.varnames= [key for key in self.cds.data_vars.keys() if 'S'+key in self.cds.data_vars]
-        keys = list(self.cds.data_vars.keys())
-        for var in keys:
-            if var not in self.varnames:
-                self.cds = self.cds.drop(var)
-        keys = list(self.fds.data_vars.keys())
-        for var in keys:
-            if var not in self.varnames:
-                self.fds = self.fds.drop(var)
+        if self.cds is not None:
+            self.varnames= [key for key in self.cds.data_vars.keys() if 'S'+key in self.cds.data_vars]
+            keys = list(self.cds.data_vars.keys())
+            for var in keys:
+                if var not in self.varnames:
+                    self.cds = self.cds.drop(var)
+            keys = list(self.fds.data_vars.keys())
+            for var in keys:
+                if var not in self.varnames:
+                    self.fds = self.fds.drop(var)
 
         self.hann_window = self.fine_grid_hann_window()
         self.xx = None
@@ -78,13 +78,12 @@ class L2Fit(base_transform):
         n = np.arange(N + 1)
         hann = np.sin(n/N*np.pi)**2
         return np.outer(hann,hann)
-    
-    def feature_vector(self,varname,cds:xr.Dataset,fds:xr.Dataset,feats):
-        
-        x = cds[varname].values.flatten()
+    def prepare_outputs(self,fds:xr.DataArray):
+        return fds.values * self.hann_window
+    def feature_vector(self,cds:xr.Dataset,feats):
+        x = cds.values.flatten()
         x = np.concatenate([x*feat for feat in feats])
-        y = fds[varname].values * self.hann_window
-        return x,y
+        return x
     def add(self,xx,varname):
         xx_ =self.__getattribute__(varname)
         if  xx_ is None:
@@ -100,7 +99,8 @@ class L2Fit(base_transform):
         feats = self.get_geo_features(cds)
         prods = {}
         for varname in self.varnames:
-            x,y = self.feature_vector(varname,cds,fds,feats)
+            x = self.feature_vector(cds[varname],feats)
+            y = self.prepare_outputs(fds[varname])
             xx = np.outer(x,x)
             xy = np.outer(x,y)
             prods[varname] = (xx,xy)
@@ -111,17 +111,13 @@ class L2Fit(base_transform):
         cds = cds.fillna(0)
         fds = fds.fillna(0)
         feats = self.get_geo_features(cds)
-        x,y = self.feature_vector(varname,cds,fds,feats)
+        x = self.feature_vector(cds[varname],feats)
+        y = self.prepare_outputs(fds[varname])
         pred = x.reshape([1,-1]) @ self.solution
         return pred.reshape(self.fine_shape),y.reshape(self.fine_shape)
-    def combine(self,l2fit:'L2Fit')->'L2Fit':
-        self.add(l2fit.xx,'xx')
-        self.add(l2fit.xy,'xy')
-        return self
     def solve(self,):
         halfymat =np.linalg.cholesky(self.xx + 1e-3*np.eye(self.xx.shape[0]))
         self.solution = np.linalg.solve(halfymat.T,np.linalg.solve(halfymat,self.xy))
-        # np.save('deconv_weights.npy',self.solution)
         return self.solution
 def compute_section_limits(len_axes,section):
     m = np.product(len_axes)
@@ -129,6 +125,46 @@ def compute_section_limits(len_axes,section):
     m1 = np.minimum(dm*section[1],m)
     m0 = dm*section[0]
     return (m0,m1)
+class Eval(L2Fit):
+    def __init__(self, sigma, solution, degree: int = 4):
+        super().__init__(sigma, None, None, degree)
+        self.solution = solution
+    def eval(self,cds,limits = None):
+        nlats,nlons = len(cds.lat),len(cds.lon)
+        
+        coeffs = self.solution.values
+        if limits is not None:
+            latvals = np.arange(limits[0],limits[1])
+            lonvals = np.arange(limits[2],limits[3])
+            nlats = limits[1] - limits[0]
+            nlons = limits[3] - limits[2]
+        else:
+            latvals = np.arange(nlats)
+            lonvals = np.arange(nlons)
+        fds = np.zeros(((nlats + 2)*self.sigma,(nlons+2)*self.sigma))
+        
+        k =0 
+        
+        for ilat,ilon in itertools.product(latvals,lonvals):
+            fine_index = self.multiply_index([i for i in (ilat,ilon)])
+            subcds = self.center(cds,fine_index,self.coarse_spread).fillna(0)
+            feats = self.get_geo_features(subcds)
+            x = self.feature_vector(subcds,feats)
+            y = x.reshape([1,-1])@coeffs
+            y = y.reshape(self.fine_shape)
+            ilat0 = ilat - latvals[0]
+            ilon0 = ilon - lonvals[0]
+            
+            if k < 5:
+                vmax = np.amax(np.abs(y))
+                plt.imshow(y,cmap = 'bwr',vmax = vmax,vmin = -vmax)
+                plt.savefig(f'subfig_{k}.png')
+                plt.close()
+                k+=1
+            latslice = slice((ilat0 +1)*self.sigma - self.fine_spread,(ilat0+1)*self.sigma + self.fine_spread+1)
+            lonslice = slice((ilon0+1)*self.sigma - self.fine_spread,(ilon0+1)*self.sigma + self.fine_spread+1)
+            fds[latslice,lonslice] += y
+        return fds
 class SectionedL2Fit(L2Fit):
     def __init__(self, sigma, cds: xr.Dataset, fds: xr.Dataset,  section = (0,1),degree: int = 4):
         super().__init__(sigma, cds, fds, degree)
@@ -147,7 +183,7 @@ class SectionedL2Fit(L2Fit):
         self.limits = compute_section_limits(list(self.len_axes.values()),section)
         self.length = self.limits[1] - self.limits[0]
         num_dims = degree**2*np.prod(self.coarse_shape)
-        max_length =int(np.ceil(num_dims*10/section[1]))
+        max_length =int(np.ceil(num_dims*100/section[1]))
         print(f'self.length = {self.length}, needed data = {max_length}')
         self.length = int(np.minimum(self.length,max_length))
     def get_indices(self,i):
@@ -203,9 +239,11 @@ def main():
         it = np.random.randint(nt)*5
         ilat = np.random.randint(nlat)
         ilon = np.random.randint(nlon)
-        xx,xy = l2fit.collect(it,ilat,ilon,0)
+        prods = l2fit.collect(it,ilat,ilon,0)
+        xx,xy = prods['u']
         l2fit.add(xx,'xx')
         l2fit.add(xy,'xy')
+        print(k,xx.shape,xy.shape)
         k+=1
         if k % 500 == 0:
             l2fit.solve()
