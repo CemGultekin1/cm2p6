@@ -5,6 +5,7 @@ from utils.arguments import options
 from utils.slurm import flushed_print
 from utils.xarray import plot_ds
 import xarray as xr
+import sys
 
 def main():
     datargs = sys.argv[1:]
