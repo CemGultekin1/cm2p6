@@ -33,12 +33,13 @@ def run():
     import itertools
     coeffsmat = np.zeros(fw0.xy.shape)
     for sels in itertools.product(*nslice):
+        flushed_print(f'sels = {sels}')
         x = fw0
         for sel in sels:
             x = x.sel(sel)
         xx = x.xx
         xy = x.xy
-        xxhalf = np.linalg.cholesky(xx + 1e-3 *np.eye(xx.shape[0]))
+        xxhalf = np.linalg.cholesky(xx + 1e-9 *np.eye(xx.shape[0]))
         coeffs = np.linalg.solve(xxhalf.T,np.linalg.solve(xxhalf,xy))
         coeffsmat[sels[0]['grid'],sels[1]['depth']] = coeffs
     fw0['coeffs'] = (fw0.xy.dims,coeffsmat)

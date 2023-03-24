@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import itertools
 def main():
     sigma = 4
-    args = f'--sigma {sigma} --filtering gcm --lsrp 1 --mode data'.split()
+    args = f'--sigma {sigma} --filtering gcm --lsrp 0 --mode data'.split()
     dfw = load_learned_deconv(args).isel(grid = 0,depth = 0)
     print(dfw)
     
@@ -35,14 +35,27 @@ def main():
     from data.load import load_xr_dataset
     args = '--sigma 4 --filtering gcm'.split()
     cds,_ = load_xr_dataset(args,high_res = False)
-    ev = Eval(sigma,dfw.coeffs)
-    y = ev.eval(cds.u.isel(time = 0),limits = (100,130,100,130))
-    print(y.shape)
-    vmax = np.amax(np.abs(y))
+    fds,_ = load_xr_dataset(args,high_res = True)
+    ev = Eval(sigma,dfw.coeffs,degree = 8)
+    limits = (100,130,100,130)
+    varname = 'u'
+    ypred = ev.eval(cds[varname].isel(time = 0)*0 + 1,limits = limits)
+    key = 't' if varname == 'temp' else 'u'
+    iseldict = {key+dim:slice(limits[2*i]*sigma,limits[2*i+1]*sigma) for i,dim in enumerate('lat lon'.split())}
+    ytrue = fds[varname].isel(time = 0,**iseldict).values*0+1
+    
     fig,axs = plt.subplots(1,2,figsize = (20,10))
+    
     ax = axs[0]
-    pos = ax.imshow(y,cmap = 'bwr',vmin = -vmax,vmax = vmax)
+    vmax = np.amax(np.abs(ypred))
+    pos = ax.imshow(ypred,cmap = 'bwr',vmin = -vmax,vmax = vmax)
     fig.colorbar(pos,ax = ax)
+    
+    ax = axs[1]
+    vmax = np.amax(np.abs(ytrue))
+    pos = ax.imshow(ytrue,cmap = 'bwr',vmin = -vmax,vmax = vmax)
+    fig.colorbar(pos,ax = ax)
+    
     fig.savefig('predicted_hres.png')
     
 
