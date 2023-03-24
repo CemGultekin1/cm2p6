@@ -38,6 +38,7 @@ def run():
     time.start('data')
     for data_vars,coords in generator:
         time.end('data')
+        
         data_vars,coords = torch2numpy(data_vars,coords)
         ds = xr.Dataset(data_vars = data_vars,coords = coords)
 
@@ -65,6 +66,7 @@ def run():
         else:
             dst = xr.merge([dst,ds])
         time.start('data')
+        
     if dst is not None:
         flushed_print(dst.time.values[0],time)
         chk = {k:len(dst[k]) for k in list(dst.coords)}

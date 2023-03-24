@@ -7,8 +7,8 @@ import xarray as xr
 import sys
 
 def main():
-    datargs = sys.argv[1:]
-    # datargs = '--minibatch 1 --prefetch_factor 1 --disp 1 --depth 0 --disp 100 --sigma 4 --section 1 10 --mode data --num_workers 1 --filtering gcm'.split()
+    # datargs = sys.argv[1:]
+    datargs = '--minibatch 1 --prefetch_factor 1 --disp 1 --depth 0 --disp 100 --sigma 4 --section 0 1 --mode data --num_workers 1 --filtering gcm'.split()
    
     generators, = get_deconvolution_generator(datargs,data_loaders = True)
     filename = get_learned_deconvolution_location(datargs,preliminary=True)
@@ -19,6 +19,7 @@ def main():
     fields = None
     for t,(coords,(indims,xx),(outdims,xy)) in enumerate(generators):
         time.end('data')
+        time.start('data')
         dims = list(coords.keys())
         indims = [dims[i] for i in indims]
         outdims = [dims[i] for i in outdims]
@@ -38,7 +39,7 @@ def main():
             flushed_print(t,str(time))
         if t % 256 == 0:
             fields.to_netcdf(filename)
-        time.start('data')
+       
     flushed_print(f'now saving...')        
     fields.to_netcdf(filename)
     flushed_print(f'done')

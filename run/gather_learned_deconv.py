@@ -31,17 +31,29 @@ def run():
     coords = 'grid depth'.split()
     nslice = [[{c:cc} for cc in fw0[c].values] for c in coords]
     import itertools
-    coeffsmat = np.zeros(fw0.xy.shape)
+    shp = list(fw0.xy.shape)
+    maxdegree = 1
+    numcoeffs = 2*11**2*maxdegree**2
+    shp[2] = numcoeffs
+    coeffsmat = np.zeros(shp)
     for sels in itertools.product(*nslice):
         flushed_print(f'sels = {sels}')
         x = fw0
         for sel in sels:
             x = x.sel(sel)
-        xx = x.xx
-        xy = x.xy
-        xxhalf = np.linalg.cholesky(xx + 1e-9 *np.eye(xx.shape[0]))
-        coeffs = np.linalg.solve(xxhalf.T,np.linalg.solve(xxhalf,xy))
+        xx = x.xx.values[:numcoeffs,:numcoeffs]
+        xy = x.xy.values[:numcoeffs,:]
+        
+        flushed_print(f'np.amax(xx) = {np.amax(xx)},\t np.amin(xx) = {np.amin(xx)},\t np.mean(np.abs(xx)) = {np.mean(np.abs(xx))}')
+        # xxhalf = np.linalg.cholesky(xx )#+ 1e-5 *np.eye(xx.shape[0]))
+        # coeffs = np.linalg.solve(xxhalf.T,np.linalg.solve(xxhalf,xy))
+        u,s,vh = np.linalg.svd(xx,full_matrices = False)
+        sinv = np.diag(1/np.where(s/s[0]<1e-5,np.inf,s))
+        coeffs = vh.T@sinv@u.T@xy
         coeffsmat[sels[0]['grid'],sels[1]['depth']] = coeffs
+    fw0 = fw0.isel(
+        ninputs1 = range(numcoeffs),ninputs2 = range(numcoeffs)
+    )
     fw0['coeffs'] = (fw0.xy.dims,coeffsmat)
     fw0.to_netcdf(path0,mode='w',)
     flushed_print(f'saved {path0}')

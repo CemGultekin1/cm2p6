@@ -12,7 +12,7 @@ class L2Fit(base_transform):
         super().__init__(sigma,None,)
         self.dims = 'lat lon ulat ulon tlat tlon'.split()
         self.fine_spread = sigma
-        self.coarse_spread = 5
+        self.coarse_spread = 10
         shpfun = lambda x: (x*2+1,x*2+1)
         self.fine_shape = shpfun(self.fine_spread)
         self.coarse_shape = shpfun(self.coarse_spread)
@@ -43,6 +43,8 @@ class L2Fit(base_transform):
         for i,j in itertools.product(range(self.degree),range(self.degree)):
             feats = latfeats*i + lonfeats*j
             fourier_components.append(np.cos(feats).flatten())
+            if i==0 and j== 0:
+                continue
             fourier_components.append(np.sin(feats).flatten())
         return fourier_components
         
@@ -116,7 +118,7 @@ class L2Fit(base_transform):
         pred = x.reshape([1,-1]) @ self.solution
         return pred.reshape(self.fine_shape),y.reshape(self.fine_shape)
     def solve(self,):
-        halfymat =np.linalg.cholesky(self.xx + 1e-3*np.eye(self.xx.shape[0]))
+        halfymat =np.linalg.cholesky(self.xx + 1e-7*np.eye(self.xx.shape[0]))
         self.solution = np.linalg.solve(halfymat.T,np.linalg.solve(halfymat,self.xy))
         return self.solution
 def compute_section_limits(len_axes,section):
@@ -129,9 +131,22 @@ class Eval(L2Fit):
     def __init__(self, sigma, solution, degree: int = 4):
         super().__init__(sigma, None, None, degree)
         self.solution = solution
+    def effective_filter(self,cds,ilat,ilon):
+        cspan = self.coarse_spread*2+1
+        fspan = self.fine_spread*2+1
+        fine_index = self.multiply_index([i for i in (ilat,ilon)])
+        subcds = self.center(cds,fine_index,self.coarse_spread).fillna(0)
+        feats = self.get_geo_features(subcds)
+
+        feats = np.concatenate(feats,).reshape([-1,2*self.degree**2,1])
+        # solv = self.solution.values.reshape([-1,2*self.degree**2,fspan**2])
+        # eff_filts = np.sum(feats*solv,axis = 1)
+        eff_filts = self.solution.values.reshape([-1,2*fspan**2])
+        eff_filts = np.sum(eff_filts**2,axis = 1)
+        eff_filts = eff_filts.reshape([cspan,cspan])
+        return eff_filts
     def eval(self,cds,limits = None):
         nlats,nlons = len(cds.lat),len(cds.lon)
-        
         coeffs = self.solution.values
         if limits is not None:
             latvals = np.arange(limits[0],limits[1])
@@ -166,7 +181,7 @@ class Eval(L2Fit):
             fds[latslice,lonslice] += y
         return fds
 class SectionedL2Fit(L2Fit):
-    def __init__(self, sigma, cds: xr.Dataset, fds: xr.Dataset,  section = (0,1),degree: int = 8):
+    def __init__(self, sigma, cds: xr.Dataset, fds: xr.Dataset,  section = (0,1),degree: int = 3):
         super().__init__(sigma, cds, fds, degree)
         nt = 100
         
@@ -234,8 +249,8 @@ def main():
     
 
     
-    
-    l2fit = L2Fit(4,cds,fds,degree = 3)
+    sigma = 4
+    l2fit = L2Fit(sigma,cds,fds,degree = 3)
     nlat,nlon = [len(cds[dim]) for dim in 'lat lon'.split()]
     nt = 100
     k = 0
@@ -253,6 +268,7 @@ def main():
         if k % 500 == 0:
             l2fit.solve()
     l2fit.solve()
+    Eval(sigma,l2fit.solution)
     import matplotlib.pyplot as plt
     k= 0
     while k < 16:

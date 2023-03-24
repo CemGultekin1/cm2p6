@@ -36,13 +36,31 @@ def main():
     args = '--sigma 4 --filtering gcm'.split()
     cds,_ = load_xr_dataset(args,high_res = False)
     fds,_ = load_xr_dataset(args,high_res = True)
-    ev = Eval(sigma,dfw.coeffs,degree = 8)
-    limits = (100,130,100,130)
     varname = 'u'
-    ypred = ev.eval(cds[varname].isel(time = 0)*0 + 1,limits = limits)
+    cds = cds[varname].isel(time = 0)
+    
+    coeffs = dfw.coeffs
+    degree = int(np.sqrt(coeffs.shape[0]//11**2//2))
+    ev = Eval(sigma,coeffs,degree = degree)
+    limits = (100,130,100,130)
+    eff = ev.effective_filter(cds,110,110)
+    print(eff.shape)
+    nrow,ncol = 1,1#9,9
+    fig,axs = plt.subplots(nrow,ncol,figsize = (10*ncol,10*nrow))
+    
+    for i,j in itertools.product(range(nrow),range(ncol)):
+        ax = axs#[i,j]
+        f = eff#[:,:,i,j]
+        vmax = np.amax(np.abs(f))
+        pos = ax.imshow(f,cmap = 'bwr',vmin = -vmax,vmax = vmax)
+        fig.colorbar(pos,ax = ax)
+    fig.savefig('eff_inv_filter.png')
+    return
+    
+    ypred = ev.eval(cds,limits = limits)
     key = 't' if varname == 'temp' else 'u'
     iseldict = {key+dim:slice(limits[2*i]*sigma,limits[2*i+1]*sigma) for i,dim in enumerate('lat lon'.split())}
-    ytrue = fds[varname].isel(time = 0,**iseldict).values*0+1
+    ytrue = fds[varname].isel(time = 0,**iseldict).values
     
     fig,axs = plt.subplots(1,2,figsize = (20,10))
     
