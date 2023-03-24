@@ -46,24 +46,6 @@ def main():
             xx = (indims,xx.numpy()),
             xy = (outdims,xy.numpy()),
         )
-        if xy.numpy().sum() == 0:
-            continue
-        print(xy.shape)
-        coeffs = xy.numpy()
-        coeffs = coeffs[0,0].reshape([11,11,4,4,2,9,9])
-        nr = 4
-        import matplotlib.pyplot as plt
-        import itertools
-        import numpy as np
-        fig,axs = plt.subplots(nr,nr,figsize = (30,30))
-        for i,j in itertools.product(range(nr),range(nr)):
-            y = coeffs[...,0,0,1,i,j]
-            vmax = np.amax(np.abs(y))
-            ax = axs[i,j]
-            pos = ax.imshow(y,cmap = 'bwr',vmin = -vmax,vmax = vmax)
-            fig.colorbar(pos,ax = ax)
-        fig.savefig('filters_look.png')
-        return
         subfield  = xr.Dataset(
             data_vars = data_vars,
             coords = coords

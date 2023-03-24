@@ -23,13 +23,6 @@ class HighResCm2p6:
         self._grid_interpolation = None
         self._scipy_forcing_class = scipy_subgrid_forcing
         self.forcing_class = filtering_classes[kwargs.get('filtering')]
-        print(self.forcing_class)
-        raise Exception
-        # if kwargs.get('filtering') == 'gcm':
-        #     self.forcing_class = gcm_lsrp_subgrid_forcing
-        # else:
-        #     assert kwargs.get('filtering') == 'gaussian'
-        #     self.forcing_class = greedy_scipy_lsrp_subgrid_forcing
         a,b = section
         nt = len(self.ds.time)
         time_secs = np.linspace(0,nt,b+1).astype(int)
