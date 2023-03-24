@@ -166,12 +166,15 @@ class Eval(L2Fit):
             fds[latslice,lonslice] += y
         return fds
 class SectionedL2Fit(L2Fit):
-    def __init__(self, sigma, cds: xr.Dataset, fds: xr.Dataset,  section = (0,1),degree: int = 8):
+    def __init__(self, sigma, cds: xr.Dataset, fds: xr.Dataset,  section = (0,1),degree: int = 1):
         super().__init__(sigma, cds, fds, degree)
-        nt = int(len(self.cds.time)*0.85)
+        nt = 100
         
-        self.cds = self.cds.isel(time = np.arange(nt))
-        self.fds = self.fds.isel(time = np.arange(nt))
+        dt = len(self.cds.time)//nt
+        
+        
+        self.cds = self.cds.isel(time = np.arange(nt)*dt)
+        self.fds = self.fds.isel(time = np.arange(nt)*dt)
         
         self.len_axes = {}
         for dim in 'lat lon depth time'.split():
@@ -182,7 +185,9 @@ class SectionedL2Fit(L2Fit):
             self.len_axes[dim] = n
         self.limits = compute_section_limits(list(self.len_axes.values()),section)
         self.length = self.limits[1] - self.limits[0]
-        # num_dims = degree**2*np.prod(self.coarse_shape)
+        
+        num_dims = degree**2*np.prod(self.coarse_shape)
+        print(f'self.length,num_dims = {self.length,num_dims}')
         # max_length =int(np.ceil(num_dims*100/section[1]))        
         # print(f'self.length = {self.length}, needed data = {max_length}, num_dims = {num_dims}, degree = {degree}')
         # self.length = int(np.minimum(self.length,max_length))
