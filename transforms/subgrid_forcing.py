@@ -3,7 +3,6 @@ from transforms.coarse_graining_inverse import  matmult_masked_filtering,matmult
 from transforms.grids import forward_difference
 from transforms.krylov import  krylov_inversion
 import numpy as np
-from utils.xarray import plot_ds
 import xarray as xr
 
 
@@ -184,21 +183,21 @@ class greedy_scipy_subgrid_forcing(scipy_subgrid_forcing):
 
 
 
-class scipy_lsrp_subgrid_forcing(landfilling_krylov_lsrp_subgrid_forcing):
-    filtering_class = scipy_filtering
-    coarse_grain_class =  plain_coarse_grain
-    inv_filtering_class = matmult_filtering
+# class scipy_lsrp_subgrid_forcing(landfilling_krylov_lsrp_subgrid_forcing):
+#     filtering_class = scipy_filtering
+#     coarse_grain_class =  plain_coarse_grain
+#     inv_filtering_class = matmult_filtering
 
 
-class greedy_scipy_lsrp_subgrid_forcing(landfilling_krylov_lsrp_subgrid_forcing):
-    filtering_class = greedy_scipy_filtering
-    coarse_grain_class =  greedy_coarse_grain
-    inv_filtering_class = matmult_masked_filtering
+# class greedy_scipy_lsrp_subgrid_forcing(landfilling_krylov_lsrp_subgrid_forcing):
+#     filtering_class = greedy_scipy_filtering
+#     coarse_grain_class =  greedy_coarse_grain
+#     inv_filtering_class = matmult_masked_filtering
 
-class gcm_lsrp_subgrid_forcing(landfilling_krylov_lsrp_subgrid_forcing):
-    filtering_class = gcm_filtering
-    coarse_grain_class = greedy_coarse_grain
-    inv_filtering_class = matmult_masked_filtering
+# class gcm_lsrp_subgrid_forcing(landfilling_krylov_lsrp_subgrid_forcing):
+#     filtering_class = gcm_filtering
+#     coarse_grain_class = greedy_coarse_grain
+#     inv_filtering_class = matmult_masked_filtering
 
 
 

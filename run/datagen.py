@@ -1,11 +1,10 @@
 import sys
-from data.paths import get_preliminary_low_res_data_location
+from data.paths import get_low_res_data_location, get_preliminary_low_res_data_location
 from data.load import get_data
 from run.train import Timer
 from utils.arguments import options
+from utils.xarray import plot_ds
 from utils.slurm import flushed_print
-# from utils.xarray import plot_ds
-# from utils.xarray import plot_ds
 import xarray as xr
 import torch
 def torch2numpy(data_vars,coords):
@@ -28,10 +27,10 @@ def drop_timeless(ds:xr.Dataset):
 
 def run():
     datargs = sys.argv[1:]
-    # datargs = '--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 4 --section 1 10 --mode data --num_workers 1 --filtering gaussian'.split()
+    # datargs = '--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 4 --section 0 10 --mode data --num_workers 1 --filtering gaussian'.split()
     generator,= get_data(datargs,half_spread = 0, torch_flag = False, data_loaders = True,groups = ('all',))
     filename = get_preliminary_low_res_data_location(datargs)#.replace('.','_base.')
-    flushed_print(f'filename = {filename}')
+    print(f'filename = {filename}')
     datargs,_ = options(datargs,key = "data")
     initflag = False
     dst = None

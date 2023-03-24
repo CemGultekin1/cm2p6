@@ -2,7 +2,7 @@ from typing import Callable
 from utils.xarray import concat, tonumpydict
 import xarray as xr
 from transforms.grids import get_grid_vars, ugrid2tgrid_interpolation
-from transforms.subgrid_forcing import base_lsrp_subgrid_forcing, base_subgrid_forcing, filtering_classes, scipy_subgrid_forcing#,greedy_scipy_lsrp_subgrid_forcing
+from transforms.subgrid_forcing import base_lsrp_subgrid_forcing, filtering_classes, scipy_subgrid_forcing#,greedy_scipy_lsrp_subgrid_forcing
 import numpy as np
 
 class HighResCm2p6:
@@ -23,6 +23,11 @@ class HighResCm2p6:
         self._grid_interpolation = None
         self._scipy_forcing_class = scipy_subgrid_forcing
         self.forcing_class = filtering_classes[kwargs.get('filtering')]
+        # if kwargs.get('filtering') == 'gcm':
+        #     self.forcing_class = gcm_lsrp_subgrid_forcing
+        # else:
+        #     assert kwargs.get('filtering') == 'gaussian'
+        #     self.forcing_class = greedy_scipy_lsrp_subgrid_forcing
         a,b = section
         nt = len(self.ds.time)
         time_secs = np.linspace(0,nt,b+1).astype(int)
@@ -51,15 +56,15 @@ class HighResCm2p6:
         return ds
 
     @property
-    def ugrid_scipy_forcing(self,)->base_subgrid_forcing:
+    def ugrid_scipy_forcing(self,)->scipy_subgrid_forcing:
         if self._ugrid_scipy_forcing is None:
-            self._ugrid_scipy_forcing :base_subgrid_forcing= scipy_subgrid_forcing(self.sigma,self.ugrid)
+            self._ugrid_scipy_forcing :scipy_subgrid_forcing= scipy_subgrid_forcing(self.sigma,self.ugrid)
         return self._ugrid_scipy_forcing
 
     @property
-    def tgrid_scipy_forcing(self,)->base_subgrid_forcing:
+    def tgrid_scipy_forcing(self,)->scipy_subgrid_forcing:
         if self._tgrid_scipy_forcing is None:
-            self._tgrid_scipy_forcing :base_subgrid_forcing= scipy_subgrid_forcing(self.sigma,self.tgrid)
+            self._tgrid_scipy_forcing :scipy_subgrid_forcing= scipy_subgrid_forcing(self.sigma,self.tgrid)
         return self._tgrid_scipy_forcing
         
     @property
@@ -73,15 +78,15 @@ class HighResCm2p6:
         _,tgrid = get_grid_vars(ds)
         return tgrid
     @property
-    def ugrid_subgrid_forcing(self,)-> base_subgrid_forcing:
+    def ugrid_subgrid_forcing(self,)-> base_lsrp_subgrid_forcing:
         if self._ugrid_subgrid_forcing is None:
-            self._ugrid_subgrid_forcing : base_subgrid_forcing = self.forcing_class(self.sigma,self.ugrid)
+            self._ugrid_subgrid_forcing : base_lsrp_subgrid_forcing = self.forcing_class(self.sigma,self.ugrid)
         return self._ugrid_subgrid_forcing
     
     @property
-    def tgrid_subgrid_forcing(self,)-> base_subgrid_forcing:
+    def tgrid_subgrid_forcing(self,)-> base_lsrp_subgrid_forcing:
         if self._tgrid_subgrid_forcing is None:
-            self._tgrid_subgrid_forcing :base_subgrid_forcing =self.forcing_class(self.sigma,self.tgrid)
+            self._tgrid_subgrid_forcing :base_lsrp_subgrid_forcing =self.forcing_class(self.sigma,self.tgrid)
         return self._tgrid_subgrid_forcing
 
     @property
@@ -152,19 +157,16 @@ class HighResCm2p6:
         def switch_grid_on_dictionary(ulres):
             ulres['u'],ulres['v'] = self.grid_interpolation(ulres['u'],ulres['v'])
         if scipy_filtering:
-            uforcings,(ucres,ulres) = self.ugrid_scipy_forcing(uvars,'u v'.split(),'Su Sv'.split())
+            uforcings,(uclres,ulres) = self.ugrid_scipy_forcing(uvars,'u v'.split(),'Su Sv'.split())
             switch_grid_on_dictionary(ulres)
             tforcings,(tcres,_) = self.tgrid_scipy_forcing(tvars,'temp '.split(),'Stemp '.split(),lres = ulres)
         else:
-            # uforcings,(uclres,ulres),(_,ulres0,uhres0) = self.ugrid_subgrid_forcing(uvars,'u v'.split(),'Su Sv'.split())
-            uforcings,(ucres,_) = self.ugrid_subgrid_forcing(uvars,'u v'.split(),'Su Sv'.split())
-            # switch_grid_on_dictionary(ulres)
+            uforcings,(uclres,ulres) = self.ugrid_subgrid_forcing(uvars,'u v'.split(),'Su Sv'.split())
+            switch_grid_on_dictionary(ulres)
             # switch_grid_on_dictionary(ulres0)
             # switch_grid_on_dictionary(uhres0)
-            # tforcings,(tcres,_),_ = self.tgrid_subgrid_forcing(tvars,'temp '.split(),'Stemp '.split(),lres = ulres,hres0 = uhres0,lres0 = ulres0,)
-            tforcings,(tcres,_) = self.tgrid_subgrid_forcing(tvars,'temp '.split(),'Stemp '.split(),)
-            
-        uvars = dict(uforcings,**ucres)
+            tforcings,(tcres,_) = self.tgrid_subgrid_forcing(tvars,'temp '.split(),'Stemp '.split(),lres = ulres)#,hres0 = uhres0,lres0 = ulres0,)
+        uvars = dict(uforcings,**uclres)
         tvars = dict(tforcings,**tcres)
         def pass_gridvals(tgridvaldict,ugridvaldict):
             assert len(ugridvaldict) > 0
@@ -198,8 +200,13 @@ class HighResCm2p6:
     def append_mask(self,ds,i):
         wetmask = self.get_mask(i)
         ds = xr.merge([ds,wetmask])
+        # ds = xr.merge([wetmask])
+        # ti,_ = self.time_depth_indices(i)
+        # ds = ds.expand_dims(dim = {"time":[ti]},axis = 0)
         return ds
     def __getitem__(self,i):
         ds = self.get_forcings(i,)
+        # ds = self.append_mask(ds,i)
+        
         nds =  tonumpydict(ds)
         return nds

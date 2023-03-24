@@ -7,17 +7,17 @@ from utils.paths import JOBS, JOBS_LOGS
 JOBNAME = 'datagen'
 root = JOBS
 
-NCPU =5
+NCPU = 18
 NSEC = 10
-PERCPU = 30
+PERCPU = 10
 def python_args():
     def givearg(filtering,sigma,depth,section):
         st =  f"--minibatch 1 --prefetch_factor 1 --depth {depth} --sigma {sigma} --section {section} --mode data --num_workers {NCPU} --filtering {filtering}"
         return st
     
-    filtering = ['gaussian']#,'gcm']
-    sigmas = [4,]#8,12,16]
-    depths = [0,]#5]
+    filtering = ['gaussian','gcm']
+    sigmas = [4,8,12,16]
+    depths = [0,5]
     
     
     sections = [f'{i} {NSEC}' for i in range(NSEC)]
@@ -39,7 +39,7 @@ def slurm(njob):
     err = os.path.join(JOBS_LOGS,JOBNAME+ '_%A_%a.err')
     create_slurm_job(slurmfile,\
         python_file = 'run/datagen.py',
-        time = "24:00:00",array = f"1-{njob}",\
+        time = "48:00:00",array = f"1-{njob}",\
         mem = f"{int(NCPU*PERCPU)}GB",job_name = JOBNAME,\
         output = out,error = err,\
         cpus_per_task = str(NCPU),
