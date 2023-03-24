@@ -1,7 +1,5 @@
 import sys
-from data.paths import get_filter_weights_location, get_learned_deconvolution_location
-from transforms.gcm_compression import FilterWeightCompression
-# from transforms.gcm_compression_spatially_variant import FilterWeightSpaceVariantCompression
+from data.paths import  get_learned_deconvolution_location
 from utils.slurm import flushed_print
 from utils.paths import JOBS
 from utils.arguments import options

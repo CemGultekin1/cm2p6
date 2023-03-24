@@ -1,10 +1,10 @@
 import sys
-from data.paths import get_low_res_data_location, get_preliminary_low_res_data_location
+from data.paths import get_preliminary_low_res_data_location
 from data.load import get_data
 from run.train import Timer
 from utils.arguments import options
 from utils.slurm import flushed_print
-from utils.xarray import plot_ds
+# from utils.xarray import plot_ds
 # from utils.xarray import plot_ds
 import xarray as xr
 import torch
@@ -55,8 +55,6 @@ def run():
                 if not initflag:
                     dst = dst.chunk(chunks=chk)
                     dst.to_zarr(filename,mode='w')
-                    # print(dst)
-                    # return
                     initflag = True
                 else:
                     dst = drop_timeless(dst)

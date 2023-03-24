@@ -61,9 +61,10 @@ class gcm_filtering(filtering):
 
 class scipy_filtering(filtering):
     def filter(self,x):
-        return  xr.apply_ufunc(\
+        output = xr.apply_ufunc(\
             lambda data: gaussian_filter(data, self.sigma/2, mode='wrap'),\
-            self.grid.area*x.fillna(0),dask='parallelized', output_dtypes=[float, ])
+            x.fillna(0)*self.grid.area,dask='parallelized', output_dtypes=[float, ])
+        return output
         
     def base_filter(self,x):
         return xr.apply_ufunc(\

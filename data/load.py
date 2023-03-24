@@ -257,7 +257,7 @@ def get_deconvolution_generator(args,data_loaders = True,):
     dsets = [SectionedL2Fit(ns.sigma,cds.copy(),fds.copy(),section = ns.section, )]
     if data_loaders:
         params={'batch_size':None,\
-            'shuffle': False,#internally shuffled within each section\
+            'shuffle': True,
             'num_workers':ns.num_workers,\
             'prefetch_factor':ns.prefetch_factor}
         torchdsets = [TorchDatasetWrap(dset_)  for dset_ in dsets]

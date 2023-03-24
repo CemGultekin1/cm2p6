@@ -166,15 +166,15 @@ class Eval(L2Fit):
             fds[latslice,lonslice] += y
         return fds
 class SectionedL2Fit(L2Fit):
-    def __init__(self, sigma, cds: xr.Dataset, fds: xr.Dataset,  section = (0,1),degree: int = 4):
+    def __init__(self, sigma, cds: xr.Dataset, fds: xr.Dataset,  section = (0,1),degree: int = 8):
         super().__init__(sigma, cds, fds, degree)
         nt = int(len(self.cds.time)*0.85)
         
         self.cds = self.cds.isel(time = np.arange(nt))
         self.fds = self.fds.isel(time = np.arange(nt))
         
-        self.len_axes =dict(time = nt)
-        for dim in 'lat lon depth'.split():
+        self.len_axes = {}
+        for dim in 'lat lon depth time'.split():
             try:
                 n = len(self.cds[dim]) 
             except: 
@@ -182,21 +182,21 @@ class SectionedL2Fit(L2Fit):
             self.len_axes[dim] = n
         self.limits = compute_section_limits(list(self.len_axes.values()),section)
         self.length = self.limits[1] - self.limits[0]
-        num_dims = degree**2*np.prod(self.coarse_shape)
-        max_length =int(np.ceil(num_dims*100/section[1]))        
-        print(f'self.length = {self.length}, needed data = {max_length}, degree = {degree}')
-        self.length = int(np.minimum(self.length,max_length))
-        self.chosen_inds = np.sort(np.random.choice(self.length, max_length, replace=False))
+        # num_dims = degree**2*np.prod(self.coarse_shape)
+        # max_length =int(np.ceil(num_dims*100/section[1]))        
+        # print(f'self.length = {self.length}, needed data = {max_length}, num_dims = {num_dims}, degree = {degree}')
+        # self.length = int(np.minimum(self.length,max_length))
     def get_indices(self,i):
-        inds = []
-        for x in self.len_axes.values():
-            inds.append(i%x)
+        inds = {}
+        for key,x in self.len_axes.items():
+            inds[key] = i%x
             i = i//x
+        print(inds)
         return inds
     def __len__(self,):
         return self.length
-    def collect(self,itime,ilat,ilon,idepth):
-        prods = super().collect(itime,ilat,ilon,idepth)
+    def collect(self,lat =0,lon = 0,depth = 0,time = 0):
+        prods = super().collect(time,lat,lon,depth)
         ndepth = self.len_axes['depth']
         xx,xy = prods['u']
         coords = dict(
@@ -214,14 +214,13 @@ class SectionedL2Fit(L2Fit):
         for vn,(xx,xy) in prods.items():
             
             ut_ind = 0 if vn in 'u v'.split() else 1
-            xx_[ut_ind,idepth] += xx
-            xy_[ut_ind,idepth] += xy
+            xx_[ut_ind,depth] += xx
+            xy_[ut_ind,depth] += xy
             
         return coords,(indims,xx_),(outdims,xy_)
     def __getitem__(self,i):
-        i = self.chosen_inds[i]
         i = i+self.limits[0]
-        return self.collect(*self.get_indices(i))
+        return self.collect(**self.get_indices(i))
 def main():
     from data.load import load_xr_dataset
     import itertools
