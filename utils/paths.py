@@ -1,12 +1,19 @@
 import os
-ROOT = '/scratch/cg3306/climate'
+
+file1 = open('paths.txt', 'r')
+lines = file1.readlines()
+file1.close()
+
+ROOT = lines[0]
 ENV_PATH = '/scratch/cg3306/climate/.ext3'
 CM2P6_PATH = '/scratch/zanna/data/cm2.6'
+OUTPUTS_PATH = '/scratch/cg3306/climate/outputs'
+AS15415_PATH = '/scratch/as15415/Data/CM26_Surface_UVT.zarr'
+
 REPO_NAME = 'cm2p6'
 REPO = os.path.join(ROOT,REPO_NAME)
 
-OUTPUTS_PATH = '/scratch/cg3306/climate/outputs'
-AS15415_PATH = '/scratch/as15415/Data/CM26_Surface_UVT.zarr'
+
 class FINE_CM2P6_PATH_Class:
     one_pct_co2 = '1pct_co2'
     zero_co2 = ''
