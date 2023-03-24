@@ -3,8 +3,8 @@
 #SBATCH --array=1-1
 #SBATCH --mem=36GB
 #SBATCH --job-name=filter_weights
-#SBATCH --output=/scratch/cg3306/climate/outputs/slurm_logs/filter_weights_%a_%A.out
-#SBATCH --error=/scratch/cg3306/climate/outputs/slurm_logs/filter_weights_%a_%A.err
+#SBATCH --output=/scratch/cg3306/climate/outputs/slurm_logs/filter_weights_%A_%a.out
+#SBATCH --error=/scratch/cg3306/climate/outputs/slurm_logs/filter_weights_%A_%a.err
 #SBATCH --cpus-per-task=18
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1

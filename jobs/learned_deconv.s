@@ -3,8 +3,8 @@
 #SBATCH --array=1-10
 #SBATCH --mem=100GB
 #SBATCH --job-name=learned_deconv
-#SBATCH --output=/scratch/cg3306/climate/outputs/slurm_logs/learned_deconv_%a_%A.out
-#SBATCH --error=/scratch/cg3306/climate/outputs/slurm_logs/learned_deconv_%a_%A.err
+#SBATCH --output=/scratch/cg3306/climate/outputs/slurm_logs/learned_deconv_%A_%a.out
+#SBATCH --error=/scratch/cg3306/climate/outputs/slurm_logs/learned_deconv_%A_%a.err
 #SBATCH --cpus-per-task=10
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1

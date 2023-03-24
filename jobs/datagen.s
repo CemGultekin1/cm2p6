@@ -3,8 +3,8 @@
 #SBATCH --array=1-10
 #SBATCH --mem=180GB
 #SBATCH --job-name=datagen
-#SBATCH --output=/scratch/cg3306/climate/CM2P6Param/saves/slurm_logs/datagen_%a_%A.out
-#SBATCH --error=/scratch/cg3306/climate/CM2P6Param/saves/slurm_logs/datagen_%a_%A.err
+#SBATCH --output=/scratch/cg3306/climate/CM2P6Param/saves/slurm_logs/datagen_%A_%a.out
+#SBATCH --error=/scratch/cg3306/climate/CM2P6Param/saves/slurm_logs/datagen_%A_%a.err
 #SBATCH --cpus-per-task=18
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1

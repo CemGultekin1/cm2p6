@@ -182,8 +182,8 @@ def generate_training_tasks():
     with open(path,'w') as f:
         f.write(lines)
     slurmfile =  os.path.join(JOBS,TRAINJOB + '.s')
-    out = os.path.join(JOBS_LOGS,TRAINJOB+ '_%a_%A.out')
-    err = os.path.join(JOBS_LOGS,TRAINJOB+ '_%a_%A.err')
+    out = os.path.join(JOBS_LOGS,TRAINJOB+ '_%A_%a.out')
+    err = os.path.join(JOBS_LOGS,TRAINJOB+ '_%A_%a.err')
     create_slurm_job(slurmfile,\
         time = "12:00:00",array = jobarray,\
         mem = "150GB",job_name = TRAINJOB,\

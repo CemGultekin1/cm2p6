@@ -3,8 +3,8 @@
 #SBATCH --array=1-16
 #SBATCH --mem=30GB
 #SBATCH --job-name=datagather
-#SBATCH --output=/scratch/cg3306/climate/CM2P6Param/saves/slurm_logs/datagather_%a_%A.out
-#SBATCH --error=/scratch/cg3306/climate/CM2P6Param/saves/slurm_logs/datagather_%a_%A.err
+#SBATCH --output=/scratch/cg3306/climate/CM2P6Param/saves/slurm_logs/datagather_%A_%a.out
+#SBATCH --error=/scratch/cg3306/climate/CM2P6Param/saves/slurm_logs/datagather_%A_%a.err
 #SBATCH --cpus-per-task=1
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1

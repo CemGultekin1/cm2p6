@@ -43,8 +43,8 @@ def generate_eval_tasks():
             jobnums.append(str(i+1))
     jobarray = ','.join(jobnums)
     slurmfile =  os.path.join(JOBS,JOBNAME + '.s')
-    out = os.path.join(JOBS_LOGS,JOBNAME+ '_%a_%A.out')
-    err = os.path.join(JOBS_LOGS,JOBNAME+ '_%a_%A.err')
+    out = os.path.join(JOBS_LOGS,JOBNAME+ '_%A_%a.out')
+    err = os.path.join(JOBS_LOGS,JOBNAME+ '_%A_%a.err')
     create_slurm_job(slurmfile,\
         python_file = 'run/eval.py',
         time = "1:00:00",array = jobarray,\

@@ -3,8 +3,8 @@
 #SBATCH --array=1-3
 #SBATCH --mem=72GB
 #SBATCH --job-name=scalars
-#SBATCH --output=/scratch/cg3306/climate/CM2P6Param/saves/slurm_logs/scalars_%a_%A.out
-#SBATCH --error=/scratch/cg3306/climate/CM2P6Param/saves/slurm_logs/scalars_%a_%A.err
+#SBATCH --output=/scratch/cg3306/climate/CM2P6Param/saves/slurm_logs/scalars_%A_%a.out
+#SBATCH --error=/scratch/cg3306/climate/CM2P6Param/saves/slurm_logs/scalars_%A_%a.err
 #SBATCH --cpus-per-task=8
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1

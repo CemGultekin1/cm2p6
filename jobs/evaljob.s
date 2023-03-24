@@ -3,8 +3,8 @@
 #SBATCH --array=1-24,41-82
 #SBATCH --mem=30GB
 #SBATCH --job-name=evaljob
-#SBATCH --output=/scratch/cg3306/climate/CM2P6Param/saves/slurm_logs/evaljob_%a_%A.out
-#SBATCH --error=/scratch/cg3306/climate/CM2P6Param/saves/slurm_logs/evaljob_%a_%A.err
+#SBATCH --output=/scratch/cg3306/climate/CM2P6Param/saves/slurm_logs/evaljob_%A_%a.out
+#SBATCH --error=/scratch/cg3306/climate/CM2P6Param/saves/slurm_logs/evaljob_%A_%a.err
 #SBATCH --cpus-per-task=8
 #SBATCH --nodes=1
 #SBATCH --gres=gpu:1

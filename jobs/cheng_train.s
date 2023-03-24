@@ -3,8 +3,8 @@
 #SBATCH --array=1
 #SBATCH --mem=150GB
 #SBATCH --job-name=chengt
-#SBATCH --output=/scratch/cg3306/climate/CM2P6Param/saves/slurm_logs/chengt_%a_%A.out
-#SBATCH --error=/scratch/cg3306/climate/CM2P6Param/saves/slurm_logs/chengt_%a_%A.err
+#SBATCH --output=/scratch/cg3306/climate/CM2P6Param/saves/slurm_logs/chengt_%A_%a.out
+#SBATCH --error=/scratch/cg3306/climate/CM2P6Param/saves/slurm_logs/chengt_%A_%a.err
 #SBATCH --cpus-per-task=16
 #SBATCH --nodes=1
 #SBATCH --gres=gpu:1

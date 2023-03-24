@@ -3,8 +3,8 @@
 #SBATCH --array=1
 #SBATCH --mem=30GB
 #SBATCH --job-name=fgath
-#SBATCH --output=/scratch/cg3306/climate/outputs/slurm_logs/fgath_%a_%A.out
-#SBATCH --error=/scratch/cg3306/climate/outputs/slurm_logs/fgath_%a_%A.err
+#SBATCH --output=/scratch/cg3306/climate/outputs/slurm_logs/fgath_%A_%a.out
+#SBATCH --error=/scratch/cg3306/climate/outputs/slurm_logs/fgath_%A_%a.err
 #SBATCH --cpus-per-task=4
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1

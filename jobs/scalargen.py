@@ -28,8 +28,8 @@ def python_args():
     return njob
 def slurm(njob):
     slurmfile =  os.path.join(root,JobName + '.s')
-    out = os.path.join(JOBS_LOGS,JobName+ '_%a_%A.out')
-    err = os.path.join(JOBS_LOGS,JobName+ '_%a_%A.err')
+    out = os.path.join(JOBS_LOGS,JobName+ '_%A_%a.out')
+    err = os.path.join(JOBS_LOGS,JobName+ '_%A_%a.err')
     create_slurm_job(slurmfile,\
         python_file = 'run/scalars.py',
         time = "3:00:00",array = f"1-{njob}",\
