@@ -166,7 +166,7 @@ class Eval(L2Fit):
             fds[latslice,lonslice] += y
         return fds
 class SectionedL2Fit(L2Fit):
-    def __init__(self, sigma, cds: xr.Dataset, fds: xr.Dataset,  section = (0,1),degree: int = 1):
+    def __init__(self, sigma, cds: xr.Dataset, fds: xr.Dataset,  section = (0,1),degree: int = 8):
         super().__init__(sigma, cds, fds, degree)
         nt = 100
         
@@ -196,7 +196,6 @@ class SectionedL2Fit(L2Fit):
         for key,x in self.len_axes.items():
             inds[key] = i%x
             i = i//x
-        print(inds)
         return inds
     def __len__(self,):
         return self.length

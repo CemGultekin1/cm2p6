@@ -7,9 +7,9 @@ from utils.paths import JOBS, JOBS_LOGS
 JOBNAME = 'datagen'
 root = JOBS
 
-NCPU =10
-NSEC = 20
-PERCPU = 15
+NCPU =5
+NSEC = 10
+PERCPU = 30
 def python_args():
     def givearg(filtering,sigma,depth,section):
         st =  f"--minibatch 1 --prefetch_factor 1 --depth {depth} --sigma {sigma} --section {section} --mode data --num_workers {NCPU} --filtering {filtering}"

@@ -3,13 +3,12 @@ from data.load import  get_deconvolution_generator
 from run.train import Timer
 from utils.arguments import options
 from utils.slurm import flushed_print
-from utils.xarray import plot_ds
 import xarray as xr
 import sys
 
 def main():
-    # datargs = sys.argv[1:]
-    datargs = '--minibatch 1 --prefetch_factor 1 --disp 1 --depth 0 --disp 100 --sigma 4 --section 1 10 --mode data --num_workers 1 --filtering gcm'.split()
+    datargs = sys.argv[1:]
+    # datargs = '--minibatch 1 --prefetch_factor 1 --disp 1 --depth 0 --disp 100 --sigma 4 --section 1 10 --mode data --num_workers 1 --filtering gcm'.split()
    
     generators, = get_deconvolution_generator(datargs,data_loaders = True)
     filename = get_learned_deconvolution_location(datargs,preliminary=True)
