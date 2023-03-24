@@ -183,9 +183,10 @@ class SectionedL2Fit(L2Fit):
         self.limits = compute_section_limits(list(self.len_axes.values()),section)
         self.length = self.limits[1] - self.limits[0]
         num_dims = degree**2*np.prod(self.coarse_shape)
-        max_length =int(np.ceil(num_dims*100/section[1]))
-        print(f'self.length = {self.length}, needed data = {max_length}')
+        max_length =int(np.ceil(num_dims*100/section[1]))        
+        print(f'self.length = {self.length}, needed data = {max_length}, degree = {degree}')
         self.length = int(np.minimum(self.length,max_length))
+        self.chosen_inds = np.sort(np.random.choice(self.length, max_length, replace=False))
     def get_indices(self,i):
         inds = []
         for x in self.len_axes.values():
@@ -218,6 +219,7 @@ class SectionedL2Fit(L2Fit):
             
         return coords,(indims,xx_),(outdims,xy_)
     def __getitem__(self,i):
+        i = self.chosen_inds[i]
         i = i+self.limits[0]
         return self.collect(*self.get_indices(i))
 def main():
