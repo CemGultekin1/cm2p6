@@ -4,7 +4,7 @@ import os
 from jobs.job_body import create_slurm_job
 from utils.paths import JOBS, JOBS_LOGS
 
-JOBNAME = 'learned_deconv'
+JOBNAME = 'learndeconv'
 root = JOBS
 
 NCPU = 10
@@ -39,7 +39,7 @@ def slurm(njob):
     err = os.path.join(JOBS_LOGS,JOBNAME+ '_%A_%a.err')
     create_slurm_job(slurmfile,\
         python_file = 'run/learned_deconv.py',
-        time = "4:00:00",array = f"1-{njob}",\
+        time = "24:00:00",array = f"1-{njob}",\
         mem = f"{int(NCPU*PERCPU)}GB",job_name = JOBNAME,\
         output = out,error = err,\
         cpus_per_task = str(NCPU),
