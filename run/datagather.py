@@ -10,7 +10,6 @@ def append_zarr(path0,path1,overwrite):
         print(path1.split('/')[-1])
         return 
     ds = xr.open_zarr(path1)
-    # ds['interior_wet_mask'] = interior_wet_mask
     batchsize = 20
     nt =len(ds.time.values)
     batchinds = np.arange(0,nt,batchsize).tolist() + [nt]
@@ -29,8 +28,8 @@ def get_interior_wet_mask(datargs):
     return interior_wet_mask
 def run():
     arg = int(sys.argv[1]) - 1
-
-    path = '/scratch/cg3306/climate/CM2P6Param/jobs/datagen.txt'
+    from utils.paths import JOBS
+    path = os.path.join(JOBS,'datagen.txt')
     with open(path) as f:
         ls = f.readlines()
 
@@ -38,11 +37,8 @@ def run():
     upper_limit = (arg+1)*NSEC#40
     lower_limit = arg*NSEC #30
     flushed_print('lower_limit,upper_limit\t',lower_limit,upper_limit)
-    # interior_wet_mask = None
     for i in range(lower_limit,upper_limit):
         datargs = ls[i].split()
-        # if i==0:
-        #     interior_wet_mask = get_interior_wet_mask(datargs)            
         path1 = get_preliminary_low_res_data_location(datargs)
         path0 = get_low_res_data_location(datargs).replace('.zarr','_.zarr')
         overwrite =  i == lower_limit

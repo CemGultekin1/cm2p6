@@ -7,9 +7,9 @@ from utils.paths import JOBS, JOBS_LOGS
 JOBNAME = 'learndeconv'
 root = JOBS
 
-NCPU = 10
-NSEC = 10
-PERCPU = 10
+NCPU = 5
+NSEC = 15
+PERCPU = 20
 def python_args():
     def givearg(filtering,sigma,depth,section):
         st =  f"--minibatch 1 --prefetch_factor 1 --disp 1 --depth {depth} --disp 100 --sigma {sigma} --section {section} --mode data --num_workers {NCPU} --filtering {filtering}"
