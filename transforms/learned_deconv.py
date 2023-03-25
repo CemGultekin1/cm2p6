@@ -39,7 +39,6 @@ class L2Fit(base_transform):
         latfeats = cds.lat.values.reshape([-1,1])/90*2*np.pi
         lonfeats = cds.lon.values.reshape([1,-1])/180*2*np.pi
         fourier_components = []
-        
         for i,j in itertools.product(range(self.degree),range(self.degree)):
             feats = latfeats*i + lonfeats*j
             fourier_components.append(np.cos(feats).flatten())
@@ -137,13 +136,11 @@ class Eval(L2Fit):
         fine_index = self.multiply_index([i for i in (ilat,ilon)])
         subcds = self.center(cds,fine_index,self.coarse_spread).fillna(0)
         feats = self.get_geo_features(subcds)
-
-        feats = np.concatenate(feats,).reshape([-1,2*self.degree**2,1])
-        # solv = self.solution.values.reshape([-1,2*self.degree**2,fspan**2])
-        # eff_filts = np.sum(feats*solv,axis = 1)
-        eff_filts = self.solution.values.reshape([-1,2*fspan**2])
-        eff_filts = np.sum(eff_filts**2,axis = 1)
-        eff_filts = eff_filts.reshape([cspan,cspan])
+        num_feats = 2*self.degree**2 - 1
+        feats = np.concatenate(feats,).reshape([num_feats,-1,1])
+        solv = self.solution.values.reshape([num_feats,-1,fspan**2])
+        eff_filts = np.sum(feats*solv,axis = 0)
+        eff_filts = eff_filts.reshape([cspan,cspan,fspan,fspan])
         return eff_filts
     def eval(self,cds,limits = None):
         nlats,nlons = len(cds.lat),len(cds.lon)
@@ -181,7 +178,7 @@ class Eval(L2Fit):
             fds[latslice,lonslice] += y
         return fds
 class SectionedL2Fit(L2Fit):
-    def __init__(self, sigma, cds: xr.Dataset, fds: xr.Dataset,  section = (0,1),degree: int = 3):
+    def __init__(self, sigma, cds: xr.Dataset, fds: xr.Dataset,  section = (0,1),degree: int = 7):
         super().__init__(sigma, cds, fds, degree)
         nt = 100
         
@@ -203,9 +200,6 @@ class SectionedL2Fit(L2Fit):
         
         num_dims = degree**2*np.prod(self.coarse_shape)
         print(f'self.length,num_dims = {self.length,num_dims}')
-        # max_length =int(np.ceil(num_dims*100/section[1]))        
-        # print(f'self.length = {self.length}, needed data = {max_length}, num_dims = {num_dims}, degree = {degree}')
-        # self.length = int(np.minimum(self.length,max_length))
     def get_indices(self,i):
         inds = {}
         for key,x in self.len_axes.items():
