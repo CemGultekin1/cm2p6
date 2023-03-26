@@ -11,5 +11,5 @@
 module purge
 singularity exec --overlay /scratch/cg3306/climate/.ext3:ro /scratch/work/public/singularity/cuda11.2.2-cudnn8-devel-ubuntu20.04.sif /bin/bash -c "\
 	source src.sh;\
-	python3 run/datagather.py $JOBS_ARRAY_TASK_ID;\
+	python3 run/datagather.py $SLURM_ARRAY_TASK_ID;\
 	"
