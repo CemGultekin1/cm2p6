@@ -7,7 +7,12 @@ import itertools
 
     
 class DeconvolutionFeatures(BaseTransform):
-    def __init__(self, sigma, cds:xr.Dataset,fds:xr.Dataset,spatial_encoding_degree:int = 4,correlation_spread:int = 2,coarse_spread : int = 10):
+    def __init__(self, sigma, cds:xr.Dataset,fds:xr.Dataset,\
+                    spatial_encoding_degree:int = 4,\
+                    coarse_spread : int = 10,\
+                    correlation_spread:int = 2,\
+                    correlation_distance:int = 2,\
+                    correlation_spatial_encoding_degree:int = 1):
         super().__init__(sigma,None,)
         self.dims = 'lat lon ulat ulon tlat tlon'.split()
         self.fine_spread = sigma
@@ -18,8 +23,10 @@ class DeconvolutionFeatures(BaseTransform):
         self.fine_shape = shpfun(self.fine_spread)
         self.coarse_shape = shpfun(self.coarse_spread)
         self.cds,self.fds = cds,fds
+        self.correlation_distance = correlation_distance
         self.spatial_encoding_degree = spatial_encoding_degree
         self.correlation_spread = correlation_spread
+        self.correlation_spatial_encoding_degree = correlation_spatial_encoding_degree
         if self.cds is not None:
             self.varnames= [key for key in self.cds.data_vars.keys() if 'S'+key in self.cds.data_vars]
             keys = list(self.cds.data_vars.keys())
@@ -38,19 +45,20 @@ class DeconvolutionFeatures(BaseTransform):
         self.solution = None
     def get_geo_features(self,cds):
         self.latlon_feats = []
-        scs = self.correlation_spread
-        cspan = self.coarse_spread*2+1
-        slc = slice(scs,cspan + scs)
-        
-        latfeats = cds.lat.values[slc].reshape([-1,1])/90*2*np.pi
-        lonfeats = cds.lon.values[slc].reshape([1,-1])/180*2*np.pi
+        latfeats = cds.lat.values.reshape([-1,1])/90*2*np.pi
+        lonfeats = cds.lon.values.reshape([1,-1])/180*2*np.pi
         fourier_components = []
+        sorting = []
         for i,j in itertools.product(range(self.spatial_encoding_degree),range(self.spatial_encoding_degree)):
             feats = latfeats*i + lonfeats*j
-            fourier_components.append(np.cos(feats).flatten())
+            fourier_components.append(np.cos(feats))
+            sorting.append(i+j)
             if i==0 and j== 0:
                 continue
-            fourier_components.append(np.sin(feats).flatten())
+            fourier_components.append(np.sin(feats))
+            sorting.append(i+j)
+        x = np.argsort(sorting)
+        fourier_components = [fourier_components[i] for i in x]
         return fourier_components
         
     def center(self,cds,fine_index,spread):  
@@ -78,7 +86,10 @@ class DeconvolutionFeatures(BaseTransform):
     def coarse_grid_center(self,itime,ilat,ilon,idepth):
         fine_index = self.multiply_index([i for i in (ilat,ilon)])
         sel_dict = {key:val for key,val in dict(time = itime).items() if key in self.cds.coords}
-        cds = self.center(self.cds.isel(**sel_dict),fine_index,self.coarse_spread + self.correlation_spread)
+        corr_sp = self.correlation_spread
+        if corr_sp > 0:
+            corr_sp -= 1
+        cds = self.center(self.cds.isel(**sel_dict),fine_index,self.coarse_spread)
         return cds
     def fine_grid_hann_window(self,):
         N = self.fine_spread*2
@@ -89,19 +100,26 @@ class DeconvolutionFeatures(BaseTransform):
         return fds.values * self.hann_window
     def feature_vector(self,cds:xr.Dataset,feats):
         x = cds.values.squeeze()
-        scs = self.correlation_spread
-        cspan = self.coarse_spread*2+1
-        slc = slice(scs,cspan + scs)
-        x1 = x[slc,slc]
+        x1 = x.flatten()
        
-        xs = [x1.flatten()]
-        for di,dj in itertools.product(*[range(scs)]*2):
-            x2i = x[di:di + cspan,dj:dj + cspan]*x1
-            xs.append(x2i.flatten())
+        x1s = [x1*feat.flatten() for feat in feats]
         
-        
-        x1 = np.concatenate([x1*feat for x1 in xs for feat in feats])
-        return x1
+        corrsp = self.correlation_spread
+        corrds = self.correlation_distance
+        corrspan = 2*corrsp + 1
+        corrsp1 = corrsp + corrds
+        slc1 = slice(self.coarse_spread - corrsp,self.coarse_spread + corrsp1+1)
+        slc2 = slice(self.coarse_spread - corrsp,self.coarse_spread + corrsp+1)
+        x1 = x[slc1,slc1]
+        x2 = x[slc2,slc2]
+        x2s = []        
+        for di,dj in itertools.product(*[range(corrds+1)]*2):            
+            x2i = x1[di:di + corrspan,dj:dj + corrspan]*x2
+            x2s.append(x2i)
+
+        x1s = x1s +  [x2.flatten()*feat[slc2,slc2].flatten() for x2 in x2s for feat in feats[:2*self.correlation_spatial_encoding_degree**2 - 1]]
+        x1s = np.concatenate(x1s)
+        return x1s
     def add(self,xx,varname):
         xx_ =self.__getattribute__(varname)
         if  xx_ is None:
@@ -200,9 +218,14 @@ class DeconvolutionTransform(DeconvolutionFeatures):
         return y
 class SectionedDeconvolutionFeatures(DeconvolutionFeatures):
     def __init__(self, sigma, cds: xr.Dataset, fds: xr.Dataset,  section = (0,1),\
-                spatial_encoding_degree: int = 7,correlation_spread:int = 2,coarse_spread : int = 10):
-        super().__init__(sigma, cds, fds, spatial_encoding_degree,correlation_spread,coarse_spread)
+                spatial_encoding_degree: int = 7,\
+                        correlation_spread:int = 2,\
+                        coarse_spread : int = 10,\
+                        correlation_distance:int = 2,\
+                        correlation_spatial_encoding_degree :int = 2):
+        super().__init__(sigma, cds, fds, spatial_encoding_degree,coarse_spread,correlation_spread,correlation_distance,correlation_spatial_encoding_degree)
         nt = 100
+
         
         dt = len(self.cds.time)//nt
         
@@ -220,8 +243,11 @@ class SectionedDeconvolutionFeatures(DeconvolutionFeatures):
         self.limits = compute_section_limits(list(self.len_axes.values()),section)
         self.length = self.limits[1] - self.limits[0]
         
-        num_dims = self.spatial_encoding_degree**2*np.prod(self.coarse_shape)*(self.correlation_spread*2+1)**2
-        print(f'self.length,num_dims = {self.length,num_dims}')
+       
+        first_order_num_dims = (2*self.spatial_encoding_degree**2-1)*np.prod(self.coarse_shape)
+        second_order_num_dims = (2*self.correlation_spatial_encoding_degree**2-1)*(self.correlation_spread*2 + 1)**2*(self.correlation_distance+1)**2
+        num_dims = first_order_num_dims + second_order_num_dims
+        print(f'self.length,num_dims = {self.length,num_dims} = {first_order_num_dims} + {second_order_num_dims}')
     def get_indices(self,i):
         inds = {}
         for key,x in self.len_axes.items():

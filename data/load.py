@@ -255,7 +255,9 @@ def get_deconvolution_generator(args,data_loaders = True,):
     fds,_ = load_xr_dataset(args,high_res=True)
     cds,_ = load_xr_dataset(args,high_res=False)
     dsets = [SectionedDeconvolutionFeatures(ns.sigma,cds.copy(),fds.copy(),section = ns.section,\
-                spatial_encoding_degree=4,correlation_spread=2,coarse_spread=10)]
+                spatial_encoding_degree=5,coarse_spread=10,\
+                correlation_spread=3,correlation_distance=2,\
+                correlation_spatial_encoding_degree=2)]
     if data_loaders:
         params={'batch_size':None,\
             'shuffle': True,

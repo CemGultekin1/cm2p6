@@ -9,7 +9,7 @@ root = JOBS
 
 NCPU = 5
 NSEC = 15
-PERCPU = 20
+PERCPU = 30
 def python_args():
     def givearg(filtering,sigma,depth,section):
         st =  f"--minibatch 1 --prefetch_factor 1 --disp 1 --depth {depth} --disp 100 --sigma {sigma} --section {section} --mode data --num_workers {NCPU} --filtering {filtering}"
