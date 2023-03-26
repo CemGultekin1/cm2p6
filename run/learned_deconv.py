@@ -27,7 +27,7 @@ def main():
             xx = (indims,xx.numpy()),
             xy = (outdims,xy.numpy()),
         )
-        print(f'xx.shape,xy.shape = {xx.shape,xy.shape}')
+        # print(f'xx.shape,xy.shape = {xx.shape,xy.shape}')
         subfield  = xr.Dataset(
             data_vars = data_vars,
             coords = coords

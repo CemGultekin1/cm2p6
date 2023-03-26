@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --time=24:00:00
-#SBATCH --array=1-15
+#SBATCH --array=2-15
 #SBATCH --mem=150GB
 #SBATCH --job-name=learndeconv
 #SBATCH --output=/scratch/cg3306/climate/outputs/slurm_logs/learndeconv_%A_%a.out
