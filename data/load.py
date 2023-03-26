@@ -8,7 +8,7 @@ import copy
 from data.vars import FIELD_NAMES, FORCING_NAMES, LATITUDE_NAMES,LSRP_RES_NAMES, get_var_mask_name, rename
 from data.scalars import load_scalars
 from transforms.gcm_filter_weights import GcmFilterWeights
-from transforms.learned_deconv import SectionedL2Fit
+from transforms.learned_deconv import SectionedDeconvolutionFeatures
 from transforms.grids import get_grid_vars
 import xarray as xr
 from data.coords import  DEPTHS, REGIONS, TIMES
@@ -254,7 +254,8 @@ def get_deconvolution_generator(args,data_loaders = True,):
     assert ns.mode == 'data'
     fds,_ = load_xr_dataset(args,high_res=True)
     cds,_ = load_xr_dataset(args,high_res=False)
-    dsets = [SectionedL2Fit(ns.sigma,cds.copy(),fds.copy(),section = ns.section, )]
+    dsets = [SectionedDeconvolutionFeatures(ns.sigma,cds.copy(),fds.copy(),section = ns.section,\
+                spatial_encoding_degree=4,correlation_spread=2,coarse_spread=10)]
     if data_loaders:
         params={'batch_size':None,\
             'shuffle': True,

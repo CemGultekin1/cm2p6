@@ -1,4 +1,4 @@
-from transforms.coarse_graining import base_transform, gcm_filtering,greedy_coarse_grain, greedy_scipy_filtering, plain_coarse_grain, scipy_filtering
+from transforms.coarse_graining import BaseTransform, gcm_filtering,greedy_coarse_grain, greedy_scipy_filtering, plain_coarse_grain, scipy_filtering
 from transforms.coarse_graining_inverse import  matmult_masked_filtering,matmult_filtering
 from transforms.grids import forward_difference
 from transforms.krylov import  krylov_inversion
@@ -6,7 +6,7 @@ import numpy as np
 import xarray as xr
 
 
-class base_subgrid_forcing(base_transform):
+class base_subgrid_forcing(BaseTransform):
     filtering_class = None
     coarse_grain_class = None
     def __init__(self,*args,\

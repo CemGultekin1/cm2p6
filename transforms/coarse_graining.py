@@ -2,13 +2,13 @@ import numpy as np
 import gcm_filters as gcm
 import xarray as xr
 from scipy.ndimage import gaussian_filter
-class base_transform:
+class BaseTransform:
     def __init__(self,sigma,grid,*args,dims = 'lat lon'.split(),**kwargs):
         self.sigma = sigma
         self.grid = grid
         self.dims = dims
 
-class plain_coarse_grain(base_transform):
+class plain_coarse_grain(BaseTransform):
     def __init__(self, *args, **kwargs):
         super().__init__( *args, **kwargs)
         self._coarse_specs = dict({axis : self.sigma for axis in self.dims},boundary = 'trim')
@@ -29,7 +29,7 @@ class greedy_coarse_grain(plain_coarse_grain):
         else:
             return super().__call__(x)
 
-class filtering(base_transform):
+class filtering(BaseTransform):
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
         self._norm = None

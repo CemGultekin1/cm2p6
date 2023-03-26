@@ -1,8 +1,8 @@
 from utils.xarray import plot_ds
 import xarray as xr
 import numpy as np
-from transforms.coarse_graining import base_transform, gcm_filtering, greedy_coarse_grain
-class FilterWeightsBase(base_transform):
+from transforms.coarse_graining import BaseTransform, gcm_filtering, greedy_coarse_grain
+class FilterWeightsBase(BaseTransform):
     def __init__(self, sigma, grid, *args, dims=..., **kwargs):
         super().__init__(sigma, grid, *args, dims=dims, **kwargs)
         self.left_spacing = 2*sigma

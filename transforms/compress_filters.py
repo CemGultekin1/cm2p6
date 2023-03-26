@@ -6,7 +6,7 @@ import numpy as np
 from utils.xarray import plot_ds
 import xarray as xr 
 from transforms.grids import get_grid_vars
-from transforms.coarse_graining import base_transform
+from transforms.coarse_graining import BaseTransform
 from utils.arguments import options
 import matplotlib.pyplot as plt
 

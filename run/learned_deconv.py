@@ -7,8 +7,8 @@ import xarray as xr
 import sys
 
 def main():
-    datargs = sys.argv[1:]
-    # datargs = '--minibatch 1 --prefetch_factor 1 --disp 1 --depth 0 --disp 100 --sigma 4 --section 0 1 --mode data --num_workers 1 --filtering gcm'.split()
+    # datargs = sys.argv[1:]
+    datargs = '--minibatch 1 --prefetch_factor 1 --disp 1 --depth 0 --disp 100 --sigma 4 --section 0 1 --mode data --num_workers 1 --filtering gcm'.split()
    
     generators, = get_deconvolution_generator(datargs,data_loaders = True)
     filename = get_learned_deconvolution_location(datargs,preliminary=True)
@@ -27,6 +27,7 @@ def main():
             xx = (indims,xx.numpy()),
             xy = (outdims,xy.numpy()),
         )
+        print(f'xx.shape,xy.shape = {xx.shape,xy.shape}')
         subfield  = xr.Dataset(
             data_vars = data_vars,
             coords = coords

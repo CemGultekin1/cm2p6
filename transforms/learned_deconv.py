@@ -1,23 +1,25 @@
 
 
-from transforms.coarse_graining import base_transform
+from transforms.coarse_graining import BaseTransform
 import xarray as xr
 import numpy as np
 import itertools
-import matplotlib.pyplot as plt
 
     
-class L2Fit(base_transform):
-    def __init__(self, sigma, cds:xr.Dataset,fds:xr.Dataset,degree:int = 4):
+class DeconvolutionFeatures(BaseTransform):
+    def __init__(self, sigma, cds:xr.Dataset,fds:xr.Dataset,spatial_encoding_degree:int = 4,correlation_spread:int = 2,coarse_spread : int = 10):
         super().__init__(sigma,None,)
         self.dims = 'lat lon ulat ulon tlat tlon'.split()
         self.fine_spread = sigma
-        self.coarse_spread = 10
+        self.coarse_spread = coarse_spread
+        self.cspan = self.coarse_spread*2+1
+        self.fspan = self.fine_spread*2+1
         shpfun = lambda x: (x*2+1,x*2+1)
         self.fine_shape = shpfun(self.fine_spread)
         self.coarse_shape = shpfun(self.coarse_spread)
         self.cds,self.fds = cds,fds
-        self.degree = degree
+        self.spatial_encoding_degree = spatial_encoding_degree
+        self.correlation_spread = correlation_spread
         if self.cds is not None:
             self.varnames= [key for key in self.cds.data_vars.keys() if 'S'+key in self.cds.data_vars]
             keys = list(self.cds.data_vars.keys())
@@ -36,10 +38,14 @@ class L2Fit(base_transform):
         self.solution = None
     def get_geo_features(self,cds):
         self.latlon_feats = []
-        latfeats = cds.lat.values.reshape([-1,1])/90*2*np.pi
-        lonfeats = cds.lon.values.reshape([1,-1])/180*2*np.pi
+        scs = self.correlation_spread
+        cspan = self.coarse_spread*2+1
+        slc = slice(scs,cspan + scs)
+        
+        latfeats = cds.lat.values[slc].reshape([-1,1])/90*2*np.pi
+        lonfeats = cds.lon.values[slc].reshape([1,-1])/180*2*np.pi
         fourier_components = []
-        for i,j in itertools.product(range(self.degree),range(self.degree)):
+        for i,j in itertools.product(range(self.spatial_encoding_degree),range(self.spatial_encoding_degree)):
             feats = latfeats*i + lonfeats*j
             fourier_components.append(np.cos(feats).flatten())
             if i==0 and j== 0:
@@ -72,7 +78,7 @@ class L2Fit(base_transform):
     def coarse_grid_center(self,itime,ilat,ilon,idepth):
         fine_index = self.multiply_index([i for i in (ilat,ilon)])
         sel_dict = {key:val for key,val in dict(time = itime).items() if key in self.cds.coords}
-        cds = self.center(self.cds.isel(**sel_dict),fine_index,self.coarse_spread)
+        cds = self.center(self.cds.isel(**sel_dict),fine_index,self.coarse_spread + self.correlation_spread)
         return cds
     def fine_grid_hann_window(self,):
         N = self.fine_spread*2
@@ -82,9 +88,20 @@ class L2Fit(base_transform):
     def prepare_outputs(self,fds:xr.DataArray):
         return fds.values * self.hann_window
     def feature_vector(self,cds:xr.Dataset,feats):
-        x = cds.values.flatten()
-        x = np.concatenate([x*feat for feat in feats])
-        return x
+        x = cds.values.squeeze()
+        scs = self.correlation_spread
+        cspan = self.coarse_spread*2+1
+        slc = slice(scs,cspan + scs)
+        x1 = x[slc,slc]
+       
+        xs = [x1.flatten()]
+        for di,dj in itertools.product(*[range(scs)]*2):
+            x2i = x[di:di + cspan,dj:dj + cspan]*x1
+            xs.append(x2i.flatten())
+        
+        
+        x1 = np.concatenate([x1*feat for x1 in xs for feat in feats])
+        return x1
     def add(self,xx,varname):
         xx_ =self.__getattribute__(varname)
         if  xx_ is None:
@@ -126,60 +143,65 @@ def compute_section_limits(len_axes,section):
     m1 = np.minimum(dm*section[1],m)
     m0 = dm*section[0]
     return (m0,m1)
-class Eval(L2Fit):
-    def __init__(self, sigma, solution, degree: int = 4):
-        super().__init__(sigma, None, None, degree)
-        self.solution = solution
-    def effective_filter(self,cds,ilat,ilon):
-        cspan = self.coarse_spread*2+1
-        fspan = self.fine_spread*2+1
+
+
+import torch
+class DeconvolutionTransform(DeconvolutionFeatures):
+    def __init__(self, sigma, solution, spatial_encoding_degree: int = 4):
+        super().__init__(sigma, None, None, spatial_encoding_degree)
+        
+        self.feature_map = None
+        self.num_feats = 2*self.spatial_encoding_degree**2 - 1
+        solution = solution.values.reshape([self.num_feats,-1,self.fspan**2]).transpose((2,0,1)).reshape([-1,self.num_feats,self.cspan,self.cspan])
+        self.conv1 = torch.nn.Conv2d(solution.shape[0],solution.shape[1],(self.cspan),bias= False,)
+        self.conv1.weight.data = torch.from_numpy(solution,).type( torch.float32)
+        self.create_aligned_sum_convolution()
+    def create_aligned_sum_convolution(self,):
+        x = np.zeros((self.sigma,self.sigma,self.fspan,self.fspan,2,2))
+        for fi,fj in itertools.product(*[range(self.sigma)]*2):
+            ffi,ffj = self.fine_spread + fi,self.fine_spread + fj
+            x[fi,fj,ffi,ffj,0,0] = 1
+            x[fi,fj,ffi - self.sigma,ffj,1,0] = 1
+            x[fi,fj,ffi,ffj- self.sigma,0,1] = 1
+            x[fi,fj,ffi- self.sigma,ffj- self.sigma,1,1] = 1
+        x = x.reshape([self.sigma**2,self.fspan**2,2,2])
+        self.conv2 = torch.nn.Conv2d(self.sigma**2,self.fspan**2,(2),bias= False,)
+        self.conv2.weight.data = torch.from_numpy(x).type(torch.float32)
+    def effective_filter(self,cds,ilat,ilon):        
         fine_index = self.multiply_index([i for i in (ilat,ilon)])
         subcds = self.center(cds,fine_index,self.coarse_spread).fillna(0)
         feats = self.get_geo_features(subcds)
-        num_feats = 2*self.degree**2 - 1
-        feats = np.concatenate(feats,).reshape([num_feats,-1,1])
-        solv = self.solution.values.reshape([num_feats,-1,fspan**2])
+        feats = np.concatenate(feats,).reshape([self.num_feats,-1,1])
+        solv = self.solution.values.reshape([self.num_feats,-1,self.fspan**2])
         eff_filts = np.sum(feats*solv,axis = 0)
-        eff_filts = eff_filts.reshape([cspan,cspan,fspan,fspan])
+        eff_filts = eff_filts.reshape([self.cspan,self.cspan,self.fspan,self.fspan])
         return eff_filts
-    def eval(self,cds,limits = None):
-        nlats,nlons = len(cds.lat),len(cds.lon)
-        coeffs = self.solution.values
-        if limits is not None:
-            latvals = np.arange(limits[0],limits[1])
-            lonvals = np.arange(limits[2],limits[3])
-            nlats = limits[1] - limits[0]
-            nlons = limits[3] - limits[2]
-        else:
-            latvals = np.arange(nlats)
-            lonvals = np.arange(nlons)
-        fds = np.zeros(((nlats + 2)*self.sigma,(nlons+2)*self.sigma))
-        
-        k =0 
-        
-        for ilat,ilon in itertools.product(latvals,lonvals):
-            fine_index = self.multiply_index([i for i in (ilat,ilon)])
-            subcds = self.center(cds,fine_index,self.coarse_spread).fillna(0)
-            feats = self.get_geo_features(subcds)
-            x = self.feature_vector(subcds,feats)
-            y = x.reshape([1,-1])@coeffs
-            y = y.reshape(self.fine_shape)
-            ilat0 = ilat - latvals[0]
-            ilon0 = ilon - lonvals[0]
-            
-            if k < 5:
-                vmax = np.amax(np.abs(y))
-                plt.imshow(y,cmap = 'bwr',vmax = vmax,vmin = -vmax)
-                plt.savefig(f'subfig_{k}.png')
-                plt.close()
-                k+=1
-            latslice = slice((ilat0 +1)*self.sigma - self.fine_spread,(ilat0+1)*self.sigma + self.fine_spread+1)
-            lonslice = slice((ilon0+1)*self.sigma - self.fine_spread,(ilon0+1)*self.sigma + self.fine_spread+1)
-            fds[latslice,lonslice] += y
-        return fds
-class SectionedL2Fit(L2Fit):
-    def __init__(self, sigma, cds: xr.Dataset, fds: xr.Dataset,  section = (0,1),degree: int = 7):
-        super().__init__(sigma, cds, fds, degree)
+    def create_feature_maps(self,cds):
+        feats = self.get_geo_features(cds.fillna(0))
+        feats = [f.reshape(cds.shape) for f in feats]
+        feats = np.stack(feats,axis = 0)
+        self.feature_map = feats
+    def eval(self,cds,):
+        x = cds.fillna(0).values.squeeze()
+        x = x.reshape([1,x.shape[0],x.shape[1]])
+        x = x*self.feature_map
+        x = np.concatenate([x[:,-self.coarse_spread:],x,x[:,:self.coarse_spread+1]],axis = 1)
+        x = np.concatenate([x[:,:,-self.coarse_spread:],x,x[:,:,:self.coarse_spread+1]],axis = 2)
+        x = np.stack([x],axis = 0)
+        x = torch.from_numpy(x).type(torch.float32)
+        with torch.no_grad():
+            y = self.conv1(x)
+            y = self.conv2(y)
+        y = y.numpy()
+        y = y[0]
+        nlat,nlon = y.shape[1],y.shape[2]
+        y = y.reshape([self.sigma,self.sigma,nlat,nlon]).transpose((2,0,3,1))
+        y = y.reshape([self.sigma*nlat,self.sigma*nlon])
+        return y
+class SectionedDeconvolutionFeatures(DeconvolutionFeatures):
+    def __init__(self, sigma, cds: xr.Dataset, fds: xr.Dataset,  section = (0,1),\
+                spatial_encoding_degree: int = 7,correlation_spread:int = 2,coarse_spread : int = 10):
+        super().__init__(sigma, cds, fds, spatial_encoding_degree,correlation_spread,coarse_spread)
         nt = 100
         
         dt = len(self.cds.time)//nt
@@ -198,7 +220,7 @@ class SectionedL2Fit(L2Fit):
         self.limits = compute_section_limits(list(self.len_axes.values()),section)
         self.length = self.limits[1] - self.limits[0]
         
-        num_dims = degree**2*np.prod(self.coarse_shape)
+        num_dims = self.spatial_encoding_degree**2*np.prod(self.coarse_shape)*(self.correlation_spread*2+1)**2
         print(f'self.length,num_dims = {self.length,num_dims}')
     def get_indices(self,i):
         inds = {}
@@ -225,11 +247,9 @@ class SectionedL2Fit(L2Fit):
         shp = [2,ndepth] + list(xy.shape)
         xy_ = np.zeros(shp)
         for vn,(xx,xy) in prods.items():
-            
             ut_ind = 0 if vn in 'u v'.split() else 1
             xx_[ut_ind,depth] += xx
             xy_[ut_ind,depth] += xy
-            
         return coords,(indims,xx_),(outdims,xy_)
     def __getitem__(self,i):
         i = i+self.limits[0]
@@ -244,7 +264,7 @@ def main():
 
     
     sigma = 4
-    l2fit = L2Fit(sigma,cds,fds,degree = 3)
+    deconv = DeconvolutionFeatures(sigma,cds,fds,spatial_encoding_degree = 2,correlation_spread=3)
     nlat,nlon = [len(cds[dim]) for dim in 'lat lon'.split()]
     nt = 100
     k = 0
@@ -253,23 +273,22 @@ def main():
         it = np.random.randint(nt)*5
         ilat = np.random.randint(nlat)
         ilon = np.random.randint(nlon)
-        prods = l2fit.collect(it,ilat,ilon,0)
+        prods = deconv.collect(it,ilat,ilon,0)
         xx,xy = prods['u']
-        l2fit.add(xx,'xx')
-        l2fit.add(xy,'xy')
+        deconv.add(xx,'xx')
+        deconv.add(xy,'xy')
         print(k,xx.shape,xy.shape)
         k+=1
         if k % 500 == 0:
-            l2fit.solve()
-    l2fit.solve()
-    Eval(sigma,l2fit.solution)
+            deconv.solve()
+    deconv.solve()
     import matplotlib.pyplot as plt
     k= 0
     while k < 16:
         it = np.random.randint(10,nt+10,)*10
         ilat = np.random.randint(nlat)
         ilon = np.random.randint(nlon)
-        pred,ytrue = l2fit.eval('u',it,ilat,ilon,0)        
+        pred,ytrue = deconv.eval('u',it,ilat,ilon,0)        
         if ytrue.sum()==0:
             continue
         fig,axs= plt.subplots(1,2,figsize = (20,10))

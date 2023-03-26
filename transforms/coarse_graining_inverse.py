@@ -1,5 +1,5 @@
 import itertools
-from transforms.coarse_graining import base_transform
+from transforms.coarse_graining import BaseTransform
 import numpy as np
 import xarray as xr
 
@@ -38,7 +38,7 @@ def filter_weights(sigma):
 
     
 
-class matmult_1d(base_transform):
+class matmult_1d(BaseTransform):
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
         area = self.grid.area.values
@@ -123,13 +123,13 @@ def coordinatewise_matmultip(lw,sigma):
     return q
 
 
-class slicewise_matmult_filtering_saver(base_transform):
+class slicewise_matmult_filtering_saver(BaseTransform):
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
         self.lat_area,self.lon_area = \
             wet_density(self.grid.wet_mask,self.grid.area,self.sigma,self.dims)    
         
-class matmult_filtering(base_transform):
+class matmult_filtering(BaseTransform):
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
         lon_area = self.grid.mean(dim = self.dims[0])
