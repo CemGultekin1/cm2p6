@@ -31,11 +31,14 @@ class Timer:
 
 def main():
     args = sys.argv[1:]
-    # args = '--lsrp 0 --depth 0 --sigma 4 --filtering gcm --temperature False --latitude False --interior False --domain global --num_workers 1 --disp 50 --batchnorm 1 1 1 1 1 1 1 0 --lossfun MVARE --widths 2 128 64 32 32 32 32 32 4 --kernels 5 5 3 3 3 3 3 3 --minibatch 1 --model dfcnn'.split()
+    # args = '--lsrp 0 --depth 0 --sigma 4 --filtering gaussian --temperature False --latitude False --interior False --domain four_regions --num_workers 1 --disp 50 --batchnorm 1 1 1 1 1 1 1 0 --lossfun heteroscedastic --widths 2 128 64 32 32 32 32 32 4 --kernels 5 5 3 3 3 3 3 3 --minibatch 4'.split()
+    
     modelid,state_dict,net,criterion,optimizer,scheduler,logs,runargs=load_model(args)
     flushed_print('torch.cuda.is_available():\t',torch.cuda.is_available())
     flushed_print('runargs:\t',runargs)
     training_generator,val_generator=get_data(args,half_spread = net.spread,torch_flag = True,data_loaders = True,groups = ('train','validation'))
+    
+    
     device=get_device()
     net.to(device)
     print(f"using device: {device}")

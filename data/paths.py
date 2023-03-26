@@ -59,6 +59,7 @@ def get_low_res_data_location(args):
     prms,_ = options(args,key = "run")
     
     filename = get_filename(prms.sigma,prms.depth,prms.co2,prms.filtering)
+    print(filename)
     if prms.lsrp == 1:
         f0 = filename.replace('.zarr','_.zarr').split('/')[-1]
         f1 = filename.split('/')[-1]
