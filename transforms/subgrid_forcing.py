@@ -29,11 +29,13 @@ class base_subgrid_forcing(BaseTransform):
         return hres_flux
     def __call__(self,hres,keys,rename,lres = {},clres = {}):
         lres = {x:self.filtering(y) if x not in lres else lres[x] for x,y in hres.items()}
+        clres = {key:self.coarse_grain(x) if key not in clres else clres[key] for key,x in lres.items()}
+        
         hres_flux = self.compute_flux({key:hres[key] for key in keys})
         lres_flux = self.compute_flux({key:lres[key] for key in keys})
 
         forcings =  { rn : self._subgrid_forcing_formula(hres,lres,hres_flux,lres_flux,key) for key,rn in zip(keys,rename) }
-        clres = {key:self.coarse_grain(x) if key not in clres else clres[key] for key,x in lres.items()}
+        
         forcings = {key:self.coarse_grain(x) for key,x in forcings.items()}
         return forcings,(clres,lres)
 

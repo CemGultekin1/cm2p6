@@ -5,7 +5,6 @@ Created on Wed Feb 19 12:15:35 2020
 @author: arthur
 """
 
-from transforms.subgrid_forcing import gcm_lsrp_subgrid_forcing, greedy_scipy_lsrp_subgrid_forcing
 
 import xarray as xr
 from scipy.ndimage import gaussian_filter

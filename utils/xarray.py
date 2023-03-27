@@ -173,10 +173,10 @@ def fromnumpydict(data_vars,coords):
         data_vars_ = {}
         coords_ = {}
         for key in data_vars:
-            data_vars_[key] = ([t[i] for t in data_vars[key][0]],data_vars[key][1][i].numpy())
+            data_vars_[key] = ([t[i] for t in data_vars[key][0]],data_vars[key][1][i])
         for key in coords:
             if key != 'time':
-                coords_[key] = coords[key][i].numpy()
+                coords_[key] = coords[key][i]
             else:
                 coords_[key] =  np.array([coords[key][i]])#datetime.fromisoformat(coords[key][i])])
         ds = xr.Dataset(data_vars = data_vars_,coords = coords_)

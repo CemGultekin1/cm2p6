@@ -157,16 +157,19 @@ class HighResCm2p6:
         def switch_grid_on_dictionary(ulres):
             ulres['u'],ulres['v'] = self.grid_interpolation(ulres['u'],ulres['v'])
         if scipy_filtering:
-            uforcings,(uclres,ulres) = self.ugrid_scipy_forcing(uvars,'u v'.split(),'Su Sv'.split())
+            uforcings,(ucres,ulres) = self.ugrid_scipy_forcing(uvars,'u v'.split(),'Su Sv'.split())
             switch_grid_on_dictionary(ulres)
             tforcings,(tcres,_) = self.tgrid_scipy_forcing(tvars,'temp '.split(),'Stemp '.split(),lres = ulres)
         else:
-            uforcings,(uclres,ulres) = self.ugrid_subgrid_forcing(uvars,'u v'.split(),'Su Sv'.split())
-            switch_grid_on_dictionary(ulres)
+            uforcings,(ucres,ulres) = self.ugrid_subgrid_forcing(uvars,'u v'.split(),'Su Sv'.split())
+
+            # switch_grid_on_dictionary(ulres)
             # switch_grid_on_dictionary(ulres0)
             # switch_grid_on_dictionary(uhres0)
-            tforcings,(tcres,_) = self.tgrid_subgrid_forcing(tvars,'temp '.split(),'Stemp '.split(),lres = ulres)#,hres0 = uhres0,lres0 = ulres0,)
-        uvars = dict(uforcings,**uclres)
+            tforcings,(tcres,_) = self.tgrid_subgrid_forcing(tvars,'temp '.split(),'Stemp '.split(),)#,hres0 = uhres0,lres0 = ulres0,)
+            tcres.pop('u')
+            tcres.pop('v')
+        uvars = dict(uforcings,**ucres)
         tvars = dict(tforcings,**tcres)
         def pass_gridvals(tgridvaldict,ugridvaldict):
             assert len(ugridvaldict) > 0
@@ -176,7 +179,9 @@ class HighResCm2p6:
                     tgridval[key_] = ugridval[key_]
                 tgridvaldict[key] = tgridval
             return tgridvaldict
+       
         tvars = pass_gridvals(tvars,uvars)
+        
         fvars =  dict(uvars,**tvars)
         fvars = self.expand_dims(i,fvars,time = True,depth = True)
         return concat(**fvars)
