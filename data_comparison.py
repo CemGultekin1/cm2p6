@@ -21,8 +21,8 @@ def main():
     isel_dict = {
         v + key+'_ocean':slice(1500,2500) for key in 'u t'.split() for v in 'x y'.split()
     }
-    ds = ds.isel(**isel_dict)
-    grid_data = grid_data.isel(**isel_dict)
+    ds = ds#.isel(**isel_dict)
+    grid_data = grid_data#.isel(**isel_dict)
     forces = eddy_forcing(ds.drop('surface_temp'),grid_data,sigma)
     
     
@@ -46,9 +46,13 @@ def main():
     
     data_vars,coords = hrcm[0]
     x = xr.Dataset(data_vars = data_vars,coords = coords)
-    x = x.isel(time = 0,depth = 0).drop('time depth'.split()).drop('Stemp temp'.split())
-    print(x)
-    print(forces)
+    x = x.isel(time = 0,depth = 0).drop('time depth'.split())
+    
+    plot_ds(np.log10(np.abs(x)),'cem_forces.png',ncols = 3,)
+    
+    x = x.drop('Stemp temp'.split())
+
+
     x1 = x.rename(
         {key:'cem'+key for key in x.data_vars.keys()}
     )
