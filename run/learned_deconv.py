@@ -5,10 +5,10 @@ from utils.arguments import options
 from utils.slurm import flushed_print
 import xarray as xr
 import sys
-
+import os
 def main():
     datargs = sys.argv[1:]
-    # datargs = '--minibatch 1 --prefetch_factor 1 --disp 1 --depth 0 --disp 100 --sigma 4 --section 0 1 --mode data --num_workers 3 --filtering gcm'.split()
+    # datargs = '--minibatch 1 --prefetch_factor 1 --disp 1 --depth 0 --disp 100 --sigma 4 --section 0 1 --mode data --num_workers 1 --filtering gcm'.split()
    
     generators, = get_deconvolution_generator(datargs,data_loaders = True)
     filename = get_learned_deconvolution_location(datargs,preliminary=True)
@@ -16,7 +16,13 @@ def main():
     args,_ = options(datargs,key = "run")
     time = Timer()
     time.start('data')
-    fields = None
+    if os.path.exists(filename):
+        print(f'loading {filename}')
+        fields = xr.open_dataset(filename,mode = 'r').load()
+        filename = filename.replace('.nc','_.nc')
+    else:
+        print(f'no existing found')
+        fields = None
     for t,(coords,(indims,xx),(outdims,xy)) in enumerate(generators):
         time.end('data')
         time.start('data')
@@ -27,7 +33,6 @@ def main():
             xx = (indims,xx.numpy()),
             xy = (outdims,xy.numpy()),
         )
-        # print(f'xx.shape,xy.shape = {xx.shape,xy.shape}')
         subfield  = xr.Dataset(
             data_vars = data_vars,
             coords = coords
