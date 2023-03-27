@@ -238,14 +238,14 @@ class SectionedDeconvolutionFeatures(DeconvolutionFeatures):
                         correlation_distance:int = 2,\
                         correlation_spatial_encoding_degree :int = 2):
         super().__init__(sigma, cds, fds, spatial_encoding_degree,coarse_spread,correlation_spread,correlation_distance,correlation_spatial_encoding_degree)
-        nt = 500
+        nt = 100
 
         
         dt = len(self.cds.time)//nt
         
         
-        self.cds = self.cds.isel(time = np.arange(nt)*dt + dt//2)
-        self.fds = self.fds.isel(time = np.arange(nt)*dt + dt//2)
+        self.cds = self.cds.isel(time = np.arange(nt)*dt)
+        self.fds = self.fds.isel(time = np.arange(nt)*dt)
         
         self.len_axes = {}
         for dim in 'lat lon depth time'.split():
@@ -304,6 +304,7 @@ def main():
 
     
     sigma = 4
+    
     deconv = DeconvolutionFeatures(sigma,cds,fds,spatial_encoding_degree = 1,coarse_spread=1)
     nlat,nlon = [len(cds[dim]) for dim in 'lat lon'.split()]
     nt = 100
