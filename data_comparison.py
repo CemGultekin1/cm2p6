@@ -27,47 +27,34 @@ def main():
     
     
     rename = {'yu_ocean':'lat','xu_ocean':'lon',\
-                'usurf':'u','vsurf':'v'}#'S_x':'Su','S_y':'Sv',
+                'usurf':'u','vsurf':'v','S_x':'Su','S_y':'Sv'}
 
     rename1 = {'yu_ocean':'ulat','xu_ocean':'ulon',\
                 'yt_ocean':'tlat','xt_ocean':'tlon',\
                 'usurf':'u','vsurf':'v','surface_temp':'temp'}
     forces = forces.rename(
         rename
-    ).drop('xt_ocean yt_ocean'.split()).u
+    ).drop('xt_ocean yt_ocean'.split()).isel(time = 0)
 
     # path1 = os.path.join(TEMPORARY_DATA,'arthur_data.nc')
     # forces.to_netcdf(path1)
 
-    filtered = just_filtering(ds.drop('surface_temp').fillna(0),grid_data,(sigma/2,sigma/2)).rename(**rename).drop('xt_ocean yt_ocean'.split())
+
     ds = grid_data.rename(rename1)
     ds['depth'] = [0]
-    hrcm = HighResCm2p6(ds.fillna(0),sigma,filtering = 'gaussian')
-    
-    ds1 = ds.rename({'ulat':'lat','ulon':'lon'})
-
-    _,(cu,_) = hrcm.ugrid_subgrid_forcing(
-        dict(u = ds1.u,v = ds1.v),'u v'.split(),'Su Sv'.split()
-    )
-    cu = cu['u'].drop('depth')
-
-    coarsened =filtered.coarsen({'lon': int(sigma),
-                                    'lat': int(sigma)},
-                                    boundary='trim').mean().u
-    coarsened,forces,cu = [x.isel(time = 0) for x in [coarsened,forces,cu]]
+    hrcm = HighResCm2p6(ds,sigma,filtering = 'gaussian')
     
     data_vars,coords = hrcm[0]
     x = xr.Dataset(data_vars = data_vars,coords = coords)
-    x = x.isel(time = 0,depth = 0).drop('time depth'.split()).u
-    plot_ds(
-        {'arthur_coarsened':coarsened,
-         'arthur_coarsened1':forces,
-        'my_coarsened':cu,
-        'my_coarsened1':x,
-        'err0': np.log10(np.abs(coarsened - cu)),
-        'err1': np.log10(np.abs(coarsened - forces)),
-        'err2': np.log10(np.abs(x - cu))},'arthur_forces.png',ncols = 3
+    x = x.isel(time = 0,depth = 0).drop('time depth'.split()).drop('Stemp temp'.split())
+    print(x)
+    print(forces)
+    x1 = x.rename(
+        {key:'cem'+key for key in x.data_vars.keys()}
     )
-    
+    f = xr.merge([x1,forces])
+    plot_ds(f,'arthur_forces.png',ncols = 3,)
+    err = np.log10(np.abs(x - forces))
+    plot_ds(err,'arthur_forces_err.png',ncols = 3,)
 if __name__ == '__main__':
     main()
