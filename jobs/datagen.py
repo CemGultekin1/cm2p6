@@ -8,7 +8,7 @@ JOBNAME = 'datagen'
 root = JOBS
 
 NCPU = 3
-NSEC = 10
+NSEC = 15
 PERCPU = 50
 def python_args():
     def givearg(filtering,sigma,depth,section):
