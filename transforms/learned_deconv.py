@@ -4,15 +4,12 @@ from transforms.coarse_graining import BaseTransform
 import xarray as xr
 import numpy as np
 import itertools
-
     
 class DeconvolutionFeatures(BaseTransform):
     def __init__(self, sigma, cds:xr.Dataset,fds:xr.Dataset,\
-                    spatial_encoding_degree:int = 4,\
-                    coarse_spread : int = 10,\
-                    correlation_spread:int = 2,\
-                    correlation_distance:int = 2,\
-                    correlation_spatial_encoding_degree:int = 1):
+                spatial_encoding_degree=5,coarse_spread=10,\
+                correlation_spread=3,correlation_distance=2,\
+                correlation_spatial_encoding_degree=2):
         super().__init__(sigma,None,)
         self.dims = 'lat lon ulat ulon tlat tlon'.split()
         self.fine_spread = sigma
@@ -23,10 +20,13 @@ class DeconvolutionFeatures(BaseTransform):
         self.fine_shape = shpfun(self.fine_spread)
         self.coarse_shape = shpfun(self.coarse_spread)
         self.cds,self.fds = cds,fds
-        self.correlation_distance = correlation_distance
+        
         self.spatial_encoding_degree = spatial_encoding_degree
-        self.correlation_spread = correlation_spread
-        self.correlation_spatial_encoding_degree = correlation_spatial_encoding_degree
+        
+        # self.correlation_distance = correlation_distance
+        # self.correlation_spread = correlation_spread
+        # self.correlation_spatial_encoding_degree = correlation_spatial_encoding_degree
+        
         if self.cds is not None:
             self.varnames= [key for key in self.cds.data_vars.keys() if 'S'+key in self.cds.data_vars]
             keys = list(self.cds.data_vars.keys())
@@ -37,13 +37,14 @@ class DeconvolutionFeatures(BaseTransform):
             for var in keys:
                 if var not in self.varnames:
                     self.fds = self.fds.drop(var)
-
         self.hann_window = self.fine_grid_hann_window()
         self.xx = None
         self.xy = None
         self.xy_moment = None
         self.solution = None
-    def get_geo_features(self,cds):
+        self.get_geo_features()
+    def get_geo_features(self,):
+        cds = self.cds
         self.latlon_feats = []
         latfeats = cds.lat.values.reshape([-1,1])/90*2*np.pi
         lonfeats = cds.lon.values.reshape([1,-1])/180*2*np.pi
@@ -58,8 +59,7 @@ class DeconvolutionFeatures(BaseTransform):
             fourier_components.append(np.sin(feats))
             sorting.append(i+j)
         x = np.argsort(sorting)
-        fourier_components = [fourier_components[i] for i in x]
-        return fourier_components
+        self.fourier_components = [fourier_components[i] for i in x]
         
     def center(self,cds,fine_index,spread):  
         dims = [dim for dim in self.dims if dim in cds.coords]
@@ -86,9 +86,9 @@ class DeconvolutionFeatures(BaseTransform):
     def coarse_grid_center(self,itime,ilat,ilon,idepth):
         fine_index = self.multiply_index([i for i in (ilat,ilon)])
         sel_dict = {key:val for key,val in dict(time = itime).items() if key in self.cds.coords}
-        corr_sp = self.correlation_spread
-        if corr_sp > 0:
-            corr_sp -= 1
+        # corr_sp = self.correlation_spread
+        # if corr_sp > 0:
+        #     corr_sp -= 1
         cds = self.center(self.cds.isel(**sel_dict),fine_index,self.coarse_spread)
         return cds
     def fine_grid_hann_window(self,):
@@ -102,22 +102,21 @@ class DeconvolutionFeatures(BaseTransform):
         x = cds.values.squeeze()
         x1 = x.flatten()
        
-        x1s = [x1*feat.flatten() for feat in feats]
+        x1s = [x1*feat for feat in feats]
         
-        corrsp = self.correlation_spread
-        corrds = self.correlation_distance
-        corrspan = 2*corrsp + 1
-        corrsp1 = corrsp + corrds
-        slc1 = slice(self.coarse_spread - corrsp,self.coarse_spread + corrsp1+1)
-        slc2 = slice(self.coarse_spread - corrsp,self.coarse_spread + corrsp+1)
-        x1 = x[slc1,slc1]
-        x2 = x[slc2,slc2]
-        x2s = []        
-        for di,dj in itertools.product(*[range(corrds+1)]*2):            
-            x2i = x1[di:di + corrspan,dj:dj + corrspan]*x2
-            x2s.append(x2i)
-
-        x1s = x1s +  [x2.flatten()*feat[slc2,slc2].flatten() for x2 in x2s for feat in feats[:2*self.correlation_spatial_encoding_degree**2 - 1]]
+        # corrsp = self.correlation_spread
+        # corrds = self.correlation_distance
+        # corrspan = 2*corrsp + 1
+        # corrsp1 = corrsp + corrds
+        # slc1 = slice(self.coarse_spread - corrsp,self.coarse_spread + corrsp1+1)
+        # slc2 = slice(self.coarse_spread - corrsp,self.coarse_spread + corrsp+1)
+        # x1 = x[slc1,slc1]
+        # x2 = x[slc2,slc2]
+        # x2s = []        
+        # for di,dj in itertools.product(*[range(corrds+1)]*2):            
+        #     x2i = x1[di:di + corrspan,dj:dj + corrspan]*x2
+        #     x2s.append(x2i)
+        # x1s = x1s +  [x2.flatten()*feat for x2 in x2s for feat in feats]
         x1s = np.concatenate(x1s)
         return x1s
     def add(self,xx,varname):
@@ -132,7 +131,7 @@ class DeconvolutionFeatures(BaseTransform):
         fds = self.fine_grid_center(it,ilat,ilon,idepth)
         cds = cds.fillna(0)
         fds = fds.fillna(0)
-        feats = self.get_geo_features(cds)
+        feats = [feat[ilat,ilon] for feat in self.fourier_components]
         prods = {}
         for varname in self.varnames:
             x = self.feature_vector(cds[varname],feats)
@@ -165,14 +164,33 @@ def compute_section_limits(len_axes,section):
 
 import torch
 class DeconvolutionTransform(DeconvolutionFeatures):
-    def __init__(self, sigma, solution, spatial_encoding_degree: int = 4):
-        super().__init__(sigma, None, None, spatial_encoding_degree)
+    def __init__(self, sigma, solution, **kwargs):
+        super().__init__(sigma,None,None,**kwargs)
         
         self.feature_map = None
-        self.num_feats = 2*self.spatial_encoding_degree**2 - 1
-        solution = solution.values.reshape([self.num_feats,-1,self.fspan**2]).transpose((2,0,1)).reshape([-1,self.num_feats,self.cspan,self.cspan])
-        self.conv1 = torch.nn.Conv2d(solution.shape[0],solution.shape[1],(self.cspan),bias= False,)
-        self.conv1.weight.data = torch.from_numpy(solution,).type( torch.float32)
+        # self.spatial_encoding_degree = 3
+        # self.correlation_spatial_encoding_degree = 1
+        num_chan1 = (2*self.spatial_encoding_degree**2 - 1)
+        # num_chan2 = (2*self.correlation_spatial_encoding_degree**2 - 1)*(self.correlation_distance+1)**2
+        num_outs = self.fspan**2
+        num_feats1 = num_chan1*self.cspan**2
+        # corrspan = self.correlation_spread*2+1
+        # num_feats2 = num_chan2*corrspan**2 * 0
+        
+        num_feats = num_feats1 #+ num_feats2
+        
+        sol = solution.values.reshape([num_feats,num_outs])
+        
+        sol1 = sol[:num_feats1,:]
+        
+        
+        
+        sol1 = sol1.reshape([num_chan1,-1,num_outs]).transpose((0,2,1)).reshape([num_chan1,num_outs,self.cspan,self.cspan])
+        self.conv1s = []
+        for k in range(sol1.shape[0]):
+            ncov = torch.nn.Conv2d(1,sol1.shape[1],(self.cspan),bias= False,)
+            ncov.weight.data = torch.from_numpy(sol1[k:k+1]).type( torch.float32)
+            self.conv1s.append(ncov)
         self.create_aligned_sum_convolution()
     def create_aligned_sum_convolution(self,):
         x = np.zeros((self.sigma,self.sigma,self.fspan,self.fspan,2,2))
@@ -185,31 +203,27 @@ class DeconvolutionTransform(DeconvolutionFeatures):
         x = x.reshape([self.sigma**2,self.fspan**2,2,2])
         self.conv2 = torch.nn.Conv2d(self.sigma**2,self.fspan**2,(2),bias= False,)
         self.conv2.weight.data = torch.from_numpy(x).type(torch.float32)
-    def effective_filter(self,cds,ilat,ilon):        
-        fine_index = self.multiply_index([i for i in (ilat,ilon)])
-        subcds = self.center(cds,fine_index,self.coarse_spread).fillna(0)
-        feats = self.get_geo_features(subcds)
-        feats = np.concatenate(feats,).reshape([self.num_feats,-1,1])
-        solv = self.solution.values.reshape([self.num_feats,-1,self.fspan**2])
-        eff_filts = np.sum(feats*solv,axis = 0)
-        eff_filts = eff_filts.reshape([self.cspan,self.cspan,self.fspan,self.fspan])
-        return eff_filts
-    def create_feature_maps(self,cds):
-        feats = self.get_geo_features(cds.fillna(0))
-        feats = [f.reshape(cds.shape) for f in feats]
-        feats = np.stack(feats,axis = 0)
-        self.feature_map = feats
+   
+    def extension(self,x,spread):
+        x = np.concatenate([x[:,-spread:],x,x[:,:spread+1]],axis = 1)
+        x = np.concatenate([x[:,:,-spread:],x,x[:,:,:spread+1]],axis = 2)
+        return x
     def eval(self,cds,):
         x = cds.fillna(0).values.squeeze()
         x = x.reshape([1,x.shape[0],x.shape[1]])
-        x = x*self.feature_map
-        x = np.concatenate([x[:,-self.coarse_spread:],x,x[:,:self.coarse_spread+1]],axis = 1)
-        x = np.concatenate([x[:,:,-self.coarse_spread:],x,x[:,:,:self.coarse_spread+1]],axis = 2)
-        x = np.stack([x],axis = 0)
-        x = torch.from_numpy(x).type(torch.float32)
-        with torch.no_grad():
-            y = self.conv1(x)
-            y = self.conv2(y)
+        x1 =  self.extension(x,self.coarse_spread)
+        x1 = np.stack([x1],axis = 0)
+        x1 = torch.from_numpy(x1).type(torch.float32)        
+        y = None
+        for conv,fcomp in zip(self.conv1s,self.fourier_components):
+            with torch.no_grad():
+                y_ = conv(x1)*fcomp
+                y_ = self.conv2(y_)
+            if y is None:
+                y = y_
+            else:
+                y+= y_
+    
         y = y.numpy()
         y = y[0]
         nlat,nlon = y.shape[1],y.shape[2]
@@ -290,11 +304,11 @@ def main():
 
     
     sigma = 4
-    deconv = DeconvolutionFeatures(sigma,cds,fds,spatial_encoding_degree = 2,correlation_spread=3)
+    deconv = DeconvolutionFeatures(sigma,cds,fds,spatial_encoding_degree = 1,coarse_spread=1)
     nlat,nlon = [len(cds[dim]) for dim in 'lat lon'.split()]
     nt = 100
     k = 0
-    while k < 100:
+    while k < 10:
     # for it,ilat,ilon in itertools.product(np.arange(nt)*5,range(nlat),range(nlon)):
         it = np.random.randint(nt)*5
         ilat = np.random.randint(nlat)
@@ -308,6 +322,8 @@ def main():
         if k % 500 == 0:
             deconv.solve()
     deconv.solve()
+    # return
+    ev = DeconvolutionTransform(sigma,deconv.solution,)
     import matplotlib.pyplot as plt
     k= 0
     while k < 16:

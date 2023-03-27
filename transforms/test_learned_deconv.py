@@ -1,5 +1,6 @@
 
 from data.load import load_learned_deconv
+from data.paths import get_learned_deconvolution_location
 from transforms.learned_deconv import DeconvolutionTransform
 import numpy as np
 from utils.xarray import plot_ds
@@ -11,27 +12,11 @@ import itertools
 def main():
     sigma = 4
     args = f'--sigma {sigma} --filtering gcm --lsrp 0 --mode data'.split()
-    dfw = load_learned_deconv(args).isel(grid = 0,depth = 0)
+    path = get_learned_deconvolution_location(args,preliminary = False).replace('.nc','_.nc')
+    dfw = xr.open_dataset(path)
     print(dfw)
+        
     
-    # xx = dfw.xx.values
-    # xy = dfw.xy.values
-    # xxhalf = np.linalg.cholesky(xx + 1e-3*np.eye(xx.shape[0]))
-    # coeffs = np.linalg.solve(xxhalf.T,np.linalg.solve(xxhalf,xy))
-    # coeffs = dfw.coeffs.values.reshape([11,11,4,4,2,9,9])
-    # nr = 9
-    # fig,axs = plt.subplots(nr,nr,figsize = (30,30))
-    # for i,j in itertools.product(range(nr),range(nr)):
-    #     y = coeffs[...,1,1,1,i,j]
-    #     vmax = np.amax(np.abs(y))
-    #     ax = axs[i,j]
-    #     pos = ax.imshow(y,cmap = 'bwr',vmin = -vmax,vmax = vmax)
-    #     fig.colorbar(pos,ax = ax)
-    # fig.savefig('filters_look.png')
-        
-        
-        
-    # return
     from data.load import load_xr_dataset
     args = '--sigma 4 --filtering gcm'.split()
     cds,_ = load_xr_dataset(args,high_res = False)
@@ -40,12 +25,13 @@ def main():
     time = 1234
     cds = cds[varname].isel(time = time)
     
+    grid_ind = 1 if varname == 'temp' else 0
+    dfw = dfw.isel(grid = grid_ind,depth = 0)
     coeffs = dfw.coeffs
-    degree = 3 #int(np.sqrt(coeffs.shape[0]//11**2//2))
-    ev = DeconvolutionTransform(sigma,coeffs,degree = degree)
+    # degree = 3 #int(np.sqrt(coeffs.shape[0]//11**2//2))
+    ev = DeconvolutionTransform(sigma,coeffs,)
     ev.create_feature_maps(cds)
     ypred = ev.eval(cds,)
-
     # key = 't' if varname == 'temp' else 'u'
     iseldict = {}#key+dim:slice(limits[2*i]*sigma,limits[2*i+1]*sigma) for i,dim in enumerate('lat lon'.split())}
     ytrue = fds[varname].isel(time = time,**iseldict).fillna(0).values
@@ -80,9 +66,9 @@ def main():
         ax = axs[i,2]
         pos = ax.imshow(np.abs(yp - yt), cmap = 'seismic',vmin = 0)
         fig.colorbar(pos,ax = ax)
-    
-    fig.savefig('predicted_hres.png')
-    
+    filename = f'predicted_hres_{varname}.png'
+    fig.savefig(filename)
+    print(filename)
 
 if __name__ == '__main__':
     main()
