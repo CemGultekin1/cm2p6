@@ -2,8 +2,8 @@ from utils.paths import ENV_PATH
 def job(argsfile,python_file,add_eval:bool = False,**kwargs):
     head = ["#!/bin/bash"]
     intro = [f"#SBATCH --{key.replace('_','-')}={val}" for key,val in kwargs.items()]
+    dateline = [f"echo \"$(date)\""]
     bashline = [
-        f"echo \"$(date)\"",
         f"ARGS=$(sed -n \"$SLURM_ARRAY_TASK_ID\"p {argsfile})"
     ]
     env = ENV_PATH
@@ -17,7 +17,7 @@ def job(argsfile,python_file,add_eval:bool = False,**kwargs):
         codebody.append(f"python3 run/eval.py $ARGS --mode eval;")
     codebody = ['\t' + cb + '\\' for cb in codebody]
     codebody.append('\t\"')
-    return "\n".join(head + intro + bashline + bodystart + codebody)
+    return "\n".join(head +  intro + dateline + bashline + bodystart + codebody + dateline)
 
 def create_slurm_job(path,python_file = 'run/train.py',**kwargs):
     argsfile = path.replace('.s','.txt')
