@@ -1,10 +1,5 @@
 from argparse import ArgumentTypeError
 
-USUAL_PARAMS = {
-    "depth" : (0,5,55,110,181,330,728),
-    "sigma" : (4,8,12,16),
-}
-
 SCALAR_PARAMS = {
     "sigma" : {"type": int, "choices" : (4,8,12,16)},    
 }
@@ -34,10 +29,6 @@ EVAL_PARAMS = {
     "modelid" : {"type":str,"default" : ""},
     "dataids" : {"type":str, "nargs":'+',"default" : ""}
 }
-
-
-
-
 
 
 ARCH_PARAMS = {
@@ -75,6 +66,12 @@ TRAIN_PARAMS = dict(TRAIN_PARAMS,**DATA_PARAMS)
 MODEL_PARAMS = dict(TRAIN_PARAMS,**ARCH_PARAMS)
 RUN_PARAMS = dict(MODEL_PARAMS,**RUN_PARAMS)
 
+
+
+USUAL_PARAMS = {
+    "depth" : (0,5,55,110,181,330,728),
+    "sigma" : (4,8,12,16),
+}
 
 
 def str2bool(v):
@@ -136,3 +133,4 @@ def replace_param(args,param,newval):
         args.append(param_)
         args.append(newval)
     return args
+

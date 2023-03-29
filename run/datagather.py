@@ -4,7 +4,7 @@ from data.paths import get_low_res_data_location, get_preliminary_low_res_data_l
 from utils.slurm import flushed_print
 import xarray as xr
 import numpy as np
-NSEC= 10
+NSEC= 15
 def append_zarr(path0,path1,overwrite):
     if not os.path.exists(path1):
         print(path1.split('/')[-1])

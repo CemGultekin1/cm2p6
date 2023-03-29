@@ -10,7 +10,7 @@ def main():
     paths = os.listdir(root)
     sigmas = [int(p.split('_')[1]) for p in paths]
     surf = ['beneath' not in p for p in paths]
-    paths = [p for p,s,sr in zip(paths,sigmas,surf) if s == sigma and not sr]
+    paths = [p for p,s,sr in zip(paths,sigmas,surf) if s == sigma and sr]
     for path in paths:
         ds = xr.open_zarr(os.path.join(root,path))
         if 'u' not in ds.data_vars:
