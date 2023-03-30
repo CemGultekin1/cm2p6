@@ -15,17 +15,15 @@ class plain_coarse_grain(BaseTransform):
         self.coarse_wet_density = self.grid.wet_mask.coarsen(**self._coarse_specs).mean()
         self.coarse_wet_mask = xr.where(self.coarse_wet_density>0,1,0)
     def __call__(self,x):
-        forcing_coarse = x.fillna(0).coarsen(**self._coarse_specs).mean()
-        forcing_coarse = xr.where(self.coarse_wet_mask,forcing_coarse,np.nan)
+        forcing_coarse = x.coarsen(**self._coarse_specs).mean()
+        # forcing_coarse = xr.where(self.coarse_wet_mask,forcing_coarse,np.nan)
         return  forcing_coarse
 
 class greedy_coarse_grain(plain_coarse_grain):
     def __call__(self,x,greedy = True):
         if greedy:
-            # wet_mask = xr.where(np.isnan(x),0,1)
-            forcing_coarse = x.fillna(0).coarsen(**self._coarse_specs).mean()
-            # wet_mask_coarse = wet_mask.coarsen(**self._coarse_specs).mean()
-            return forcing_coarse/self.coarse_wet_density#/wet_mask_coarse
+            forcing_coarse = x.coarsen(**self._coarse_specs).mean()
+            return forcing_coarse/self.coarse_wet_density
         else:
             return super().__call__(x)
 
@@ -59,29 +57,37 @@ class gcm_filtering(filtering):
     def filter(self,x):
         return self._gcm.apply(self.grid.area*x,dims =  self.dims)
 
+
+
+def stacked_gaussian_filter(data,*args,**kwargs):
+    result = np.zeros_like(data)
+    for i,data_ in enumerate(data):
+        result[i] = gaussian_filter(data_, *args,**kwargs)
+    return result
+
 class scipy_filtering(filtering):
     def filter(self,x):
         output = xr.apply_ufunc(\
-            lambda data: gaussian_filter(data, self.sigma/2, mode='wrap'),\
-            x.fillna(0)*self.grid.area,dask='parallelized', output_dtypes=[float, ])
+            lambda data: stacked_gaussian_filter(data, self.sigma/2, mode='wrap'),\
+            x*self.grid.area,dask='parallelized', output_dtypes=[float, ])
         return output
         
     def base_filter(self,x):
         return xr.apply_ufunc(\
-            lambda data: gaussian_filter(data, self.sigma/2, mode='wrap'),\
+            lambda data: stacked_gaussian_filter(data, self.sigma/2, mode='wrap'),\
             x,dask='parallelized', output_dtypes=[float, ])
 
 class greedy_scipy_filtering(filtering):
     def filter(self,x):
-        wet_mask = xr.where(np.isnan(x),0,1)
+        # wet_mask = xr.where(np.isnan(x),0,1)
         output = xr.apply_ufunc(\
-            lambda data: gaussian_filter(data, self.sigma/2, mode='wrap'),\
-            x.fillna(0)*self.grid.area*wet_mask,dask='parallelized', output_dtypes=[float, ])
-        output = xr.where(wet_mask,output,np.nan)
+            lambda data: stacked_gaussian_filter(data, self.sigma/2, mode='wrap'),\
+            x*self.grid.area*self.grid.wet_mask,dask='parallelized', output_dtypes=[float, ])
+        # output = xr.where(wet_mask,output,np.nan)
         return output
     def base_filter(self,x):
         return xr.apply_ufunc(\
-            lambda data: gaussian_filter(data, self.sigma/2, mode='wrap'),\
+            lambda data: stacked_gaussian_filter(data, self.sigma/2, mode='wrap'),\
             x*self.grid.wet_mask,dask='parallelized', output_dtypes=[float, ])
 
 

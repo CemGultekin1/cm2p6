@@ -16,12 +16,40 @@ from utils.arguments import options
 import numpy as np
 import torch
 
+def flattened_grid_spacing(ds:xr.Dataset):
+    xu = ds.xu_ocean.values
+    yu = ds.yu_ocean.values
+    earth_radius_in_meters = 6.3710072e6
+    
+    dxu = xu[1:] - xu[:-1]
+    dxu = np.median(dxu)*np.ones(xu.shape)
+    dxu = dxu*earth_radius_in_meters/180*np.pi
+    dxu = dxu.reshape([1,-1])*np.ones((len(yu),1))
+    
+    dyu = yu[1:] - yu[:-1]
+    dyu = np.concatenate([dyu,dyu[-1:]])
+    dyu = dyu*earth_radius_in_meters/180*np.pi
+    dyu = dyu.reshape([-1,1])*np.ones((1,len(xu)))
+    ds['dxu'] = (('yu_ocean','xu_ocean'),dxu)
+    ds['dyu'] = (('yu_ocean','xu_ocean'),dyu)
+    ds['dxt'] = (('yt_ocean','xt_ocean'),dxu)
+    ds['dyt'] = (('yt_ocean','xt_ocean'),dyu)
+    return ds
+    
+    
 
-def load_grid(ds:xr.Dataset,):
-    grid_loc = xr.open_dataset(get_high_res_grid_location())
-    passkeys = ['xu_ocean','yu_ocean','xt_ocean','yt_ocean','dxu','dyu','dxt','dyt']#,'area_t',]
+
+def load_grid(ds:xr.Dataset,spacing = 'asis'):
+    if spacing != 'asis':
+        grid_loc =  flattened_grid_spacing(ds)
+    else:
+        grid_loc = xr.open_dataset(get_high_res_grid_location())
+    passkeys = ['dxu','dyu','dxt','dyt']#,'area_t',]
+    st_oceans = ds.st_ocean.values
     for key in passkeys:
-        ds[key] = grid_loc[key]
+        val = grid_loc[key]
+        val = val.expand_dims(dim = {'st_ocean': st_oceans},axis = 0)
+        ds[key] = val
     return ds
 
 def load_filter_weights(args,utgrid='u',svd0213 = False):
@@ -96,7 +124,9 @@ def load_xr_dataset(args,high_res = None):
         raise RequestDoesntExist
     ds_zarr= xr.open_zarr(data_address,consolidated=False )
     if high_res:  
-        ds_zarr = load_grid(ds_zarr)
+        if runargs.depth == 0:
+            ds_zarr = ds_zarr.expand_dims(dim = {'st_ocean':[0]},axis = 1)
+        ds_zarr = load_grid(ds_zarr,spacing = runargs.spacing)
     if runargs.sanity:
         ds_zarr = ds_zarr.isel(time = slice(0,1))
     ds_zarr,scs=  preprocess_dataset(args,ds_zarr,high_res)
@@ -310,12 +340,14 @@ def preprocess_dataset(args,ds:xr.Dataset,high_res_flag:bool ):
             if np.abs(ds.depth.values-prms.depth)>1:
                 print(f'requested depth {prms.depth},\t existing depth = {ds.depth.values}')
                 raise RequestDoesntExist
-    else:
-        ds['depth'] = [0]
+    else:        
         if prms.mode != 'data':
+            ds['depth'] = [0]
             ds = ds.isel(depth = 0)
             if prms.mode != 'scalars':
                 scs = scs.isel(depth = 0)
+            
+
     if prms.mode in ['train','eval','view'] and 'tr_depth' in ds.coords:
         depthval = ds.depth.values
         trd = ds.tr_depth.values

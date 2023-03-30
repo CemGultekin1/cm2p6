@@ -21,16 +21,16 @@ def check_existing_datasets():
     plt.savefig('different_datasets.png')
 def check_forcings():
     # root = '/scratch/zanna/data/cm2.6/coarse_datasets/'
-    root = '/scratch/cg3306/climate/CM2P6Param/saves/data/'
+    root = '/scratch/cg3306/climate/outputs/data/'
     import xarray as xr
     select = dict(time = 0,depth =0)#,lat = range(100,500),lon = range(100,500))
     files = [
-        '/scratch/zanna/data/cm2.6/coarse_datasets/coarse_4_beneath_surface_gaussian.zarr',
+        root + f'coarse_4_surface_gaussian_0_1_flat.zarr',
         root + f'coarse_4_surface_gaussian_0_1.zarr'
     ]
     dss = {i:xr.open_zarr(f).isel(**select) for i,f in enumerate(files)}
     # dss = {i:xr.open_zarr(root + f'coarse_4_surface_gcm_0_{i}.zarr').isel(**select) for i in [1,10]}
-    fields = [f'S{x}{y}' for x in 'u v temp'.split() for y in ['','_res']] + 'u v temp'.split()
+    fields = [f'S{x}{y}' for x in 'u v temp'.split() for y in ['',]] + 'u v temp'.split()#'_res'
     k0,k1 = list(dss.keys())
     import matplotlib.pyplot as plt
     for f in fields:
@@ -40,7 +40,7 @@ def check_forcings():
             
             v0 = dss[k0][f]
             v1 = dss[k1][f]
-            adv = np.abs(v1)/np.abs(v0)
+            adv = v1 - v0
             fs = [v0,v1,adv]
 
             if ir==0:
@@ -63,16 +63,20 @@ def check_forcings():
             n2 = np.nanmean(np.abs(adv)**2)
             
             if ir == 1:
-                adv.plot(ax = axs[ir,2],vmin = 0)
+                adv.plot(ax = axs[ir,2],)
             else:
                 adv.plot(ax = axs[ir,2])#,vmin = 0,vmax = 2)
+            # if ir == 0:
+            #     title = 'in logscale'
+            # else:
+            #     title = ''
+            # axs[ir,0].set_title(f'without land correction {title}')
+            # axs[ir,1].set_title(f'with land correction {title}')
             if ir == 0:
-                title = 'in logscale'
-            else:
-                title = ''
-            axs[ir,0].set_title(f'without land correction {title}')
-            axs[ir,1].set_title(f'with land correction {title}')
-            axs[ir,2].set_title(f'|land_corrected|/|default| {title}')
+                axs[ir,0].set_title(files[0].split('/')[-1])
+                axs[ir,1].set_title(files[1].split('/')[-1])
+                axs[ir,2].set_title('diff')
+            # axs[ir,2].set_title(f'|land_corrected|/|default| {title}')
 
                 
         print(f + '.png')

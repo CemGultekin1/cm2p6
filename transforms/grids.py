@@ -100,6 +100,7 @@ class ugrid2tgrid_interpolation:
         self.ugrid = ugrid
         self.tgrid = tgrid
     def __call__(self,u,v):
+        
         dlat = self.ugrid.dy*self.ugrid.wet_mask
         dlon = self.ugrid.dx*self.ugrid.wet_mask
 
@@ -109,17 +110,16 @@ class ugrid2tgrid_interpolation:
         wu = dlat*u.fillna(0)
         wv = dlon*v.fillna(0)
 
-        ut = (wu + wu.roll(lon = -1))/mdlat
-        vt = (wv + wv.roll(lon = -1))/mdlon
+        ut = (wu + wu.roll(lon = -1).fillna(0))/mdlat
+        vt = (wv + wv.roll(lon = -1).fillna(0))/mdlon
 
 
         coords = {key:val for key,val in self.tgrid.coords.items() if key in 'lat lon'.split()}
-        ut = ut.assign_coords(**coords)
-        vt = vt.assign_coords(**coords)
+        ut = ut.assign_coords(**coords).fillna(0)
+        vt = vt.assign_coords(**coords).fillna(0)
         
-        ut = xr.where(self.tgrid.wet_mask,ut,np.nan)
-        vt = xr.where(self.tgrid.wet_mask,vt,np.nan)
-        
+        # ut = xr.where(self.tgrid.wet_mask,ut,0)
+        # vt = xr.where(self.tgrid.wet_mask,vt,0)
         return ut,vt
 
 
@@ -163,7 +163,7 @@ def get_grid_vars(grid:xr.Dataset,):
         name_lat = f"{prefix}lat"
         kwargs = dict(
             coords = dict(
-                lat = grid[name_lat].values,lon = grid[name_lon].values,
+                depth = grid['depth'].values,lat = grid[name_lat].values,lon = grid[name_lon].values,
             ),
         )
         dx = xr.DataArray(

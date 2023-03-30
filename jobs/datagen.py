@@ -11,8 +11,10 @@ NCPU = 3
 NSEC = 15
 PERCPU = 50
 def python_args():
-    def givearg(filtering,sigma,depth,section):
+    def givearg(filtering,sigma,depth,section):        
         st =  f"--minibatch 1 --prefetch_factor 1 --depth {depth} --sigma {sigma} --section {section} --mode data --num_workers {NCPU} --filtering {filtering}"
+        if filtering == 'gaussian':
+            st += " --spacing long_flat"
         return st
     
     filtering = ['gaussian','gcm']

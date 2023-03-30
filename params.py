@@ -14,6 +14,7 @@ DATA_PARAMS = {
     "filtering" :  {"type": str, "choices" : ["gcm","gaussian","greedy_gaussian"]},
     "depth" : {"type": float, "default" : 0.},
     "co2" : {"type":bool,"default":False},
+    "spacing" : {"type":str,"choices":["asis","long_flat"]}
 }
 
 

@@ -23,10 +23,11 @@ class base_subgrid_forcing(BaseTransform):
         Takes their fine-grid derivatives across latitude and longitude
         Returns the fine-grid objects and their coarse-grid counterparts and their coarse-grid derivatives across latitude and longitude 
         '''
-        dlat = {f"dlat_{x}":forward_difference(y.fillna(0),self.grid[self.grid_separation[0]],self.dims[0]) for x,y in hresdict.items()}
-        dlon = {f"dlon_{x}":forward_difference(y.fillna(0),self.grid[self.grid_separation[1]],self.dims[1]) for x,y in hresdict.items()}
+        dlat = {f"dlat_{x}":forward_difference(y,self.grid[self.grid_separation[0]],self.dims[0]) for x,y in hresdict.items()}
+        dlon = {f"dlon_{x}":forward_difference(y,self.grid[self.grid_separation[1]],self.dims[1]) for x,y in hresdict.items()}
         hres_flux = dict(**dlat,**dlon)
         return hres_flux
+    # def get_wet_density(self,)
     def __call__(self,hres,keys,rename,lres = {},clres = {}):
         lres = {x:self.filtering(y) if x not in lres else lres[x] for x,y in hres.items()}
         clres = {key:self.coarse_grain(x) if key not in clres else clres[key] for key,x in lres.items()}
@@ -47,7 +48,17 @@ class base_subgrid_forcing(BaseTransform):
         adv1 = self.filtering(adv1)
         adv2 = lresvars[u]*lres_flux[f"dlon_{key}"] + lresvars[v]*lres_flux[f"dlat_{key}"]
         return  adv2 - adv1
+class WetMasks(BaseTransform):
+    def __init__(self, sigma, ugrid,tgrid, *args, dims=..., **kwargs):
+        super().__init__(sigma, ugrid, *args, dims=dims, **kwargs)
+        self.ugrid = ugrid
+        self.tgrid = tgrid
+        self.interior_ocean_spread = 3*sigma
+    def generate_mask(self,dpethi):
+        gi = self.grid.isel(depth = dpethi)
 
+            
+            
 
 class base_lsrp_subgrid_forcing(base_subgrid_forcing):
     inv_filtering_class = None

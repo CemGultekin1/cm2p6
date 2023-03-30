@@ -1,123 +1,123 @@
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 4 --section 0 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 4 --section 1 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 4 --section 2 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 4 --section 3 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 4 --section 4 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 4 --section 5 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 4 --section 6 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 4 --section 7 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 4 --section 8 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 4 --section 9 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 4 --section 10 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 4 --section 11 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 4 --section 12 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 4 --section 13 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 4 --section 14 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 4 --section 0 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 4 --section 1 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 4 --section 2 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 4 --section 3 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 4 --section 4 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 4 --section 5 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 4 --section 6 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 4 --section 7 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 4 --section 8 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 4 --section 9 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 4 --section 10 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 4 --section 11 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 4 --section 12 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 4 --section 13 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 4 --section 14 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 8 --section 0 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 8 --section 1 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 8 --section 2 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 8 --section 3 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 8 --section 4 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 8 --section 5 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 8 --section 6 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 8 --section 7 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 8 --section 8 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 8 --section 9 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 8 --section 10 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 8 --section 11 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 8 --section 12 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 8 --section 13 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 8 --section 14 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 8 --section 0 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 8 --section 1 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 8 --section 2 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 8 --section 3 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 8 --section 4 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 8 --section 5 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 8 --section 6 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 8 --section 7 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 8 --section 8 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 8 --section 9 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 8 --section 10 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 8 --section 11 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 8 --section 12 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 8 --section 13 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 8 --section 14 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 12 --section 0 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 12 --section 1 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 12 --section 2 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 12 --section 3 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 12 --section 4 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 12 --section 5 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 12 --section 6 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 12 --section 7 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 12 --section 8 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 12 --section 9 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 12 --section 10 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 12 --section 11 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 12 --section 12 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 12 --section 13 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 12 --section 14 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 12 --section 0 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 12 --section 1 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 12 --section 2 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 12 --section 3 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 12 --section 4 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 12 --section 5 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 12 --section 6 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 12 --section 7 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 12 --section 8 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 12 --section 9 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 12 --section 10 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 12 --section 11 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 12 --section 12 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 12 --section 13 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 12 --section 14 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 16 --section 0 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 16 --section 1 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 16 --section 2 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 16 --section 3 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 16 --section 4 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 16 --section 5 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 16 --section 6 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 16 --section 7 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 16 --section 8 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 16 --section 9 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 16 --section 10 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 16 --section 11 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 16 --section 12 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 16 --section 13 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 0 --sigma 16 --section 14 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 16 --section 0 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 16 --section 1 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 16 --section 2 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 16 --section 3 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 16 --section 4 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 16 --section 5 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 16 --section 6 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 16 --section 7 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 16 --section 8 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 16 --section 9 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 16 --section 10 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 16 --section 11 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 16 --section 12 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 16 --section 13 15 --mode data --num_workers 3 --filtering gaussian
---minibatch 1 --prefetch_factor 1 --depth 5 --sigma 16 --section 14 15 --mode data --num_workers 3 --filtering gaussian
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 4 --section 0 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 4 --section 1 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 4 --section 2 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 4 --section 3 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 4 --section 4 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 4 --section 5 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 4 --section 6 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 4 --section 7 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 4 --section 8 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 4 --section 9 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 4 --section 10 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 4 --section 11 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 4 --section 12 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 4 --section 13 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 4 --section 14 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 4 --section 0 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 4 --section 1 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 4 --section 2 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 4 --section 3 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 4 --section 4 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 4 --section 5 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 4 --section 6 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 4 --section 7 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 4 --section 8 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 4 --section 9 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 4 --section 10 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 4 --section 11 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 4 --section 12 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 4 --section 13 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 4 --section 14 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 8 --section 0 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 8 --section 1 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 8 --section 2 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 8 --section 3 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 8 --section 4 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 8 --section 5 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 8 --section 6 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 8 --section 7 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 8 --section 8 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 8 --section 9 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 8 --section 10 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 8 --section 11 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 8 --section 12 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 8 --section 13 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 8 --section 14 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 8 --section 0 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 8 --section 1 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 8 --section 2 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 8 --section 3 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 8 --section 4 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 8 --section 5 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 8 --section 6 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 8 --section 7 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 8 --section 8 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 8 --section 9 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 8 --section 10 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 8 --section 11 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 8 --section 12 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 8 --section 13 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 8 --section 14 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 12 --section 0 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 12 --section 1 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 12 --section 2 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 12 --section 3 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 12 --section 4 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 12 --section 5 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 12 --section 6 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 12 --section 7 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 12 --section 8 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 12 --section 9 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 12 --section 10 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 12 --section 11 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 12 --section 12 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 12 --section 13 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 12 --section 14 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 12 --section 0 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 12 --section 1 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 12 --section 2 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 12 --section 3 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 12 --section 4 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 12 --section 5 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 12 --section 6 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 12 --section 7 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 12 --section 8 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 12 --section 9 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 12 --section 10 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 12 --section 11 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 12 --section 12 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 12 --section 13 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 12 --section 14 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 16 --section 0 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 16 --section 1 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 16 --section 2 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 16 --section 3 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 16 --section 4 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 16 --section 5 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 16 --section 6 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 16 --section 7 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 16 --section 8 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 16 --section 9 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 16 --section 10 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 16 --section 11 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 16 --section 12 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 16 --section 13 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 16 --section 14 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 16 --section 0 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 16 --section 1 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 16 --section 2 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 16 --section 3 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 16 --section 4 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 16 --section 5 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 16 --section 6 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 16 --section 7 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 16 --section 8 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 16 --section 9 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 16 --section 10 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 16 --section 11 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 16 --section 12 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 16 --section 13 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
+--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 16 --section 14 15 --mode data --num_workers 3 --filtering gaussian --spacing long_flat
 --minibatch 1 --prefetch_factor 1 --depth 0 --sigma 4 --section 0 15 --mode data --num_workers 3 --filtering gcm
 --minibatch 1 --prefetch_factor 1 --depth 0 --sigma 4 --section 1 15 --mode data --num_workers 3 --filtering gcm
 --minibatch 1 --prefetch_factor 1 --depth 0 --sigma 4 --section 2 15 --mode data --num_workers 3 --filtering gcm

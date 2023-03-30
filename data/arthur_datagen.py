@@ -133,7 +133,6 @@ def eddy_forcing(u_v_dataset : xr.Dataset, grid_data: xr.Dataset,
     #                      yt_ocean=u_v_dataset.coords['yu_ocean'])
     # u_v_dataset['temp'] = u_v_dataset['surface_temperature'].interp(
     #     interp_coords)
-
     scale_filter = (scale_x / 2, scale_y / 2)
     # High res advection terms
     adv = advections(u_v_dataset, grid_data)

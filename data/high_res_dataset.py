@@ -12,7 +12,7 @@ class HighResCm2p6:
     coarse_grain : Callable
     initiated : bool
     def __init__(self,ds:xr.Dataset,sigma,*args,section = [0,1],**kwargs):
-        self.ds = ds.copy()#.isel({f"{prefix}{direction}":slice(1500,2500) for prefix in 'u t'.split() for direction in 'lat lon'.split()})
+        self.ds = ds.copy()#.isel({f"{prefix}{direction}":slice(1500,1800) for prefix in 'u t'.split() for direction in 'lat lon'.split()})
         self.sigma = sigma
         self.initiated = False
         self.wet_mask = None
@@ -45,13 +45,15 @@ class HighResCm2p6:
     def __len__(self,):
         return len(self.ds.time)*len(self.ds.depth)
     def time_depth_indices(self,i):
+        return i
         di = i%len(self.ds.depth)
         ti = i//len(self.ds.depth)
         return ti,di
 
     def get_hres_dataset(self,i):
-        ti,di = self.time_depth_indices(i)
-        ds = self.ds.isel(time = ti,depth = di) 
+        # ti,di = self.time_depth_indices(i)
+        # ds = self.ds.isel(time = ti,depth = di) 
+        ds = self.ds.isel(time = i)
         # ds = ds.isel(**{f"{k0}{k1}":slice(1000,1960) for k0 in 'u t'.split() for k1 in 'lat lon'.split()})
         return ds
 
@@ -104,7 +106,7 @@ class HighResCm2p6:
         u.name = 'u'
         v.name = 'v'
         temp.name = 'temp'
-        return u,v,temp
+        return u.fillna(0),v.fillna(0),temp.fillna(0)
    
 
     def get_mask(self,i):
@@ -145,10 +147,7 @@ class HighResCm2p6:
         return mask_
     def get_forcings(self,i):
         u,v,temp = self._base_get_hres(i)
-
-        # plot_ds({'u':u.isel(lat = slice(1000,2000),lon = slice(1000,2000))},'hres_u.png',ncols = 1)
         ff =  self.fields2forcings(i,u,v,temp)
-        # plot_ds({'u':ff['u'].isel(lat = slice(250,500),lon = slice(250,500))},'lres_u.png',ncols = 1)
         return ff
     def fields2forcings(self,i,u,v,temp,scipy_filtering = False):
         u_t,v_t = self.grid_interpolation(u,v)
@@ -156,19 +155,15 @@ class HighResCm2p6:
         tvars = dict(u = u_t, v = v_t,temp = temp,)
         def switch_grid_on_dictionary(ulres):
             ulres['u'],ulres['v'] = self.grid_interpolation(ulres['u'],ulres['v'])
-        if scipy_filtering:
-            uforcings,(ucres,ulres) = self.ugrid_scipy_forcing(uvars,'u v'.split(),'Su Sv'.split())
-            switch_grid_on_dictionary(ulres)
-            tforcings,(tcres,_) = self.tgrid_scipy_forcing(tvars,'temp '.split(),'Stemp '.split(),lres = ulres)
-        else:
-            uforcings,(ucres,ulres) = self.ugrid_subgrid_forcing(uvars,'u v'.split(),'Su Sv'.split())
 
-            # switch_grid_on_dictionary(ulres)
-            # switch_grid_on_dictionary(ulres0)
-            # switch_grid_on_dictionary(uhres0)
-            tforcings,(tcres,_) = self.tgrid_subgrid_forcing(tvars,'temp '.split(),'Stemp '.split(),)#,hres0 = uhres0,lres0 = ulres0,)
-            tcres.pop('u')
-            tcres.pop('v')
+        uforcings,(ucres,ulres) = self.ugrid_subgrid_forcing(uvars,'u v'.split(),'Su Sv'.split())
+        # switch_grid_on_dictionary(ulres)
+        # switch_grid_on_dictionary(ulres0)
+        # switch_grid_on_dictionary(uhres0)
+        tforcings,(tcres,_) = self.tgrid_subgrid_forcing(tvars,'temp '.split(),'Stemp '.split(),)#,hres0 = uhres0,lres0 = ulres0,)
+        tcres.pop('u')
+        tcres.pop('v')
+        
         uvars = dict(uforcings,**ucres)
         tvars = dict(tforcings,**tcres)
         def pass_gridvals(tgridvaldict,ugridvaldict):
@@ -181,22 +176,17 @@ class HighResCm2p6:
             return tgridvaldict
        
         tvars = pass_gridvals(tvars,uvars)
-        
         fvars =  dict(uvars,**tvars)
-        fvars = self.expand_dims(i,fvars,time = True,depth = True)
+        fvars = self.expand_dims(i,fvars,time = True)#,depth = True)
         return concat(**fvars)
     
         
-    def expand_dims(self,i,fields,time = True,depth = True):
-        ti,di = self.time_depth_indices(i)
+    def expand_dims(self,i,fields,time = True):#,depth = True):
+        ti = i
         _time = self.ds.time.values[ti]
-        _depth = self.ds.depth.values[di]
         dd = dict()
         if time:
             dd['time'] = [_time]
-        if depth:
-            dd['depth'] = [_depth]
-        
         if isinstance(fields,dict):
             fields = {key:val.expand_dims(dd).compute() for key,val in fields.items()}
         else:

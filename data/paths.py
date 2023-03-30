@@ -59,7 +59,6 @@ def get_low_res_data_location(args):
     prms,_ = options(args,key = "run")
     
     filename = get_filename(prms.sigma,prms.depth,prms.co2,prms.filtering)
-    print(filename)
     if prms.lsrp == 1:
         f0 = filename.replace('.zarr','_.zarr').split('/')[-1]
         f1 = filename.split('/')[-1]
@@ -67,12 +66,17 @@ def get_low_res_data_location(args):
         print(f'{f0} = {f1}.replace(".zarr","_.zarr")')
         print('-'*64)
         filename = filename.replace('.zarr','_.zarr')
+    if prms.spacing == 'long_flat':
+        filename = filename.replace('.zarr','_flat.zarr')
+    print(filename)
     return filename
 
 def get_preliminary_low_res_data_location(args):
     prms,_ = options(args,key = "run")
     a,b = prms.section
     filename = get_filename(prms.sigma,prms.depth,prms.co2,prms.filtering,locdir = TEMPORARY_DATA)
+    if prms.spacing == 'long_flat':
+        filename = filename.replace('.zarr','_flat.zarr')
     filename = filename.replace('.zarr',f'_{a}_{b}.zarr')
     return filename
 

@@ -27,9 +27,9 @@ def drop_timeless(ds:xr.Dataset):
 
 def run():
     datargs = sys.argv[1:]
-    # datargs = '--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 4 --section 0 10 --mode data --num_workers 1 --filtering gaussian'.split()
+    # datargs = '--minibatch 1 --prefetch_factor 1 --depth 0 --spacing long_flat --sigma 4 --section 0 1 --mode data --num_workers 1 --filtering gaussian'.split()
     generator,= get_data(datargs,half_spread = 0, torch_flag = False, data_loaders = True,groups = ('all',))
-    filename = get_preliminary_low_res_data_location(datargs)#.replace('.','_base.')
+    filename = get_preliminary_low_res_data_location(datargs)
     print(f'filename = {filename}')
     datargs,_ = options(datargs,key = "data")
     initflag = False
@@ -44,8 +44,10 @@ def run():
 
         # chk = {k:len(ds[k]) for k in list(ds.coords)}
         # ds = ds.chunk(chunks=chk)
+        # print(ds.depth)
         # ds.to_zarr(filename,mode='w')
-        # plot_ds(ds.isel(time = 0,depth = 0),'ds.png')
+        # depth = int(ds.depth.values[0])
+        # plot_ds(ds.isel(time = 0,),f'ds-{depth}.png')
         # return
 
         if dst is not None:
