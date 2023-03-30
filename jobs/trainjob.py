@@ -91,6 +91,7 @@ def generate_training_tasks():
         latitude = False,
         interior = False,
         domain = 'four_regions',
+        min_precision = 0.024
     )
     kwargs[1] = dict(
         lsrp = 0,     

@@ -95,9 +95,11 @@ class FullyCNN(DetectOutputSizeMixin, Sequential):
 
     def forward(self, x):
         x = super().forward(x)
+        x[:,2:] = torch.maximum(x[:,2:],0.1*torch.ones_like(x[:,2:]))
         # for i in range(4):
         #     xi = x[0,i].numpy()
         #     print(f'ARTHUR_{i} = ',np.mean(np.abs(xi)))
+        
         return x #self.final_transformation(x)
 
     def _make_subblock(self, conv):
@@ -205,7 +207,7 @@ def run_model(cnns_:dict,):
     args = '--filtering gaussian --interior False'
     ds,scs = load_xr_dataset(args.split(),high_res = False)
 
-    ds = ds.isel(time = 3,lat = slice(100,200),lon = slice(100,200)).fillna(0)
+    ds = ds.isel(time = 3,lat = slice(100,400),lon = slice(100,400)).fillna(0)
 
     inputs = np.stack([np.stack([ds.u.values,ds.v.values],axis = 0)],axis = 0)
     
@@ -254,6 +256,21 @@ def get_vmin_vmax(outputs:dict):
         for i in range(3):
             vmaxs[i] = np.maximum(vmaxs[i],vmaxs_[i])    
     return vmaxs
+def plot_std_distribution(outputs:dict):
+    outputs.pop('true_outputs',None)
+    fig,axs = plt.subplots(1,2,figsize = (15,7))
+    for key,val in outputs.items():
+        std = np.sort(val[2].flatten())[::-1]
+        axs[0].semilogy(std,label = key)
+        std = np.sort(val[3].flatten())[::-1]
+        axs[1].semilogy(std,label = key)
+    axs[0].legend()
+    axs[1].legend()
+    axs[0].set_title('Su forcing std outputs sorted')
+    axs[1].set_title('Sv forcing std outputs sorted')
+    fig.savefig('std_distributions.png')
+        
+        
 def plot_outputs(outputs:dict):
     vmaxs = get_vmin_vmax(outputs)
     num_models = len(outputs)
@@ -303,8 +320,8 @@ def load_models():
     models['best_model'] = load_model(path,True)
     
     
-    filenames = ['20230327','20230329']
-    # filenames = ['20230329']
+    # filenames = ['20230327','20230329']
+    filenames = ['20230329']
     for fn in filenames:
         path = os.path.join(ONLINE_MODELS,'cem_' + fn + '.pth')
         models[fn] = load_model(path,False)
@@ -313,7 +330,8 @@ def load_models():
 def main():
     models = load_models()
     outputs = run_model(models)
-    plot_outputs(outputs)
+    # plot_outputs(outputs)
+    plot_std_distribution(outputs)
 
 if '__main__' == __name__:
     main()

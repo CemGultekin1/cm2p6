@@ -31,7 +31,7 @@ class Timer:
 
 def main():
     args = sys.argv[1:]
-    # args = '--lsrp 0 --depth 0 --sigma 4 --filtering gaussian --temperature False --latitude False --interior False --domain four_regions --num_workers 1 --disp 50 --batchnorm 1 1 1 1 1 1 1 0 --lossfun heteroscedastic --widths 2 128 64 32 32 32 32 32 4 --kernels 5 5 3 3 3 3 3 3 --minibatch 4 --reset_model 1 --relog 1'.split()
+    # args = '--lsrp 0 --depth 0 --sigma 4 --filtering gaussian --temperature False --latitude False --interior False --domain four_regions --min_precision 0.024 --num_workers 1 --disp 1 --batchnorm 1 1 1 1 1 1 1 0 --lossfun heteroscedastic --widths 2 128 64 32 32 32 32 32 4 --kernels 5 5 3 3 3 3 3 3 --minibatch 1'.split()
     
     modelid,state_dict,net,criterion,optimizer,scheduler,logs,runargs=load_model(args)
     flushed_print('torch.cuda.is_available():\t',torch.cuda.is_available())
@@ -76,9 +76,7 @@ def main():
             infields,outfields,mask = infields.to(device),outfields.to(device),mask.to(device)
             timer.end('data')
             timer.start('model')
-            
             outputs = net.forward(infields)
-            outfields,mask = outfields.to(device),mask.to(device)
 
             # with torch.set_grad_enabled(False):
             #     net.eval()

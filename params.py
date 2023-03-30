@@ -38,7 +38,8 @@ ARCH_PARAMS = {
     "skipconn" : {"type":int,"nargs":'+',"default":tuple([0]*8)},
     "batchnorm" : {"type":int,"nargs":'+',"default":tuple([1]*8)},
     "seed" : {"type":int,"default":0},
-    "model" : {"type":str, "choices":["fcnn","dfcnn","lsrp:0"]}
+    "model" : {"type":str, "choices":["fcnn","dfcnn","lsrp:0"]},
+    "min_precision" : {"type":float, "default":0.}
 }
 
 

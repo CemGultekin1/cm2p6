@@ -6,42 +6,44 @@ import numpy as np
 from utils.parallel import get_device
 
 class Layer:
-    def __init__(self,nn_layers:list,device) -> None:
-        self.device = device
+    def __init__(self,nn_layers:list) -> None:
         self.nn_layers =nn_layers
         self.section = []
     def add(self,nn_obj):
         self.section.append(len(self.nn_layers))
-        self.nn_layers.append(nn_obj.to(self.device))
+        self.nn_layers.append(nn_obj)
     def __call__(self,x):
         for j in self.section:
             x = self.nn_layers[j](x)
         return x
 
 class CNN_Layer(Layer):
-    def __init__(self,nn_layers:list,device,widthin,widthout,kernel,batchnorm,nnlnr) -> None:
-        super().__init__(nn_layers,device)
+    def __init__(self,nn_layers:list,widthin,widthout,kernel,batchnorm,nnlnr) -> None:
+        super().__init__(nn_layers)
         self.add(nn.Conv2d(widthin,widthout,kernel))
         if batchnorm:
             self.add(nn.BatchNorm2d(widthout))
         if nnlnr:
             self.add(nn.ReLU(inplace = True))
 class Softmax_Layer(Layer):
-    def __init__(self,nn_layers:list,device,split) -> None:
-        super().__init__(nn_layers,device)
+    def __init__(self,nn_layers:list,split,min_value = 0) -> None:
+        super().__init__(nn_layers)
         self.add(nn.Softplus())
+        self.min_value = min_value
         self.split = split
     def __call__(self, x):
         if self.split>1:
             xs = list(torch.split(x,x.shape[1]//self.split,dim=1))
-            xs[-1] = super().__call__(xs[-1])
+            p = super().__call__(xs[-1])
+            p = p + self.min_value
+            xs[-1] = p
             return tuple(xs)
         return super().__call__(x)
         
 
 class Sequential(Layer):
-    def __init__(self,nn_layers,device,widths,kernels,batchnorm,softmax_layer = False,split = 1):
-        super().__init__(nn_layers,device)
+    def __init__(self,nn_layers,widths,kernels,batchnorm,softmax_layer = False,split = 1,min_precision = 0):
+        super().__init__(nn_layers)
         self.sections = []
         spread = 0
         self.nlayers = len(kernels)
@@ -49,31 +51,29 @@ class Sequential(Layer):
             spread+=kernels[i]-1
         self.spread = spread//2
         for i in range(self.nlayers):
-            self.sections.append(CNN_Layer(nn_layers,device,widths[i],widths[i+1],kernels[i],batchnorm[i], i < self.nlayers - 1))
+            self.sections.append(CNN_Layer(nn_layers,widths[i],widths[i+1],kernels[i],batchnorm[i], i < self.nlayers - 1))
         if softmax_layer:
-            self.sections.append(Softmax_Layer(nn_layers,device,split))
+            self.sections.append(Softmax_Layer(nn_layers,split,min_value = min_precision))
     def __call__(self, x):
         for lyr in self.sections:
             x = lyr.__call__(x)
         return x
 
 class CNN(nn.Module):
-    def __init__(self,widths = None,kernels = None,batchnorm = None,seed = None,**kwargs):
+    def __init__(self,widths = None,kernels = None,batchnorm = None,seed = None,min_precision = 0 ,**kwargs):
         super(CNN, self).__init__()
-        device = get_device()
-        self.device = device
         torch.manual_seed(seed)
         self.nn_layers = nn.ModuleList()
         
         self.sequence = \
-            Sequential(self.nn_layers,device, widths,kernels,batchnorm,softmax_layer=True,split = 2)
+            Sequential(self.nn_layers, widths,kernels,batchnorm,softmax_layer=True,min_precision = min_precision,split = 2)
         spread = 0
         for k in kernels:
             spread += (k-1)/2
         self.spread = int(spread)
-    def forward(self,x):
-        x1 = x.to(self.device)
+    def forward(self,x1):
         return self.sequence(x1)
+    
 class DoubleCNN(CNN):
     def __init__(self, cnn1:CNN,widths=None, kernels=None, batchnorm=None, seed=None, **kwargs):
         super().__init__(widths, kernels, batchnorm, seed, **kwargs)

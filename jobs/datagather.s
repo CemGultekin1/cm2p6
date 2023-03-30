@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --time=5:00:00
+#SBATCH --time=2:00:00
 #SBATCH --array=1
 #SBATCH --mem=30GB
 #SBATCH --job-name=datagather
