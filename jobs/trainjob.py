@@ -90,8 +90,8 @@ def generate_training_tasks():
         temperature = False,
         latitude = False,
         interior = False,
+        spacing = 'long_flat',
         domain = 'four_regions',
-        min_precision = 0.024
     )
     kwargs[1] = dict(
         lsrp = 0,     

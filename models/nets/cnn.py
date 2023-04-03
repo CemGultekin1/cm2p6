@@ -3,7 +3,6 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 import numpy as np
-from utils.parallel import get_device
 
 class Layer:
     def __init__(self,nn_layers:list) -> None:

@@ -15,6 +15,13 @@ v_scale = 1/0.07252696573672539
 Su_scale = 4.9041400042653195e-08
 Sv_scale = 4.8550991806254025e-08
 
+cnn_arguments = dict(
+        seed = 0,
+        min_precision = 0.024,
+        kernels=[5, 5, 3, 3, 3, 3, 3, 3],
+        widths=[2,128, 64, 32, 32, 32, 32, 32, 4],
+        batchnorm = [1, 1, 1, 1, 1, 1, 1, 0]
+)
 
 class DetectOutputSizeMixin:
     def output_width(self, input_height, input_width):
@@ -109,52 +116,83 @@ class FullyCNN(DetectOutputSizeMixin, Sequential):
         return subbloc
     
     
-class CNN(nn.Module):
-    def __init__(self,filter_size=[5, 5, 3, 3, 3, 3, 3, 3],\
-                     width=[128, 64, 32, 32, 32, 32, 32, 4],\
-                        inchan=2,cuda_flag=False,relu_flag = True):
-        super(CNN, self).__init__()
-        self.nn_layers = nn.ModuleList()
-        self.filter_size=filter_size
-        self.num_layers=len(filter_size)
+
+    
+class Layer:
+    def __init__(self,nn_layers:list) -> None:
+        self.nn_layers =nn_layers
+        self.section = []
+    def add(self,nn_obj):
+        self.section.append(len(self.nn_layers))
+        self.nn_layers.append(nn_obj)
+    def __call__(self,x):
+        for j in self.section:
+            x = self.nn_layers[j](x)
+        return x
+
+class CNN_Layer(Layer):
+    def __init__(self,nn_layers:list,widthin,widthout,kernel,batchnorm,nnlnr) -> None:
+        super().__init__(nn_layers)
+        self.add(nn.Conv2d(widthin,widthout,kernel))
+        if batchnorm:
+            self.add(nn.BatchNorm2d(widthout))
+        if nnlnr:
+            self.add(nn.ReLU(inplace = True))
+class Softmax_Layer(Layer):
+    def __init__(self,nn_layers:list,split,min_value = 0) -> None:
+        super().__init__(nn_layers)
+        self.add(nn.Softplus())
+        self.min_value = min_value
+        self.split = split
+    def __call__(self, x):
+        if self.split>1:
+            xs = list(torch.split(x,x.shape[1]//self.split,dim=1))
+            p = super().__call__(xs[-1])
+            p = p + self.min_value
+            xs[-1] = p
+            return tuple(xs)
+        return super().__call__(x)
         
-        if cuda_flag:
-            device = "cuda:0" 
-        else:  
-            device = "cpu"  
-        self.relu_flag = relu_flag
-        self.nn_layers.append(nn.Conv2d(inchan, width[0], filter_size[0]).to(device) )
-        for i in range(1,self.num_layers):
-            self.nn_layers.append(nn.BatchNorm2d(width[i-1]).to(device) )
-            if relu_flag:
-                self.nn_layers.append(nn.ReLU(inplace = True))
-            self.nn_layers.append(nn.Conv2d(width[i-1], width[i], filter_size[i]).to(device) )
-        self.nn_layers.append(nn.Softplus().to(device))
-    def forward(self, x):
-        cn=0
-        x = self.nn_layers[cn](x) # conv2d
-        cn+=1
-        while cn<len(self.nn_layers)-1:
-            x = self.nn_layers[cn](x) # batch
-            cn+=1
-            if self.relu_flag:
-                x = self.nn_layers[cn](x) # relu #torch.relu(x)#
-                cn+=1
-            else:
-                x = torch.relu(x)
-            x = self.nn_layers[cn](x) # conv2d 
-            cn+=1
-        mean,precision=torch.split(x,x.shape[1]//2,dim=1)
-        precision=self.nn_layers[-1](precision) # softplus
-        out=torch.cat([mean,precision],dim=1)
-        return out
+
+class Sequential_(Layer):
+    def __init__(self,nn_layers,widths,kernels,batchnorm,softmax_layer = False,split = 1,min_precision = 0):
+        super().__init__(nn_layers)
+        self.sections = []
+        spread = 0
+        self.nlayers = len(kernels)
+        for i in range(self.nlayers):
+            spread+=kernels[i]-1
+        self.spread = spread//2
+        for i in range(self.nlayers):
+            self.sections.append(CNN_Layer(nn_layers,widths[i],widths[i+1],kernels[i],batchnorm[i], i < self.nlayers - 1))
+        if softmax_layer:
+            self.sections.append(Softmax_Layer(nn_layers,split,min_value = min_precision))
+    def __call__(self, x):
+        for lyr in self.sections:
+            x = lyr.__call__(x)
+        return x
+
+class CNN(nn.Module):
+    def __init__(self,widths = None,kernels = None,batchnorm = None,seed = None,min_precision = 0 ,**kwargs):
+        super(CNN, self).__init__()
+        torch.manual_seed(seed)
+        self.nn_layers = nn.ModuleList()
+        
+        self.sequence = \
+            Sequential_(self.nn_layers, widths,kernels,batchnorm,softmax_layer=True,min_precision = min_precision,split = 2)
+        spread = 0
+        for k in kernels:
+            spread += (k-1)/2
+        self.spread = int(spread)
+    def forward(self,x1):
+        return self.sequence(x1)
     
 
 
 
 def MOM6_testNN(nn,uv,pe,pe_num,u_scale,v_scale,Su_scale,Sv_scale):
    global gpu_id
-   use_cuda = False
+   use_cuda = True
    u= uv[0,:,:,:]*u_scale
    v= uv[1,:,:,:]*v_scale
    x = np.array([np.squeeze(u),np.squeeze(v)])
@@ -165,39 +203,40 @@ def MOM6_testNN(nn,uv,pe,pe_num,u_scale,v_scale,Su_scale,Sv_scale):
    x = torch.from_numpy(x) # quite faster than x = torch.tensor(x)
    if use_cuda:
        if not next(nn.parameters()).is_cuda:
-          gpu_id = int(pe/math.ceil(pe_num/torch.cuda.device_count()))
-          print('GPU id is:',gpu_id)
-          nn = nn.cuda(gpu_id)
+            gpu_id = int(pe/math.ceil(pe_num/torch.cuda.device_count()))
+            print('GPU id is:',gpu_id)
+            nn = nn.cuda(gpu_id)
        x = x.cuda(gpu_id)
    with torch.no_grad():
        # start_time = time.time()
-       out = nn.forward(x)
+       outs = nn.forward(x)
+       if isinstance(outs,tuple):
+           mean,precision = outs
+       else:
+           mean,precision = torch.split(outs,2,dim = 1)
        # end_time = time.time()
    if use_cuda:
-       out = out.to('cpu')
-   out = out.numpy().astype(np.float64)
+       mean = mean.to('cpu')
+       precision = precision.to('cpu')
+   mean = mean.numpy().astype(np.float64)
+   std = np.sqrt(1/precision.numpy().astype(np.float64))
    # At this point, python out shape is (nk,4,ni,nj)
    # Comment-out is tranferring arraies into F order
    # convert out to (ni,nj,nk)
-   out = out.transpose((1,2,3,0)) # new the shape is (4,ni,nj,nk)
-   dim = np.shape(out)
-   # print(dim)
+   mean = mean.transpose((1,2,3,0)) # new the shape is (4,ni,nj,nk)
+   std = std.transpose((1,2,3,0))
+   dim = np.shape(mean)
    Sxy = np.zeros((6,dim[1],dim[2],dim[3])) # the shape is (2,ni,nj,nk)
    epsilon_x = np.random.normal(0, 1, size=(dim[1],dim[2]))
    epsilon_x = np.dstack([epsilon_x]*dim[3])
    epsilon_y = np.random.normal(0, 1, size=(dim[1],dim[2]))
    epsilon_y = np.dstack([epsilon_y]*dim[3])
-   # if pe==0:
-   #   print(scaling)
-   # full output
-   Sxy[0,:,:,:] = (out[0,:,:,:] + epsilon_x*np.sqrt(1/out[2,:,:,:]))*Su_scale
-   Sxy[1,:,:,:] = (out[1,:,:,:] + epsilon_y*np.sqrt(1/out[3,:,:,:]))*Sv_scale
-#    Sxy[0,:,:,:] = out[0,:,:,:]*Su_scale
-#    Sxy[1,:,:,:] = out[1,:,:,:]*Sv_scale
-   Sxy[2,:,:,:] = out[0,:,:,:]*Su_scale
-   Sxy[3,:,:,:] = out[1,:,:,:]*Sv_scale
-   Sxy[4,:,:,:] = np.sqrt(1/out[2,:,:,:])*Su_scale
-   Sxy[5,:,:,:] = np.sqrt(1/out[3,:,:,:])*Sv_scale
+   Sxy[0,:,:,:] = (mean[0,:,:,:] + epsilon_x*std[0,:,:,:])*Su_scale
+   Sxy[1,:,:,:] = (mean[1,:,:,:] + epsilon_y*std[1,:,:,:])*Sv_scale
+   Sxy[2,:,:,:] = mean[0,:,:,:]*Su_scale
+   Sxy[3,:,:,:] = mean[1,:,:,:]*Sv_scale
+   Sxy[4,:,:,:] = std[0,:,:,:]*Su_scale
+   Sxy[5,:,:,:] = std[1,:,:,:]*Sv_scale
    return Sxy 
 
 
@@ -219,9 +258,11 @@ def run_model(cnns_:dict,):
         print(name)
         if 'GZ21' in name:
             scales = [10,10,1e-7,1e-7]
-        Sxy = MOM6_testNN(cnn_,inputs,0,0,*scales)
-        Sxy = np.squeeze(Sxy)
-        Sxy = np.where(np.isnan(Sxy),0,Sxy)
+        Sxy = MOM6_testNN(cnn_,inputs,0,1,*scales)
+        cnn_.to('cpu')
+        Sxy = np.squeeze(Sxy)        
+        Sxy[4:] = np.log10(Sxy[4:])
+        Sxy = np.where(np.isnan(Sxy),np.nan,Sxy)
         outputs[name] = Sxy[2:]
 
     true_vals = np.stack([ds.Su.values,ds.Sv.values],axis = 0)
@@ -230,32 +271,40 @@ def run_model(cnns_:dict,):
     outputs['true_outputs'] = true_vals
     
     return outputs
-def imshow_on_ax(fig,ax,val,title,pos_valued:bool,**kwargs):
+def imshow_on_ax(fig,ax,val,title,zero_centered:bool,**kwargs):
     val = np.squeeze(val)
-    if not pos_valued:
-        vmax = kwargs.get('vmax')#np.amax(np.abs(val))#
+    vmax = kwargs.get('vmax')
+    vmin = kwargs.get('vmin')
+    if zero_centered:
+        vmax = np.maximum(np.abs(vmax),np.abs(vmin))
         vmin = -vmax
-    else:
-        vmax = kwargs.get('vmax')#np.amax(np.abs(val))#
-        vmin = 0
     pos = ax.imshow(val,cmap = 'bwr',vmax = vmax,vmin = vmin)
     ax.set_title(title)
     fig.colorbar(pos, ax=ax)
 def get_vmin_vmax(outputs:dict):
     vmaxs = [-np.inf]*3
+    vmins = [np.inf]*3
     vmaxs_ = [0]*3
+    vmins_ = [0]*3
+    
     true_value = outputs['true_outputs']
     true_value = true_value[0]
+    true_value = np.where(np.isnan(true_value),0,true_value)
     for key,val in outputs.items():
         if key == 'true_outputs':
             continue
-        vmaxs_[0] = np.amax(np.abs(val[0]))
-        vmaxs_[1] = np.amax(np.abs(val[0] - true_value))
-        vmaxs_[2] = np.amax(np.abs(val[2]))
+        val = np.where(np.isnan(val),0,val)        
+        vmaxs_[0] = np.amax(val[0])
+        vmaxs_[1] = np.amax(val[0] - true_value)
+        vmaxs_[2] = np.amax(val[2])
 
+        vmins_[0] = np.amin(val[0])
+        vmins_[1] = np.amin(val[0] - true_value)
+        vmins_[2] = np.amin(val[2])
         for i in range(3):
             vmaxs[i] = np.maximum(vmaxs[i],vmaxs_[i])    
-    return vmaxs
+            vmins[i] = np.minimum(vmins[i],vmins_[i])    
+    return vmaxs,vmins
 def plot_std_distribution(outputs:dict):
     outputs.pop('true_outputs',None)
     fig,axs = plt.subplots(1,2,figsize = (15,7))
@@ -272,30 +321,31 @@ def plot_std_distribution(outputs:dict):
         
         
 def plot_outputs(outputs:dict):
-    vmaxs = get_vmin_vmax(outputs)
+    vmaxs,vmins = get_vmin_vmax(outputs)
     num_models = len(outputs)
     fig,axs = plt.subplots(3,num_models,figsize = (12*num_models,24))
     true_value = outputs.pop('true_outputs')
     model_names = tuple(outputs.keys())
-    imshow_on_ax(fig,axs[0,0],true_value[0],'true Su',False,vmax = vmaxs[0])
-    imshow_on_ax(fig,axs[1,0],true_value[0]*0,'*',True,vmax = vmaxs[1])
-    imshow_on_ax(fig,axs[2,0],true_value[0]*0,'*',True,vmax = vmaxs[2])
+    imshow_on_ax(fig,axs[0,0],true_value[0],'true Su',True,vmax = vmaxs[0],vmin = vmins[0])
+    imshow_on_ax(fig,axs[1,0],true_value[0]*0,'*',True,vmax = vmaxs[1],vmin = vmins[1])
+    imshow_on_ax(fig,axs[2,0],true_value[0]*0,'*',False,vmax = vmaxs[2],vmin = vmins[2])
     true_value = true_value[0]
     for r,i in enumerate(range(1,num_models)):
         mn = model_names[r]
         tv = outputs[mn].squeeze()
-        imshow_on_ax(fig,axs[0,i],tv[0],f'{mn} Subgrid-u',False,vmax = vmaxs[0])
-        imshow_on_ax(fig,axs[1,i],tv[0] - true_value,f'{mn} Subgrid-err',False,vmax = vmaxs[1])
-        imshow_on_ax(fig,axs[2,i],tv[2],f'{mn} std-u',True,vmax = vmaxs[2])
+        imshow_on_ax(fig,axs[0,i],tv[0],f'{mn} Subgrid-u',True,vmax = vmaxs[0],vmin = vmins[0])
+        imshow_on_ax(fig,axs[1,i],tv[0] - true_value,f'{mn} Subgrid-err',True,vmax = vmaxs[1],vmin = vmins[1])
+        imshow_on_ax(fig,axs[2,i],tv[2],f'{mn} log10|std-u|',False,vmax = vmaxs[2],vmin = vmins[2])
 
     root = os.path.join(OUTPUTS_PATH,'tobedeleted_')
     if not os.path.exists(root):
         os.makedirs(root)
     fig.savefig(os.path.join(root,f'crowded_comparison.png'))
+    print(os.path.join(root,f'crowded_comparison.png'))
 
 def load_model(path,old_model_flag,fully_cnn_flag:bool = False):
     if  not fully_cnn_flag:
-        nn=CNN(cuda_flag=False,relu_flag= 1 - old_model_flag)
+        nn=CNN(**cnn_arguments)#cuda_flag=False,relu_flag= 1 - old_model_flag)
     else:        
         nn = FullyCNN()
     statedict = torch.load(path,map_location=torch.device('cpu'))
@@ -316,12 +366,12 @@ def load_models():
     path = os.path.join(OUTPUTS_PATH,'GZ21.pth')
     models['GZ21'] = load_model(path,True,fully_cnn_flag=True)
     
-    path = os.path.join(OUTPUTS_PATH,'best_model.pth')
-    models['best_model'] = load_model(path,True)
+    # path = os.path.join(OUTPUTS_PATH,'best_model.pth')
+    # models['best_model'] = load_model(path,True)
     
     
-    # filenames = ['20230327','20230329']
-    filenames = ['20230329']
+    # filenames = ['20230327',]
+    filenames = ['20230329','20230403']
     for fn in filenames:
         path = os.path.join(ONLINE_MODELS,'cem_' + fn + '.pth')
         models[fn] = load_model(path,False)
@@ -330,8 +380,8 @@ def load_models():
 def main():
     models = load_models()
     outputs = run_model(models)
-    # plot_outputs(outputs)
-    plot_std_distribution(outputs)
+    plot_outputs(outputs)
+    # plot_std_distribution(outputs)
 
 if '__main__' == __name__:
     main()
