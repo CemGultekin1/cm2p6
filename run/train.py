@@ -19,7 +19,6 @@ class Timer:
             self.times[label] = []
         self.times[label].append(time.time())
     def end(self,label):
-        # flushed_print(label,' ended')
         assert label in self.times
         t1 = self.times[label][-1]
         self.times[label][-1] = time.time() - t1
