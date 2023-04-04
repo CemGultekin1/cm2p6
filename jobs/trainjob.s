@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --time=28:00:00
-#SBATCH --array=1,2
+#SBATCH --array=1,4,7
 #SBATCH --mem=150GB
 #SBATCH --job-name=trainjob
 #SBATCH --output=/scratch/cg3306/climate/outputs/slurm_logs/trainjob_%A_%a.out

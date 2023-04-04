@@ -89,8 +89,8 @@ def generate_training_tasks():
         filtering = 'gaussian',
         temperature = False,
         latitude = False,
-        interior = False,
-        spacing = 'long_flat',
+        interior = [True,False],
+        spacing = ['asis','long_flat'],
         domain = 'four_regions',
     )
     kwargs[1] = dict(
