@@ -27,13 +27,11 @@ def drop_timeless(ds:xr.Dataset):
 
 def run():
     # datargs = sys.argv[1:]
-    datargs = '--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 4 --section 0 1 --mode data --num_workers 1 --filtering gaussian'.split()
+    datargs = '--minibatch 1 --prefetch_factor 1 --spacing long_flat --depth 0 --sigma 4 --section 0 1 --mode data --num_workers 1 --filtering gaussian'.split()
     generator,= get_data(datargs,half_spread = 0, torch_flag = False, data_loaders = True,groups = ('all',))
-    filename = get_preliminary_low_res_data_location(datargs)
+    filename = get_low_res_data_location(datargs)
     print(f'filename = {filename}')
     datargs,_ = options(datargs,key = "data")
-    initflag = False
-    dst = None
     time = Timer()
     time.start('data')
     for data_vars,coords in generator:
@@ -41,38 +39,14 @@ def run():
         
         data_vars,coords = torch2numpy(data_vars,coords)
         ds = xr.Dataset(data_vars = data_vars,coords = coords)
-        ds = ds.drop('wet_density interior_wet_mask'.split())
+        dsvars = [k for k in ds.data_vars.keys() if k not in 'wet_density interior_wet_mask'.split()]
+        ds = ds.drop(dsvars).drop('time').load()
         chk = {k:len(ds[k]) for k in list(ds.coords)}
         ds = ds.chunk(chunks=chk)
-        ds.to_zarr(filename,mode='w')
-        depth = int(ds.depth.values[0])
-        plot_ds(ds.isel(time = 0,),f'ds-{depth}.png')
-        return
-
-        if dst is not None:
-            if ds.time.values[0] != dst.time.values[0]:
-                flushed_print(dst.time.values[0],time)
-                chk = {k:len(dst[k]) for k in list(dst.coords)}
-                if not initflag:
-                    dst = dst.chunk(chunks=chk)
-                    dst.to_zarr(filename,mode='w')
-                    initflag = True
-                else:
-                    dst = drop_timeless(dst)
-                    dst = dst.chunk(chunks=chk)
-                    dst.to_zarr(filename,mode='a',append_dim = 'time')
-                dst = None
-        if dst is None:
-            dst = ds
-        else:
-            dst = xr.merge([dst,ds])
-        time.start('data')
+        print(filename)
+        print(ds)
+        ds.to_zarr(filename,mode='a')
+        break
         
-    if dst is not None:
-        flushed_print(dst.time.values[0],time)
-        chk = {k:len(dst[k]) for k in list(dst.coords)}
-        dst = drop_timeless(dst)
-        dst = dst.chunk(chunks=chk)
-        dst.to_zarr(filename,mode='a',append_dim = 'time')
 if __name__=='__main__':
     run()

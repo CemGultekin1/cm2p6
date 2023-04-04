@@ -1,5 +1,5 @@
 from data.load import load_filter_weights, load_xr_dataset
-from transforms.coarse_graining import gcm_filtering,greedy_coarse_grain
+from transforms.coarse_graining import GcmFiltering,GreedyCoarseGrain
 from transforms.grids import get_grid_vars
 from utils.arguments import options
 import numpy as np
@@ -12,7 +12,7 @@ from transforms.gcm_compression import MultiMatmult2DFilter
 class GcmInversion(MultiMatmult2DFilter,MultiLinearOps):
     def __init__(self, sigma, grid, filter_weights, rank=np.inf) -> None:
         super().__init__(sigma, grid, filter_weights, rank)
-        self.filtering, self.coarse_grain = gcm_filtering(sigma,grid,),greedy_coarse_grain(sigma,grid)
+        self.filtering, self.coarse_grain = GcmFiltering(sigma,grid,),GreedyCoarseGrain(sigma,grid)
     def __call__(self, x, inverse=False, separated=False, special: int = -1):
         # if not inverse and not separated and special < 0:
         #     xrx = self.np2xr(x.copy(),True,fine_grid=True)            

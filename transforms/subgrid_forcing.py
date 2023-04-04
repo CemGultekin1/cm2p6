@@ -1,12 +1,12 @@
-from transforms.coarse_graining import BaseTransform, gcm_filtering,greedy_coarse_grain, greedy_scipy_filtering, plain_coarse_grain, scipy_filtering
-from transforms.coarse_graining_inverse import  matmult_masked_filtering,matmult_filtering
+from transforms.coarse_graining import BaseTransform, GcmFiltering,GreedyCoarseGrain, GreedyScipyFiltering, PlainCoarseGrain, ScipyFiltering,WetMask
+from transforms.coarse_graining_inverse import  MatmultFiltering
 from transforms.grids import forward_difference
 from transforms.krylov import  krylov_inversion
 import numpy as np
 import xarray as xr
 
 
-class base_subgrid_forcing(BaseTransform):
+class BaseSubgridForcing(BaseTransform):
     filtering_class = None
     coarse_grain_class = None
     def __init__(self,*args,\
@@ -15,6 +15,7 @@ class base_subgrid_forcing(BaseTransform):
         super().__init__(*args,**kwargs)
         self.filtering = self.filtering_class(*args,**kwargs)
         self.coarse_grain = self.coarse_grain_class(*args,**kwargs)
+        self.wet_mask_generator = WetMask(*args,**kwargs)
         self.grid_separation = grid_separation
         self.momentum = momentum
     def compute_flux(self,hresdict:dict,):
@@ -48,23 +49,14 @@ class base_subgrid_forcing(BaseTransform):
         adv1 = self.filtering(adv1)
         adv2 = lresvars[u]*lres_flux[f"dlon_{key}"] + lresvars[v]*lres_flux[f"dlat_{key}"]
         return  adv2 - adv1
-class WetMasks(BaseTransform):
-    def __init__(self, sigma, ugrid,tgrid, *args, dims=..., **kwargs):
-        super().__init__(sigma, ugrid, *args, dims=dims, **kwargs)
-        self.ugrid = ugrid
-        self.tgrid = tgrid
-        self.interior_ocean_spread = 3*sigma
-    def generate_mask(self,dpethi):
-        gi = self.grid.isel(depth = dpethi)
-
             
             
 
-class base_lsrp_subgrid_forcing(base_subgrid_forcing):
+class BaseLSRPSubgridForcing(BaseSubgridForcing):
     inv_filtering_class = None
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
-        self.inv_filtering : matmult_filtering = self.inv_filtering_class(*args,**kwargs)
+        self.inv_filtering : MatmultFiltering = self.inv_filtering_class(*args,**kwargs)
     def __call__(self, hres, keys,rename,lres = {},clres = {},\
                              hres0= {},lres0 = {},clres0 = {}):
         forcings,(clres, lres) = super().__call__(hres,keys,rename,lres =  lres,clres = clres)
@@ -122,14 +114,14 @@ class xr2np_utility:
         ds.data = xx
         return ds
 
-class landfilling_krylov_lsrp_subgrid_forcing(base_lsrp_subgrid_forcing):
+class landfilling_krylov_lsrp_subgrid_forcing(BaseLSRPSubgridForcing):
     def __call__(self, hres:dict, keys,rename,lres = {},clres = {},\
                              hres0= {},lres0 = {},clres0 = {}):
-        forcings,(clres,lres) = super(base_lsrp_subgrid_forcing,self).__call__(hres,keys,rename,lres = lres,clres = clres)
+        forcings,(clres,lres) = super(BaseLSRPSubgridForcing,self).__call__(hres,keys,rename,lres = lres,clres = clres)
 
         dwxr = xr2np_utility(list(clres.values())[0])
         class orthproj_class:
-            def __init__(self,subgrid_forcing:base_lsrp_subgrid_forcing):
+            def __init__(self,subgrid_forcing:BaseLSRPSubgridForcing):
                 self.counter = 0
                 self.inv_filtering = subgrid_forcing.inv_filtering
                 self.coarse_grain = subgrid_forcing.coarse_grain
@@ -170,7 +162,7 @@ class landfilling_krylov_lsrp_subgrid_forcing(base_lsrp_subgrid_forcing):
         #     plot_ds(hres0,'hres0.png')
         #     raise Exception
 
-        forcings_lsrp,(clres0,lres0) = super(base_lsrp_subgrid_forcing,self).__call__(hres0,keys,rename,clres = clres0,lres = lres0)
+        forcings_lsrp,(clres0,lres0) = super(BaseLSRPSubgridForcing,self).__call__(hres0,keys,rename,clres = clres0,lres = lres0)
         forcings_lsrp = {f"{key}_res":  forcings[key] - forcings_lsrp[key] for key in rename}
 
         forcings = dict(forcings,**forcings_lsrp)
@@ -180,43 +172,43 @@ class landfilling_krylov_lsrp_subgrid_forcing(base_lsrp_subgrid_forcing):
 
 
 
-class gcm_subgrid_forcing(base_subgrid_forcing):
-    filtering_class = gcm_filtering
-    coarse_grain_class = greedy_coarse_grain
+class GcmSubgridForcing(BaseSubgridForcing):
+    filtering_class = GcmFiltering
+    coarse_grain_class = GreedyCoarseGrain
 
-class scipy_subgrid_forcing(base_subgrid_forcing):
-    filtering_class = scipy_filtering
-    coarse_grain_class =  plain_coarse_grain
+class ScipySubgridForcing(BaseSubgridForcing):
+    filtering_class = ScipyFiltering
+    coarse_grain_class =  PlainCoarseGrain
 
-class greedy_scipy_subgrid_forcing(scipy_subgrid_forcing):
-    filtering_class = greedy_scipy_filtering
-    coarse_grain_class =  greedy_coarse_grain
+class GreedyScipySubgridForcing(ScipySubgridForcing):
+    filtering_class = GreedyScipyFiltering
+    coarse_grain_class =  GreedyCoarseGrain
 
 
 
 
 
 # class scipy_lsrp_subgrid_forcing(landfilling_krylov_lsrp_subgrid_forcing):
-#     filtering_class = scipy_filtering
-#     coarse_grain_class =  plain_coarse_grain
-#     inv_filtering_class = matmult_filtering
+#     filtering_class = ScipyFiltering
+#     coarse_grain_class =  PlainCoarseGrain
+#     inv_filtering_class = MatmultFiltering
 
 
 # class greedy_scipy_lsrp_subgrid_forcing(landfilling_krylov_lsrp_subgrid_forcing):
-#     filtering_class = greedy_scipy_filtering
-#     coarse_grain_class =  greedy_coarse_grain
+#     filtering_class = GreedyScipyFiltering
+#     coarse_grain_class =  GreedyCoarseGrain
 #     inv_filtering_class = matmult_masked_filtering
 
 # class gcm_lsrp_subgrid_forcing(landfilling_krylov_lsrp_subgrid_forcing):
-#     filtering_class = gcm_filtering
-#     coarse_grain_class = greedy_coarse_grain
+#     filtering_class = GcmFiltering
+#     coarse_grain_class = GreedyCoarseGrain
 #     inv_filtering_class = matmult_masked_filtering
 
 
 
         
 filtering_classes = {
-    "gcm":gcm_subgrid_forcing,\
-    "gaussian":scipy_subgrid_forcing,\
-    "greedy_gaussian":greedy_scipy_subgrid_forcing
+    "gcm":GcmSubgridForcing,\
+    "gaussian":ScipySubgridForcing,\
+    "greedy_gaussian":GreedyScipySubgridForcing
 }

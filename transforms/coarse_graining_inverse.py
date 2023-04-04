@@ -123,13 +123,13 @@ def coordinatewise_matmultip(lw,sigma):
     return q
 
 
-class slicewise_matmult_filtering_saver(BaseTransform):
+class slicewise_MatmultFiltering_saver(BaseTransform):
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
         self.lat_area,self.lon_area = \
             wet_density(self.grid.wet_mask,self.grid.area,self.sigma,self.dims)    
         
-class matmult_filtering(BaseTransform):
+class MatmultFiltering(BaseTransform):
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
         lon_area = self.grid.mean(dim = self.dims[0])
@@ -168,7 +168,7 @@ class matmult_filtering(BaseTransform):
         # else:
         #     xvv = xr.where(self.coarse_wet_mask,xvv,np.nan)
         return xvv
-class matmult_masked_filtering(matmult_filtering):
+class matmult_masked_filtering(MatmultFiltering):
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
         self.coarse_wet_density = super().__call__(self.grid.wet_mask)

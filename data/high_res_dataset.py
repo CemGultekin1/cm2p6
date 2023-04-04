@@ -2,7 +2,7 @@ from typing import Callable
 from utils.xarray import concat, tonumpydict
 import xarray as xr
 from transforms.grids import get_grid_vars, ugrid2tgrid_interpolation
-from transforms.subgrid_forcing import base_lsrp_subgrid_forcing, filtering_classes, scipy_subgrid_forcing#,greedy_scipy_lsrp_subgrid_forcing
+from transforms.subgrid_forcing import BaseLSRPSubgridForcing, filtering_classes, ScipySubgridForcing
 import numpy as np
 
 class HighResCm2p6:
@@ -18,16 +18,8 @@ class HighResCm2p6:
         self.wet_mask = None
         self._ugrid_subgrid_forcing = None
         self._tgrid_subgrid_forcing = None
-        self._ugrid_scipy_forcing = None
-        self._tgrid_scipy_forcing = None
         self._grid_interpolation = None
-        self._scipy_forcing_class = scipy_subgrid_forcing
         self.forcing_class = filtering_classes[kwargs.get('filtering')]
-        # if kwargs.get('filtering') == 'gcm':
-        #     self.forcing_class = gcm_lsrp_subgrid_forcing
-        # else:
-        #     assert kwargs.get('filtering') == 'gaussian'
-        #     self.forcing_class = greedy_scipy_lsrp_subgrid_forcing
         a,b = section
         nt = len(self.ds.time)
         time_secs = np.linspace(0,nt,b+1).astype(int)
@@ -58,18 +50,6 @@ class HighResCm2p6:
         return ds
 
     @property
-    def ugrid_scipy_forcing(self,)->scipy_subgrid_forcing:
-        if self._ugrid_scipy_forcing is None:
-            self._ugrid_scipy_forcing :scipy_subgrid_forcing= scipy_subgrid_forcing(self.sigma,self.ugrid)
-        return self._ugrid_scipy_forcing
-
-    @property
-    def tgrid_scipy_forcing(self,)->scipy_subgrid_forcing:
-        if self._tgrid_scipy_forcing is None:
-            self._tgrid_scipy_forcing :scipy_subgrid_forcing= scipy_subgrid_forcing(self.sigma,self.tgrid)
-        return self._tgrid_scipy_forcing
-        
-    @property
     def ugrid(self,):
         ds = self.get_hres_dataset(0)
         ugrid,_ = get_grid_vars(ds)
@@ -80,15 +60,15 @@ class HighResCm2p6:
         _,tgrid = get_grid_vars(ds)
         return tgrid
     @property
-    def ugrid_subgrid_forcing(self,)-> base_lsrp_subgrid_forcing:
+    def ugrid_subgrid_forcing(self,)-> BaseLSRPSubgridForcing:
         if self._ugrid_subgrid_forcing is None:
-            self._ugrid_subgrid_forcing : base_lsrp_subgrid_forcing = self.forcing_class(self.sigma,self.ugrid)
+            self._ugrid_subgrid_forcing : BaseLSRPSubgridForcing = self.forcing_class(self.sigma,self.ugrid)
         return self._ugrid_subgrid_forcing
     
     @property
-    def tgrid_subgrid_forcing(self,)-> base_lsrp_subgrid_forcing:
+    def tgrid_subgrid_forcing(self,)-> BaseLSRPSubgridForcing:
         if self._tgrid_subgrid_forcing is None:
-            self._tgrid_subgrid_forcing :base_lsrp_subgrid_forcing =self.forcing_class(self.sigma,self.tgrid)
+            self._tgrid_subgrid_forcing :BaseLSRPSubgridForcing =self.forcing_class(self.sigma,self.tgrid)
         return self._tgrid_subgrid_forcing
 
     @property
@@ -109,15 +89,6 @@ class HighResCm2p6:
         return u.fillna(0),v.fillna(0),temp.fillna(0)
    
 
-    def get_mask(self,i):
-        _,di = self.time_depth_indices(i)
-        depthval = self.ds.depth.values[di]
-        if self.wet_mask is None:
-            self.build_mask(i)
-        elif depthval not in self.wet_mask.depth.values:
-            self.build_mask(i)
-        return self.wet_mask.sel(depth = [depthval])
-
     def join_wet_mask(self,mask):
         def drop_time(mask):
             if 'time' in mask.dims:
@@ -130,26 +101,30 @@ class HighResCm2p6:
             self.wet_mask = mask
         else:
             self.wet_mask = xr.merge([self.wet_mask,mask])#.wet_mask
-    def build_mask(self,i):
-        u,v,temp = self._base_get_hres(i)
-        fields = self.fields2forcings(i,u,v,temp,scipy_filtering = True)
-        mask_ = None
-        for val in fields.values():
-            mask__ = xr.where(np.isnan(val),1,0)
-            if mask_ is None:
-                mask_ = mask__
-            else:
-                mask_ += mask__
-        mask_.name = 'interior_wet_mask'
-        mask_ = xr.where(mask_>0,0,1)
-        mask_ = mask_.isel(time = 0)
-        self.join_wet_mask(mask_)
-        return mask_
+    def get_mask(self,):
+        def pass_gridvals(tgridval,ugridval):
+            for key_ in 'lat lon'.split():
+                tgridval[key_] = ugridval[key_]
+            return tgridval
+        
+        ucoarse_wet_density = self.ugrid_subgrid_forcing.wet_mask_generator.coarse_wet_density
+        tcoarse_wet_density = self.tgrid_subgrid_forcing.wet_mask_generator.coarse_wet_density
+        tcoarse_wet_density = pass_gridvals(tcoarse_wet_density,ucoarse_wet_density)
+        coarse_wet_density = (ucoarse_wet_density + tcoarse_wet_density)/2
+         
+        ucoarse_interior_wet_mask = self.ugrid_subgrid_forcing.wet_mask_generator.coarse_interior_wet_mask
+        tcoarse_interior_wet_mask = self.tgrid_subgrid_forcing.wet_mask_generator.coarse_interior_wet_mask
+        tcoarse_wet_density = pass_gridvals(tcoarse_interior_wet_mask,ucoarse_interior_wet_mask)
+        coarse_interior_wet_mask = ucoarse_interior_wet_mask*tcoarse_interior_wet_mask
+        
+        coarse_wet_density.name = 'wet_density'
+        coarse_interior_wet_mask.name = 'interior_wet_mask'
+        return coarse_wet_density.compute(),coarse_interior_wet_mask.compute()
     def get_forcings(self,i):
         u,v,temp = self._base_get_hres(i)
         ff =  self.fields2forcings(i,u,v,temp)
         return ff
-    def fields2forcings(self,i,u,v,temp,scipy_filtering = False):
+    def fields2forcings(self,i,u,v,temp,ScipyFiltering = False):
         u_t,v_t = self.grid_interpolation(u,v)
         uvars = dict(u=u,v=v)
         tvars = dict(u = u_t, v = v_t,temp = temp,)
@@ -192,11 +167,13 @@ class HighResCm2p6:
         else:
             fields = fields.expand_dims(dd)
         return fields
-    def append_mask(self,ds,i):
-        wetmask = self.get_mask(i)
-        ds = xr.merge([ds,wetmask])
+    def append_mask(self,ds):
+        wetmasks = self.get_mask()
+        ds = xr.merge([ds] + list(wetmasks))
         return ds
     def __getitem__(self,i):
         ds = self.get_forcings(i,)
+        ds = self.append_mask(ds)
+        ds = ds.drop('co2')
         nds =  tonumpydict(ds)
         return nds

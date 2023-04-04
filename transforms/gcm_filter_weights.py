@@ -1,7 +1,7 @@
 from utils.xarray import plot_ds
 import xarray as xr
 import numpy as np
-from transforms.coarse_graining import BaseTransform, gcm_filtering, greedy_coarse_grain
+from transforms.coarse_graining import BaseTransform, GcmFiltering, GreedyCoarseGrain
 class FilterWeightsBase(BaseTransform):
     def __init__(self, sigma, grid, *args, dims=..., **kwargs):
         super().__init__(sigma, grid, *args, dims=dims, **kwargs)
@@ -31,7 +31,7 @@ def continue_values(arr):
 class GcmFilterWeightsBase(FilterWeightsBase):
     def __init__(self,sigma,grid,*args,dims = 'lat lon'.split(),**kwargs):
         super().__init__(sigma,grid,*args,dims = dims,**kwargs)
-        self.coarse_wet_mask = greedy_coarse_grain(sigma,grid).coarse_wet_mask 
+        self.coarse_wet_mask = GreedyCoarseGrain(sigma,grid).coarse_wet_mask 
         self.ndepth = len(self.grid.depth)
         self.nlon = len(self.coarse_wet_mask.lon)
         self.nlat = len(self.coarse_wet_mask.lat)
@@ -49,8 +49,8 @@ class GcmFilterWeightsBase(FilterWeightsBase):
             subgrid[dim] = continue_values(subgrid[dim].values)
         return subgrid
     def generate_filter(self,subgrid):
-        filtering = gcm_filtering(self.sigma,subgrid)
-        coarse_graining = greedy_coarse_grain(self.sigma,subgrid)
+        filtering = GcmFiltering(self.sigma,subgrid)
+        coarse_graining = GreedyCoarseGrain(self.sigma,subgrid)
         span = self.span
         eye_field = xr.DataArray(
             data = np.eye(span**2).reshape([span,span,span,span]),

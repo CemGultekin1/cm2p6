@@ -189,7 +189,7 @@ def dataset_arguments(args,**kwargs_):
     else:
         boundaries = REGIONS['global']
         
-    kwargs = ['lsrp','latitude','temperature','section','interior','filtering']
+    kwargs = ['lsrp','latitude','temperature','section','interior','filtering','wet_mask_threshold']
     kwargs = {key:runprms.__dict__[key] for key in kwargs}
     kwargs['boundaries'] = boundaries
     kwargs['scalars'] = scalars

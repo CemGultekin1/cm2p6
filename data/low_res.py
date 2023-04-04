@@ -83,7 +83,8 @@ class SingleDomain(CM2p6Dataset):
         self._wetmask = None
         self._forcingmask = None
         self.interior = kwargs.get('interior')
-        
+        self.wet_mask_threshold = kwargs.get('wet_mask_threshold')
+        # print(f'self.wet_mask_threshold = {self.wet_mask_threshold}')
 
     @property
     def shape(self,):
@@ -116,7 +117,11 @@ class SingleDomain(CM2p6Dataset):
             if self.interior:
                 wetmask = 1 - ds.interior_wet_mask
             else:
-                wetmask = None
+                if 'wet_density' in ds.data_vars:
+                    print(f'"wet_density" in ds.data_vars = {"wet_density" in ds.data_vars}' )
+                    wetmask = 1 - xr.where(ds.wet_density >= self.wet_mask_threshold,1,0)
+                else:
+                    wetmask = None
             for key in ds.data_vars.keys():
                 mask_ = np.isnan(ds[key])
                 if wetmask is None:
@@ -188,4 +193,5 @@ class SingleDomain(CM2p6Dataset):
     def __getitem__(self,i):
         ds = self.get_dataset(i)
         # print(ds)
+        # raise Exception
         return ds
