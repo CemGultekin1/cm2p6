@@ -90,6 +90,7 @@ def generate_training_tasks():
         temperature = False,
         latitude = False,
         interior = [True,False],
+        min_precision = [0,0.024],
         spacing = ['asis','long_flat'],
         domain = 'four_regions',
     )

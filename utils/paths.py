@@ -71,6 +71,7 @@ BACKUP_MODELIDS_JSON = folder_tracker.join(REPO,'backup_modelids.json')
 
 JOBS_LOGS = folder_tracker.join(OUTPUTS_PATH,'slurm_logs')
 EVALS = folder_tracker.join(OUTPUTS_PATH,'evals')
+LEGACY = folder_tracker.join(OUTPUTS_PATH,'legacy')
 TIME_LAPSE = folder_tracker.join(OUTPUTS_PATH,'time_lapse')
 VIEWS = folder_tracker.join(OUTPUTS_PATH,'views')
 SCALARS = folder_tracker.join(OUTPUTS_PATH,'scalars')
@@ -88,11 +89,6 @@ R2_PLOTS = folder_tracker.join(PLOTS,'r2')
 MODELS_JSON = os.path.join(OUTPUTS_PATH,'models_info.json')
 DATA_JSON = os.path.join(OUTPUTS_PATH,'data_info.json')
 
-# folder_tracker.makedirs()
-
-# for dir in [MODELS,TRAINING_LOGS,OUTPUTS_PATH,EVALS,VIEWS,JOBS_LOGS]:
-#     if not os.path.exists(dir):
-#         os.makedirs(dir)
 
 def get_view_path(modelid):
     return os.path.join(VIEWS,modelid + '.nc')
@@ -100,8 +96,12 @@ def get_eval_path(modelid):
     return os.path.join(EVALS,modelid + '.nc')
 def modelsdict_path():
     return MODELS_JSON
-def statedict_path(modelid):
-    return os.path.join(MODELS,f"{modelid}.pth")
+def statedict_path(modelid,legacy:bool = False):
+    if not legacy:
+        return os.path.join(MODELS,f"{modelid}.pth"),modelid
+    else:
+        modelid = "GZ21"
+        return os.path.join(OUTPUTS_PATH,"GZ21.pth"),modelid
 def model_logs_json_path(modelid):
     return os.path.join(TRAINING_LOGS,f"{modelid}.json")
 

@@ -4,6 +4,10 @@ import itertools
 from typing import List
 from params import DATA_PARAMS,MODEL_PARAMS,ARCH_PARAMS,RUN_PARAMS, SCALAR_PARAMS, TRAIN_PARAMS,USUAL_PARAMS
 import numpy as np
+
+def is_legacy_run(args):
+    runargs,_ = options(args,key = 'run')
+    return runargs.gz21
 def populate_data_options(args,non_static_params = ["depth","co2"],**kwargs):
     prms,_ = options(args,key = "run")
     d = prms.__dict__

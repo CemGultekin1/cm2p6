@@ -118,7 +118,6 @@ class SingleDomain(CM2p6Dataset):
                 wetmask = 1 - ds.interior_wet_mask
             else:
                 if 'wet_density' in ds.data_vars:
-                    print(f'"wet_density" in ds.data_vars = {"wet_density" in ds.data_vars}' )
                     wetmask = 1 - xr.where(ds.wet_density >= self.wet_mask_threshold,1,0)
                 else:
                     wetmask = None

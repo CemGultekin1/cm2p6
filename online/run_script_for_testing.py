@@ -192,7 +192,7 @@ class CNN(nn.Module):
 
 def MOM6_testNN(nn,uv,pe,pe_num,u_scale,v_scale,Su_scale,Sv_scale):
    global gpu_id
-   use_cuda = True
+   use_cuda = False
    u= uv[0,:,:,:]*u_scale
    v= uv[1,:,:,:]*v_scale
    x = np.array([np.squeeze(u),np.squeeze(v)])
@@ -243,10 +243,10 @@ def MOM6_testNN(nn,uv,pe,pe_num,u_scale,v_scale,Su_scale,Sv_scale):
 def run_model(cnns_:dict,):
     from data.load import load_xr_dataset
 
-    args = '--filtering gaussian --interior False'
+    args = '--filtering gaussian --num_workers 1 --interior False'
     ds,scs = load_xr_dataset(args.split(),high_res = False)
 
-    ds = ds.isel(time = 3,lat = slice(100,400),lon = slice(100,400)).fillna(0)
+    ds = ds.isel(time = 0,).fillna(0)
 
     inputs = np.stack([np.stack([ds.u.values,ds.v.values],axis = 0)],axis = 0)
     
@@ -278,7 +278,7 @@ def imshow_on_ax(fig,ax,val,title,zero_centered:bool,**kwargs):
     if zero_centered:
         vmax = np.maximum(np.abs(vmax),np.abs(vmin))
         vmin = -vmax
-    pos = ax.imshow(val,cmap = 'bwr',vmax = vmax,vmin = vmin)
+    pos = ax.imshow(val[::-1],cmap = 'bwr',vmax = vmax,vmin = vmin)
     ax.set_title(title)
     fig.colorbar(pos, ax=ax)
 def get_vmin_vmax(outputs:dict):
@@ -344,21 +344,27 @@ def plot_outputs(outputs:dict):
     print(os.path.join(root,f'crowded_comparison.png'))
 
 def load_model(path,old_model_flag,fully_cnn_flag:bool = False):
-    if  not fully_cnn_flag:
-        nn=CNN(**cnn_arguments)#cuda_flag=False,relu_flag= 1 - old_model_flag)
-    else:        
-        nn = FullyCNN()
     statedict = torch.load(path,map_location=torch.device('cpu'))
-    if not old_model_flag:
-        _,statedict = statedict['gaussian_four_regions']
-    nn.load_state_dict(statedict,strict = False)
-    if fully_cnn_flag:
-        # path = os.path.join(OUTPUTS_PATH,'final_transformation.pth')
-        # transformation = torch.load(path)
-        # nn.final_transformation = transformation
-        pass
-    nn.eval()
-    return nn
+    if old_model_flag:
+        statedict = {'x':statedict}
+    else:
+        modelsdict = {}
+    for name,sttdict in statedict.items():
+        if  not fully_cnn_flag:
+            nn=CNN(**cnn_arguments)#cuda_flag=False,relu_flag= 1 - old_model_flag)
+        else:        
+            nn = FullyCNN()
+        
+        if not old_model_flag:
+            _,sttdict = sttdict
+        nn.load_state_dict(sttdict,strict = False)
+        nn.eval()
+        if old_model_flag:
+            return nn
+        else:
+            modelsdict[name] = nn
+        break
+    return modelsdict
     
 def load_models():
     models = {}
@@ -366,15 +372,12 @@ def load_models():
     path = os.path.join(OUTPUTS_PATH,'GZ21.pth')
     models['GZ21'] = load_model(path,True,fully_cnn_flag=True)
     
-    # path = os.path.join(OUTPUTS_PATH,'best_model.pth')
-    # models['best_model'] = load_model(path,True)
-    
-    
-    # filenames = ['20230327',]
-    filenames = ['20230329','20230403']
+
+    filenames = ['20230405']
     for fn in filenames:
         path = os.path.join(ONLINE_MODELS,'cem_' + fn + '.pth')
-        models[fn] = load_model(path,False)
+        for name,model in load_model(path,False).items():
+            models[name] =  model
     return models
 
 def main():

@@ -1,7 +1,7 @@
 from argparse import ArgumentTypeError
 
 SCALAR_PARAMS = {
-    "sigma" : {"type": int, "choices" : (4,8,12,16)},    
+    "sigma" : {"type": int, "choices" : (4,8,12,16)},
 }
 
 
@@ -40,7 +40,8 @@ ARCH_PARAMS = {
     "batchnorm" : {"type":int,"nargs":'+',"default":tuple([1]*8)},
     "seed" : {"type":int,"default":0},
     "model" : {"type":str, "choices":["fcnn","dfcnn","lsrp:0"]},
-    "min_precision" : {"type":float, "default":0.}
+    "min_precision" : {"type":float, "default":0.},
+    "gz21" : {"type":bool,"default":False},
 }
 
 

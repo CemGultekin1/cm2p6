@@ -1,4 +1,5 @@
 from argparse import Namespace
+from typing import Union
 from models.index import get_dict
 from models.variations import lcnn_architecture
 import numpy as np
@@ -6,6 +7,7 @@ from models.nets.cnn import CNN,DoubleCNN
 from models.index import update_model_info
 from models.variations import qcnn_architecture,unet_architecture
 from models.nets.others import QCNN,UNET,GAN
+from models.nets.gz21 import FullyCNN
 from models.regression import RegressionModel
 from utils.parallel import get_device
 
@@ -19,14 +21,16 @@ def chan_nums(modelargs):
     if modelargs.latitude:
         ninchans += 2
     return ninchans,noutchans
-def init_architecture(archargs:Namespace)->CNN:
-    net= CNN(**archargs.__dict__)
-    net = net.to(get_device())
-    if archargs.model == 'dfcnn':
-        net = DoubleCNN(net,**archargs.__dict__)
-        net.to(get_device())
-    
-    return net
+def init_architecture(archargs:Namespace)->Union[CNN,FullyCNN]:
+    if archargs.gz21:
+        return FullyCNN()
+    else:
+        net= CNN(**archargs.__dict__)
+        net = net.to(get_device())
+        if archargs.model == 'dfcnn':
+            net = DoubleCNN(net,**archargs.__dict__)
+            net.to(get_device())
+        return net
 
 
 

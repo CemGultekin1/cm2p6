@@ -100,13 +100,16 @@ def plot_ds(ds,imname,ncols = 3,dims = ['lat','lon'],\
             return dict()
         found_flag = False
         for psc,grouping in scale_grouping:
-            if name in grouping:
+            if grouping in name:
                 found_flag = True
                 break
         if not found_flag:
             return dict()
         vmax = -np.inf
-        for var in grouping:
+        data_vars_keys = flat_vars.keys()
+        for var in data_vars_keys:
+            if grouping not in var:
+                continue
             vmax_ = np.amax(np.abs(flat_vars[var].fillna(0).values))
             vmax = np.maximum(vmax,vmax_)
             if psc:
@@ -212,10 +215,11 @@ def fromtensor(tts,data_vars0,coords,masks,denormalize = True,fillvalue = np.nan
     data_vars = fromtensor2dict(tts,data_vars0,**kwargs)
     return fromtorchdict(data_vars,coords,masks,normalize = False,denormalize=denormalize, fillvalue=fillvalue,**kwargs)
 
-def fromtorchdict(data_vars,coords,masks,normalize = False,denormalize = False,fillvalue = np.nan,**kwargs):
+def fromtorchdict(data_vars,coords,masks,normalize = False,denormalize = False,fillvalue = np.nan,masking = True,**kwargs):
     ds = fromtorchdict2dataset(data_vars,coords)
     dsmasks = fromtorchdict2dataset(masks,coords)
-    ds = mask_dataset(ds,dsmasks,fillvalue = fillvalue)
+    if masking:
+        ds = mask_dataset(ds,dsmasks,fillvalue = fillvalue)
     if normalize:
         ds = normalize_dataset(ds,denormalize=False,**kwargs)
     elif denormalize:
@@ -239,7 +243,7 @@ def drop_unused_coords(ds,expand_dims = {},**kwargs):
 def fromtorchdict2dataset(data_vars,coords):
     for key,(dims,vals) in data_vars.items():
         if isinstance(vals,torch.Tensor):
-            vals = vals.numpy()
+            vals = vals.numpy().astype(np.float64)
         data_vars[key] = (dims,vals)
     for key,val in coords.items():
         if isinstance(val,torch.Tensor):

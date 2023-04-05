@@ -22,8 +22,9 @@ def update_statedict(state_dict_,net_,optimizer_,scheduler_,last_model = True):
 
 
 
-def get_statedict(modelid):
-    statedictfile =  statedict_path(modelid)
+def get_statedict(args):
+    modelargs,modelid = options(args,key = "model")
+    statedictfile,modelid =  statedict_path(modelid,legacy=modelargs.gz21)
     logfile = model_logs_json_path(modelid)
     device = get_device()
     state_dict = None
@@ -31,6 +32,11 @@ def get_statedict(modelid):
     if os.path.exists(statedictfile):
         print(f"model {modelid} state_dict has been found")
         state_dict = torch.load(statedictfile,map_location=torch.device(device))
+        if modelargs.gz21:
+            state_dict = dict(
+                best_model = state_dict,
+                last_model = state_dict
+            )
         if os.path.exists(logfile):
             with open(logfile) as f:
                 logs = json.load(f)
@@ -38,7 +44,7 @@ def get_statedict(modelid):
         print(f"model {modelid} state_dict has not been found")
         
         
-    return state_dict,logs
+    return state_dict,logs,modelargs,modelid 
 
 def load_modelsdict():
     file = modelsdict_path()
@@ -74,11 +80,15 @@ def get_conditional_mean_state_dict(args):
     print(' '.join(new_args))
     _,state_dict,_,_,_,_,_,_ = load_model(new_args)
     return state_dict
+
+
+
 def load_model(args):
     archargs,_ = options(args,key = "arch")
     net = init_architecture(archargs)
-    modelargs,modelid = options(args,key = "model")
-    state_dict,logs = get_statedict(modelid)
+
+    state_dict,logs,modelargs,modelid = get_statedict(args)
+        
     if modelargs.lossfun == "heteroscedastic":
         criterion = heteroscedasticGaussianLoss
     elif modelargs.lossfun == "MSE":
@@ -97,9 +107,9 @@ def load_model(args):
     if state_dict is not None and not rerun_flag:
         # net.load_state_dict(state_dict["last_model"])
         if runargs.mode == "train":
-            net.load_state_dict(state_dict["last_model"])
+            net.load_state_dict(state_dict["last_model"],strict = False)
         else:
-            net.load_state_dict(state_dict["best_model"])
+            net.load_state_dict(state_dict["best_model"],strict = False)
         print(f"Loaded an existing model")
         if "optimizer" in state_dict and not runargs.reset_optimizer:
             optimizer.load_state_dict(state_dict["optimizer"])

@@ -10,8 +10,9 @@ from data.vars import get_var_mask_name
 from models.load import load_model, load_old_model
 import matplotlib.pyplot as plt
 from utils.arguments import options, populate_data_options
+from params import replace_params
 from utils.parallel import get_device
-from utils.paths import EVALS
+from utils.paths import LEGACY
 from utils.slurm import flushed_print
 import numpy as np
 from utils.xarray import fromtensor, fromtorchdict, fromtorchdict2tensor, plot_ds
@@ -132,12 +133,19 @@ def get_lsrp_modelid(args):
     _,lsrpid = options(line.split(),key = "model")
     return True, lsrpid
 
+def get_legacy_args(args):
+    leg_args = args.copy()
+    leg_args = replace_params(leg_args,'gz21','True')
+    return leg_args
 
 def main():
-    args = sys.argv[1:]
+    # args = sys.argv[1:]
+    args = '--filtering gaussian --num_workers 1 --disp 1 --min_precision 0.024 --interior False --domain four_regions --batchnorm 1 1 1 1 1 1 1 0 --widths 2 128 64 32 32 32 32 32 4 --kernels 5 5 3 3 3 3 3 3 --minibatch 4 --mode eval'.split()
+    args_legacy = get_legacy_args(args)
     runargs,_ = options(args,key = "run")
 
     modelid,_,net,_,_,_,_,runargs=load_model(args)
+    _,_,gz21,_,_,_,_,_=load_model(args_legacy)
     # modelid,net=load_old_model('0')
     device = get_device()
     net.to(device)
@@ -145,111 +153,99 @@ def main():
     
     kwargs = dict(contained = '' if not lsrp_flag else 'res')
     assert runargs.mode == "eval"
-    multidatargs = populate_data_options(args,non_static_params=['depth','co2'],domain = 'global',interior = False)
-    # multidatargs = [args]
+    net.eval()
+    gz21.eval()
+    multidatargs = populate_data_options(args,non_static_params=[],domain = 'global',interior = False)
+    multi_datargs_legacy = populate_data_options(args_legacy,non_static_params=[],domain = 'global',interior = False)
     allstats = {}
-    for datargs in multidatargs:
+    for datargs,datargs_legacy in zip(multidatargs,multi_datargs_legacy):
         try:
             test_generator, = get_data(datargs,half_spread = net.spread, torch_flag = False, data_loaders = True,groups = ('test',))
+            test_generator_legacy, = get_data(datargs_legacy,half_spread = net.spread, torch_flag = False, data_loaders = True,groups = ('test',))
         except RequestDoesntExist:
             print('data not found!')
             test_generator = None
         if test_generator is None:
             continue
-        stats = {}
         nt = 0
-        # timer = Timer()
-        for fields,forcings,forcing_mask,_,forcing_coords in test_generator:
+        time_ranking = None
+        averaged_fields = None
+        for (fields,forcings,forcing_mask,_,forcing_coords),(fields_legacy,forcings_legacy,forcing_mask,_,forcing_coords_legacy) in zip(test_generator,test_generator_legacy):            
             fields_tensor = fromtorchdict2tensor(fields).type(torch.float32)
+            
+            fields_legacy_tensor = fromtorchdict2tensor(fields_legacy).type(torch.float32)
             depth = forcing_coords['depth'].item()
             co2 = forcing_coords['co2'].item()
             kwargs = dict(contained = '' if not lsrp_flag else 'res', \
-                expand_dims = {'co2':[co2],'depth':[depth]},\
+                expand_dims = {'co2':[co2],'depth':[depth],},\
                 drop_normalization = True,
+                masking = False,
                 )
             if nt ==  0:
                 flushed_print(depth,co2)
 
             with torch.set_grad_enabled(False):
-                mean,_ =  net.forward(fields_tensor.to(device))
+                mean,prec =  net.forward(fields_tensor.to(device))
                 mean = mean.to("cpu")
+                prec = prec.to("cpu")
+                mean_legacy,prec_legacy = gz21.forward(fields_legacy_tensor.to(device))
+                mean_legacy = mean_legacy.to("cpu")
+                prec_legacy = prec_legacy.to("cpu")
+                # fields_legacy_tensor.to("cpu")
 
 
+            predicted_forcings_mean = fromtensor(mean,forcings,forcing_coords, forcing_mask,denormalize = True,**kwargs).rename({'Su':'Su_mean','Sv':'Sv_mean'})
+            predicted_forcings_std = fromtensor(torch.sqrt(1/prec),forcings,forcing_coords, forcing_mask,denormalize = True,**kwargs).rename({'Su':'Su_std','Sv':'Sv_std'})
+            true_forcings = fromtorchdict(forcings,forcing_coords,forcing_mask,denormalize = True,**kwargs).rename({'Su':'Su_mean','Sv':'Sv_mean'})
             
-            # outfields = fromtorchdict2tensor(forcings).type(torch.float32)
-            # mask = fromtorchdict2tensor(forcing_mask).type(torch.float32)
-            # yhat = mean.numpy()[0]
-            # y = outfields.numpy()[0]
-            # m = mask.numpy()[0] < 0.5
-            # y[m] = np.nan
-            # yhat[m[:3]] = np.nan
-            # prst = lambda y: print(np.mean(y[y==y]),np.std(y[y==y]))
-            # prst(y),prst(yhat),prst(fields_tensor.numpy())
-            # nchan = yhat.shape[0]
-            # import matplotlib.pyplot as plt
-            # fig,axs = plt.subplots(nchan,2,figsize = (2*5,nchan*6))
-            # for chani in range(nchan):
-            #     ax = axs[chani,0]
-            #     ax.imshow(y[chani,::-1])
-            #     ax = axs[chani,1]
-            #     ax.imshow(yhat[chani,::-1])
-            # fig.savefig('eval_intervention.png')
-            # return
-
-
-            predicted_forcings = fromtensor(mean,forcings,forcing_coords, forcing_mask,denormalize = True,**kwargs)
-            true_forcings = fromtorchdict(forcings,forcing_coords,forcing_mask,denormalize = True,**kwargs)
-
+            
+            predicted_forcings_mean_legacy = fromtensor(mean_legacy,forcings_legacy,forcing_coords_legacy, forcing_mask,denormalize = True,**kwargs).rename({'Su':'Su_mean','Sv':'Sv_mean'})
+            predicted_forcings_std_legacy = fromtensor(torch.sqrt(1/prec_legacy),forcings_legacy,forcing_coords, forcing_mask,denormalize = True,**kwargs).rename({'Su':'Su_std','Sv':'Sv_std'})
+            
             if lsrp_flag:
-                predicted_forcings,true_forcings = lsrp_pred(predicted_forcings,true_forcings)
-                predicted_forcings,lsrp_forcings = predicted_forcings
-                stats = update_stats(stats,lsrp_forcings,true_forcings,lsrpid)
-            stats = update_stats(stats,predicted_forcings,true_forcings,modelid)
-            
-            # err = np.log10(np.abs(true_forcings - predicted_forcings))
-            # plot_ds(predicted_forcings,'predicted_forcings_2',ncols = 1)
-            # plot_ds(true_forcings,'true_forcings_2',ncols = 1)           
-            # plot_ds(err,'err_2',ncols = 1,cmap = 'magma')
-            
-            
-
-            # return
-            nt += 1
-            if runargs.disp > 0 and nt%runargs.disp==0:
-                flushed_print(nt)
-
-            # break
-            # if nt == 16:
-            # for key,stats_ in stats.items():
-            #     stats__ = metrics_dataset(stats_/nt,reduckwargs = {})
-            #     names = list(stats__.data_vars.keys())
-            #     ncols = 2
-            #     nrows  = int(np.ceil(len(names)/ncols))
+                predicted_forcings_mean,_ = lsrp_pred(predicted_forcings_mean,true_forcings)
+                predicted_forcings_mean,_ = predicted_forcings_mean
+ 
+            mean_err = np.abs(predicted_forcings_mean_legacy - predicted_forcings_mean)
+            std_err = np.abs(predicted_forcings_std - predicted_forcings_std_legacy)
+            cur_fields = xr.merge([mean_err,std_err])
+            if averaged_fields is None:
+                averaged_fields = cur_fields.copy()
+                data_vars = {key + '_max' : averaged_fields[key] for key in averaged_fields.data_vars.keys()}
+                data_vars.update(
+                    {key + '_argmax' : (averaged_fields[key]*0).astype(np.int64) for key in averaged_fields.data_vars.keys()}
+                )
+                time_ranking = xr.Dataset(
+                    data_vars = data_vars,
+                    coords = mean_err.coords,
+                )
                 
-            #     fig,axs = plt.subplots(nrows,ncols,figsize = (ncols*5,nrows*5))
-            #     for z,(i,j)  in enumerate(itertools.product(range(nrows),range(ncols))):
-            #         ax = axs[i,j]
-            #         kwargs = dict(vmin =0.5,vmax = 1) if 'r2' in names[z] else dict()
-            #         kwargs = dict(vmin =-1,vmax = 1) if 'corr' in names[z] else kwargs
-            #         stats__[names[z]].isel(co2 = 0,depth = 0).plot(ax = ax,**kwargs)
-            #         ax.set_title(names[z])
-                    
-            #     fig.savefig(f'_{nt}_{key}.png')
-            #     plt.close()
-            # if nt >300:
-            #     break
-            # break
-
-        for key in stats:
-            stats[key] = stats[key]/nt
-            if key not in allstats:
-                allstats[key] = []
-            allstats[key].append(stats[key].copy())
-
-    for key in allstats:
-        filename = os.path.join(EVALS,key+'.nc')
-        print(filename)
-        xr.merge(allstats[key]).to_netcdf(filename,mode = 'w')
+            else:
+                averaged_fields += cur_fields
+                for key in averaged_fields.data_vars.keys():
+                    _amax = f'{key}_argmax'
+                    _max = f'{key}_max'
+                    time_ranking[_amax] = xr.where(time_ranking[_max] >= cur_fields[key],time_ranking[_amax],nt)
+                    time_ranking[_max] = xr.where(time_ranking[_max] >= cur_fields[key],time_ranking[_max],cur_fields[key])
+            
+            nt += 1
+                            
+            if runargs.disp > 0 and nt%runargs.disp==0:
+                avgf = averaged_fields/nt
+                savefields = xr.merge([avgf,time_ranking])
+                flushed_print(nt)
+                filename = os.path.join(LEGACY,modelid+'.nc')
+                if not os.path.exists(LEGACY):
+                    os.makedirs(LEGACY)
+                savefields.to_netcdf(filename,mode = 'w')
+                
+        avgf = averaged_fields/nt
+        savefields = xr.merge([avgf,time_ranking])
+        flushed_print(nt)
+        filename = os.path.join(LEGACY,modelid+'.nc')
+        if not os.path.exists(LEGACY):
+            os.makedirs(LEGACY)
+        savefields.to_netcdf(filename,mode = 'w')
 
 
             

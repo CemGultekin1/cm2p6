@@ -25,35 +25,36 @@ def model_transfer(state_dict):
         new_state_dict[newkey] = state_dict[key]
     return new_state_dict
 def main():
-    args = '--lsrp 0 --depth 0 --sigma 4 --min_precision 0.024 --filtering gaussian --temperature False --latitude False --interior False --domain four_regions --num_workers 16 --disp 50 --batchnorm 1 1 1 1 1 1 1 0 --lossfun heteroscedastic --widths 2 128 64 32 32 32 32 32 4 --kernels 5 5 3 3 3 3 3 3 --minibatch 4'
+    args = '--filtering gaussian --interior False --domain four_regions --batchnorm 1 1 1 1 1 1 1 0 --widths 2 128 64 32 32 32 32 32 4 --kernels 5 5 3 3 3 3 3 3 --minibatch 4'
     
     replace_values = {
-        'filtering' : ['gaussian','gcm'],
-        'domain' : ['four_regions','global'],
+        'interior' : (['False','True'],['interior','non_interior']),
+        'spacing' : (['asis','long_flat'],['true_derivatives','wrong_derivatives'])
     }
-    put_dict_keys = 'widths kernels seed batchnorm min_precision'.split()
+    put_dict_keys = 'widths kernels seed batchnorm min_precision'.split() + list(replace_values.keys())
+    name_parts = [vals[1] for key,vals in replace_values.items()]
+    name_parts = [nmp[0] for nmp in zip(name_parts)]
+
     replace_values = [
-       [ (key,val) for val in vals ]for key,vals in replace_values.items()]
+       [ (key,val) for val in vals[0] ]for key,vals in replace_values.items()]
 
     models_dict = {}
     names = []
-    for keyvalpairs in itertools.product(*replace_values):
+    for keyvalpairs,nmp in zip(itertools.product(*replace_values),itertools.product(*name_parts)):
         args_ = args.split()
-        name = []
         for key,val in keyvalpairs:
             args_ = replace_param(args_,key,val)
-            name.append(val)
-        name = '_'.join(name)
+        name = '_'.join(nmp)
         modelargs,modelid = options(args_,key = 'model')
         modelargsdict = {
             key:modelargs.__dict__[key] for key in put_dict_keys
         }
         modelargsdict['modelid'] = modelid
+        print(name)
         models_dict[name] = (
             modelargsdict,{}
         )
         names.append(name)
-        
         
     today = date.today().strftime("%Y%m%d")
     path = os.path.join(ONLINE_MODELS,"cem_"+today+'.pth')
