@@ -23,7 +23,10 @@ DATA_PARAMS = {
 
 TRAIN_PARAMS = {
     "lr" : {"type": float, "default" : 1e-2},
-    "lossfun" : {"type":str, "choices":["heteroscedastic","MSE","MVARE"]}
+    "lossfun" : {"type":str, "choices":["heteroscedastic","MSE","MVARE"]},
+    "weight_decay" : {"type":float, "default": 0.},
+    "clip" : {"type":float, "default": -1},
+    "scheduler" : {"type":str,"choices":["ReduceLROnPlateau","MultiStepLR"]}
 }
 
 

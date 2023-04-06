@@ -1,3 +1,4 @@
+from copy import deepcopy
 import os
 from typing import Dict
 from models.nets.cnn import adjustcnn
@@ -70,7 +71,9 @@ def fix_model_type(args):
 def combine_all(kwargs:Dict[int,dict],base_kwargs):
     argslist = []
     for kwarg in kwargs.values():
-        argslist =  argslist + python_args(**kwarg,**base_kwargs)
+        base_kwargs_ = deepcopy(base_kwargs)
+        base_kwargs_.update(kwarg)
+        argslist =  argslist + python_args(**base_kwargs_)
     return argslist
 
 
@@ -83,16 +86,17 @@ def generate_training_tasks():
     )
     kwargs = {}
     kwargs[0] = dict(
-        lsrp = 0,     
-        depth = 0,
-        sigma = 4,
         filtering = 'gaussian',
-        temperature = False,
-        latitude = False,
-        interior = [True,False],
-        min_precision = [0,0.024],
-        spacing = ['asis','long_flat'],
+        interior = False,
+        clip = 1.,
+        scheduler = "MultiStepLR",
+        lr = 5e-4,
+        batchnorm = tuple([0]*8),
+        min_precision = 0.024,
         domain = 'four_regions',
+        weight_decay = 0.05,
+        lossfun = 'heteroscedastic',
+        maxepoch = 100
     )
     kwargs[1] = dict(
         lsrp = 0,     

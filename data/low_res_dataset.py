@@ -134,8 +134,9 @@ class MultiDomainDataset(MultiDomain):
             return np.stack(v,axis =0)
     def group_to_torch(self,vargroups):
         return tuple([self._to_torch(vars) for vars in vargroups])
-    def _to_torch(self,vals:np.array,type = torch.float32):
-        return torch.from_numpy(vals).type(type)
+    def _to_torch(self,vals:np.array,dtype = torch.float32):
+        # vals = vals[:,300:-280,300:-280]
+        return torch.from_numpy(vals).type(dtype)
     def normalize(self,data_vars,coords):
         keys_list = tuple(data_vars.keys())
         for key in keys_list:

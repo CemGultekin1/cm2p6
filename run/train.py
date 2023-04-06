@@ -7,6 +7,7 @@ import time
 import torch
 import numpy as np
 import sys
+from torch.nn.utils import clip_grad_norm_
 
 from utils.slurm import flushed_print
 
@@ -30,9 +31,13 @@ class Timer:
 
 def main():
     args = sys.argv[1:]
-    # args = '--lsrp 0 --depth 0 --sigma 4 --filtering gaussian --temperature False --latitude False --interior True --domain four_regions --num_workers 1 --disp 50 --batchnorm 1 1 1 1 1 1 1 0 --lossfun heteroscedastic --widths 2 128 64 32 32 32 32 32 4 --kernels 5 5 3 3 3 3 3 3 --minibatch 1'.split()
-    
+    # from utils.slurm import read_args
+    # from params import replace_params
+    # args = read_args(1)
+    # args =replace_params(args,'num_workers','1','minibatch','1')
+
     modelid,state_dict,net,criterion,optimizer,scheduler,logs,runargs=load_model(args)
+    clip = runargs.clip
     flushed_print('torch.cuda.is_available():\t',torch.cuda.is_available())
     flushed_print('runargs:\t',runargs)
     training_generator,val_generator=get_data(args,half_spread = net.spread,torch_flag = True,data_loaders = True,groups = ('train','validation'))
@@ -42,6 +47,8 @@ def main():
     print(f"using device: {device}")
     flushed_print("epochs started")
     timer = Timer()
+    # print(runargs.epoch,runargs.maxepoch)
+    # return
     for epoch in range(runargs.epoch,runargs.maxepoch):
         logs['train-loss'].append([])
         tt=0
@@ -107,6 +114,8 @@ def main():
             logs['train-loss'][-1].append(loss.item())
             optimizer.zero_grad()
             loss.backward()
+            if clip>0:
+                clip_grad_norm_(net.parameters(), clip)
             optimizer.step()
             timer.end('model')
 
@@ -117,6 +126,7 @@ def main():
                         '\t ±',\
                         str(np.std(np.array(logs['train-loss'][-1]))))
                 flushed_print(timer)
+            break
             timer.start('data')
 
         timer.reset()
@@ -132,6 +142,7 @@ def main():
                 loss = criterion(outputs, outfields, mask)
                 val_loss+=loss.item()
                 num_val+=1
+                break
         logs['val-loss'].append(val_loss/num_val)
         logs['lr'].append(optimizer.param_groups[0]['lr'])
         scheduler.step(logs['val-loss'][-1])

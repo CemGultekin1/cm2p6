@@ -194,24 +194,30 @@ def main():
                 # fields_legacy_tensor.to("cpu")
 
 
-            predicted_forcings_mean = fromtensor(mean,forcings,forcing_coords, forcing_mask,denormalize = True,**kwargs).rename({'Su':'Su_mean','Sv':'Sv_mean'})
-            predicted_forcings_std = fromtensor(torch.sqrt(1/prec),forcings,forcing_coords, forcing_mask,denormalize = True,**kwargs).rename({'Su':'Su_std','Sv':'Sv_std'})
-            true_forcings = fromtorchdict(forcings,forcing_coords,forcing_mask,denormalize = True,**kwargs).rename({'Su':'Su_mean','Sv':'Sv_mean'})
+            predicted_forcings_mean = fromtensor(mean,forcings,forcing_coords, forcing_mask,denormalize = True,**kwargs)
+            predicted_forcings_std = fromtensor(torch.sqrt(1/prec),forcings,forcing_coords, forcing_mask,denormalize = True,**kwargs)
+            true_forcings = fromtorchdict(forcings,forcing_coords,forcing_mask,denormalize = True,**kwargs)
             
             
-            predicted_forcings_mean_legacy = fromtensor(mean_legacy,forcings_legacy,forcing_coords_legacy, forcing_mask,denormalize = True,**kwargs).rename({'Su':'Su_mean','Sv':'Sv_mean'})
-            predicted_forcings_std_legacy = fromtensor(torch.sqrt(1/prec_legacy),forcings_legacy,forcing_coords, forcing_mask,denormalize = True,**kwargs).rename({'Su':'Su_std','Sv':'Sv_std'})
+            predicted_forcings_mean_legacy = fromtensor(mean_legacy,forcings_legacy,forcing_coords_legacy, forcing_mask,denormalize = True,**kwargs)
+            predicted_forcings_std_legacy = fromtensor(torch.sqrt(1/prec_legacy),forcings_legacy,forcing_coords, forcing_mask,denormalize = True,**kwargs)
             
             if lsrp_flag:
                 predicted_forcings_mean,_ = lsrp_pred(predicted_forcings_mean,true_forcings)
                 predicted_forcings_mean,_ = predicted_forcings_mean
  
-            mean_err = np.abs(predicted_forcings_mean_legacy - predicted_forcings_mean)
-            std_err = np.abs(predicted_forcings_std - predicted_forcings_std_legacy)
-            cur_fields = xr.merge([mean_err,std_err])
+            mean_err = np.square(predicted_forcings_mean_legacy - predicted_forcings_mean).rename({'Su':'Su_mean_mse','Sv':'Sv_mean_mse'})
+            std_err = np.square(predicted_forcings_std - predicted_forcings_std_legacy).rename({'Su':'Su_std_mse','Sv':'Sv_std_mse'})
+            mean_s2 = np.square(predicted_forcings_mean_legacy).rename({'Su':'Su_mean_sc2','Sv':'Sv_mean_sc2'})
+            std_s2 = np.square(predicted_forcings_std_legacy).rename({'Su':'Su_std_sc2','Sv':'Sv_std_sc2'})
+            cur_fields = xr.merge([mean_err,std_err,mean_s2,std_s2])
+            
+            max_track_keys = [key for key in cur_fields.data_vars.keys() if 'sc2' not in key]
+            
             if averaged_fields is None:
                 averaged_fields = cur_fields.copy()
-                data_vars = {key + '_max' : averaged_fields[key] for key in averaged_fields.data_vars.keys()}
+                
+                data_vars = {key + '_max' : averaged_fields[key] for key in max_track_keys}
                 data_vars.update(
                     {key + '_argmax' : (averaged_fields[key]*0).astype(np.int64) for key in averaged_fields.data_vars.keys()}
                 )
@@ -222,7 +228,7 @@ def main():
                 
             else:
                 averaged_fields += cur_fields
-                for key in averaged_fields.data_vars.keys():
+                for key in max_track_keys:
                     _amax = f'{key}_argmax'
                     _max = f'{key}_max'
                     time_ranking[_amax] = xr.where(time_ranking[_max] >= cur_fields[key],time_ranking[_amax],nt)
@@ -234,7 +240,7 @@ def main():
                 avgf = averaged_fields/nt
                 savefields = xr.merge([avgf,time_ranking])
                 flushed_print(nt)
-                filename = os.path.join(LEGACY,modelid+'.nc')
+                filename = os.path.join(LEGACY,modelid+'_.nc')
                 if not os.path.exists(LEGACY):
                     os.makedirs(LEGACY)
                 savefields.to_netcdf(filename,mode = 'w')
@@ -242,7 +248,7 @@ def main():
         avgf = averaged_fields/nt
         savefields = xr.merge([avgf,time_ranking])
         flushed_print(nt)
-        filename = os.path.join(LEGACY,modelid+'.nc')
+        filename = os.path.join(LEGACY,modelid+'_.nc')
         if not os.path.exists(LEGACY):
             os.makedirs(LEGACY)
         savefields.to_netcdf(filename,mode = 'w')

@@ -85,6 +85,7 @@ TRAINING_LOGS = folder_tracker.join(OUTPUTS_PATH,'training_logs')
 VIEW_PLOTS = folder_tracker.join(PLOTS,'views')
 TIME_LAPSE_PLOTS = folder_tracker.join(PLOTS,'time_lapse')
 R2_PLOTS = folder_tracker.join(PLOTS,'r2')
+LEGACY_PLOTS = folder_tracker.join(PLOTS,'legacy')
 
 MODELS_JSON = os.path.join(OUTPUTS_PATH,'models_info.json')
 DATA_JSON = os.path.join(OUTPUTS_PATH,'data_info.json')
@@ -98,10 +99,10 @@ def modelsdict_path():
     return MODELS_JSON
 def statedict_path(modelid,legacy:bool = False):
     if not legacy:
-        return os.path.join(MODELS,f"{modelid}.pth"),modelid
+        return os.path.join(MODELS,f"{modelid}.pth")
     else:
         modelid = "GZ21"
-        return os.path.join(OUTPUTS_PATH,"GZ21.pth"),modelid
+        return os.path.join(OUTPUTS_PATH,"GZ21.pth")
 def model_logs_json_path(modelid):
     return os.path.join(TRAINING_LOGS,f"{modelid}.json")
 

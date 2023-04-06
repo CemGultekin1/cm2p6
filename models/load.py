@@ -5,6 +5,7 @@ from models.lossfuns import MSE, heteroscedasticGaussianLoss,MVARE
 from models.nets.cnn import LCNN, DoubleCNN, DoubleLCNNWrapper
 from params import replace_param
 import torch
+from torch.optim.lr_scheduler import MultiStepLR
 from utils.arguments import options
 from utils.parallel import get_device
 from utils.paths import model_logs_json_path, modelsdict_path, statedict_path
@@ -24,7 +25,9 @@ def update_statedict(state_dict_,net_,optimizer_,scheduler_,last_model = True):
 
 def get_statedict(args):
     modelargs,modelid = options(args,key = "model")
-    statedictfile,modelid =  statedict_path(modelid,legacy=modelargs.gz21)
+    statedictfile =  statedict_path(modelid,legacy=modelargs.gz21)
+    if modelargs.gz21:
+        modelid = 'GZ21'
     logfile = model_logs_json_path(modelid)
     device = get_device()
     state_dict = None
@@ -81,7 +84,19 @@ def get_conditional_mean_state_dict(args):
     _,state_dict,_,_,_,_,_,_ = load_model(new_args)
     return state_dict
 
-
+def load_optimizer(args,net,):
+    runargs,_ = options(args,key = "run")
+    
+    optimizer = torch.optim.Adam(net.parameters(), lr=runargs.lr,weight_decay = runargs.weight_decay)
+    if runargs.scheduler == "ReduceLROnPlateau":
+        scheduler=torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer,factor=0.5,patience=2)
+    else:
+        class MultiStepLRStepInputNeglect(MultiStepLR):
+            def step(self,*args):
+                return super().step()
+        scheduler = MultiStepLRStepInputNeglect(optimizer, milestones = [10,20],
+                           gamma=0.1)
+    return optimizer,scheduler
 
 def load_model(args):
     archargs,_ = options(args,key = "arch")
@@ -100,9 +115,9 @@ def load_model(args):
         assert state_dict1 is not None
         net.cnn1.load_state_dict(state_dict1["best_model"])
     runargs,_ = options(args,key = "run")
-    optimizer = torch.optim.Adam(net.parameters(), lr=runargs.lr)
-
-    scheduler=torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer,factor=0.5,patience=2)
+    optimizer,scheduler = load_optimizer(args,net)
+    
+    
     rerun_flag = runargs.reset_model and runargs.mode == 'train'
     if state_dict is not None and not rerun_flag:
         # net.load_state_dict(state_dict["last_model"])
