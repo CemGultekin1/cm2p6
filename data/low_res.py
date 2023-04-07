@@ -174,8 +174,8 @@ class SingleDomain(CM2p6Dataset):
             if key in ds.data_vars.keys():
                 ds = ds.drop(key)
 
-        ds = apply_mask(ds,self.fieldwetmask.values,list(ds.data_vars))
-        ds = apply_mask(ds,self.forcingwetmask.values,[field for field in list(ds.data_vars) if 'S' in field])
+        # ds = apply_mask(ds,self.fieldwetmask.values,list(ds.data_vars))
+        # ds = apply_mask(ds,self.forcingwetmask.values,[field for field in list(ds.data_vars) if 'S' in field])
 
         return ds
 

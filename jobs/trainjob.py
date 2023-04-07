@@ -88,17 +88,25 @@ def generate_training_tasks():
     kwargs[0] = dict(
         filtering = 'gaussian',
         interior = False,
+        num_workers = 8,
         clip = 1.,
         scheduler = "MultiStepLR",
         lr = 5e-4,
         batchnorm = tuple([0]*8),
-        min_precision = 0.024,
+        min_precision = [0.024,0.025],
         domain = 'four_regions',
-        weight_decay = 0.05,
         lossfun = 'heteroscedastic',
         maxepoch = 100
     )
     kwargs[1] = dict(
+        filtering = 'gaussian',
+        interior = False,
+        num_workers = 8,
+        min_precision = [0.024,0.025],
+        domain = 'four_regions',
+        lossfun = 'heteroscedastic',
+    )
+    kwargs[2] = dict(
         lsrp = 0,     
         depth = 0,
         sigma = [4,8,12,16],
@@ -108,7 +116,7 @@ def generate_training_tasks():
         domain = ['four_regions','global'],
         seed = list(range(3))
     )
-    kwargs[2] = dict(
+    kwargs[3] = dict(
         lsrp = [0,1],     
         depth = 0,
         sigma = [4,8,12,16],
@@ -118,7 +126,7 @@ def generate_training_tasks():
         domain = ['four_regions','global'],
         seed = list(range(3))
     )
-    kwargs[3] = dict(
+    kwargs[4] = dict(
         lsrp = [0,1],     
         depth =[int(d) for d in DEPTHS],
         sigma = [4,8,12,16],

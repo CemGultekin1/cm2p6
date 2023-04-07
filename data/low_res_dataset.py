@@ -195,8 +195,49 @@ class MultiDomainDataset(MultiDomain):
             v[v!=v] = 0
             values[key] = v
         return values
-    def __getitem__(self,i):
-        outs = super().__getitem__(i)
+    def __getitem__(self, i):
+        ds = super().__getitem__(i)
+        per_region = []
+        requested_boundaries = ([None]*4,) if self.requested_boundaries is None else self.requested_boundaries
+        for lat0,lat1,lon0,lon1 in requested_boundaries:            
+            if lat0 is not None:
+                subds = ds.sel(lat = slice(lat0,lat1),lon= slice(lon0,lon1))
+            else:
+                subds = ds
+            single_dom_out = self.single_domain(subds)
+            if not self.torch_flag:
+                return single_dom_out
+            per_region.append(single_dom_out)
+        cropped_per_region = []
+        for var_inputs in zip(*per_region):
+            shps = []
+            for var_in in var_inputs:
+                shps.append(np.array(var_in.shape))
+            shps = np.stack(shps,axis = 0)
+            shps = np.amin(shps,axis =0)
+            group = []
+            for var_in in var_inputs:
+                var_in = var_in[:shps[0],:shps[1],:shps[2]]
+                group.append(var_in)
+            group = torch.stack(group,dim = 0)
+            cropped_per_region.append(group)
+        min_gpu_reject_size = 200
+        max_shape = np.stack([np.array(group.shape[2:]) for group in cropped_per_region],axis = 0)
+        max_shape = np.amax(max_shape,axis = 0)
+        pad_shape = np.maximum(min_gpu_reject_size - max_shape,0)
+        if np.all(pad_shape == 0) or not torch.cuda.is_available():
+            return tuple(cropped_per_region)
+        cropped_per_region_ = []
+        for group in cropped_per_region:
+            shp = group.shape
+            padded_shape = np.array(shp)
+            padded_shape[2:] += pad_shape
+            z = torch.zeros(*padded_shape)
+            z[:,:,:shp[2],:shp[3]] = group
+            cropped_per_region_.append(z)
+        return tuple(cropped_per_region_)
+        
+    def single_domain(self,outs):
         data_vars,coords = tonumpydict(outs)
 
         if self.latitude:
@@ -206,7 +247,7 @@ class MultiDomainDataset(MultiDomain):
         data_vars,coords,forcing_coords = self.pad(data_vars,coords)
         data_vars = self.mask(data_vars)
         grouped_vars = self.group_variables(data_vars)
-
+        
         if self.torch_flag:
             grouped_vars = self.group_np_stack(grouped_vars)
             return self.group_to_torch(grouped_vars)

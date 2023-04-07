@@ -192,11 +192,14 @@ def fromtorchdict2tensor(data_vars,contained = '',**kwargs):
         if contained not in key:
             continue
         _,vec = data_vars[key]
+        if isinstance(vec,np.ndarray):
+            vec = torch.from_numpy(vec)
         vecs.append(vec)
     for i in range(len(vecs)):
         vec = vecs[i]
         j = 4 - len(vec.shape)
         vecs[i] = vec.reshape([1]*j + list(vec.shape))
+        
     return torch.cat(vecs,dim=1)
 
 def fromtensor2dict(tts,data_vars0,contained = '',**kwargs):
@@ -216,9 +219,9 @@ def fromtensor(tts,data_vars0,coords,masks,denormalize = True,fillvalue = np.nan
     return fromtorchdict(data_vars,coords,masks,normalize = False,denormalize=denormalize, fillvalue=fillvalue,**kwargs)
 
 def fromtorchdict(data_vars,coords,masks,normalize = False,denormalize = False,fillvalue = np.nan,masking = True,**kwargs):
-    ds = fromtorchdict2dataset(data_vars,coords)
-    dsmasks = fromtorchdict2dataset(masks,coords)
+    ds = fromtorchdict2dataset(data_vars,coords)    
     if masking:
+        dsmasks = fromtorchdict2dataset(masks,coords)
         ds = mask_dataset(ds,dsmasks,fillvalue = fillvalue)
     if normalize:
         ds = normalize_dataset(ds,denormalize=False,**kwargs)

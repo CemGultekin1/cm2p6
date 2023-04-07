@@ -140,7 +140,11 @@ def get_legacy_args(args):
 
 def main():
     # args = sys.argv[1:]
-    args = '--filtering gaussian --num_workers 1 --disp 1 --min_precision 0.024 --interior False --domain four_regions --batchnorm 1 1 1 1 1 1 1 0 --widths 2 128 64 32 32 32 32 32 4 --kernels 5 5 3 3 3 3 3 3 --minibatch 4 --mode eval'.split()
+    # args = '--filtering gaussian --num_workers 1 --disp 1 --min_precision 0.024 --interior False --domain four_regions --batchnorm 1 1 1 1 1 1 1 0 --widths 2 128 64 32 32 32 32 32 4 --kernels 5 5 3 3 3 3 3 3 --minibatch 4 --mode eval'.split()
+    from utils.slurm import read_args
+    from params import replace_params
+    args = read_args(2)
+    args = replace_params(args,'mode','eval','num_workers','1','disp','25','minibatch','1')
     args_legacy = get_legacy_args(args)
     runargs,_ = options(args,key = "run")
 
@@ -149,6 +153,7 @@ def main():
     # modelid,net=load_old_model('0')
     device = get_device()
     net.to(device)
+    gz21.to(device)
     lsrp_flag, lsrpid = get_lsrp_modelid(args)
     
     kwargs = dict(contained = '' if not lsrp_flag else 'res')
@@ -237,6 +242,8 @@ def main():
             nt += 1
                             
             if runargs.disp > 0 and nt%runargs.disp==0:
+                if nt == 1:
+                    plot_ds(cur_fields,'cur_fields.png',ncols = 2)
                 avgf = averaged_fields/nt
                 savefields = xr.merge([avgf,time_ranking])
                 flushed_print(nt)

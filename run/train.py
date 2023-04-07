@@ -33,8 +33,8 @@ def main():
     args = sys.argv[1:]
     # from utils.slurm import read_args
     # from params import replace_params
-    # args = read_args(1)
-    # args =replace_params(args,'num_workers','1','minibatch','1')
+    # args = read_args(2)
+    # args =replace_params(args,'num_workers','1',)
 
     modelid,state_dict,net,criterion,optimizer,scheduler,logs,runargs=load_model(args)
     clip = runargs.clip
@@ -77,7 +77,6 @@ def main():
             # plot_method(outfields,'outfields.png')
             # plot_method(mask,'mask.png')
             # return
-
             infields,outfields,mask = infields.to(device),outfields.to(device),mask.to(device)
             timer.end('data')
             timer.start('model')
@@ -87,13 +86,13 @@ def main():
             #     net.eval()
             #     outputs = net.forward(infields)
             # mean,cond_var = outputs
-            # yhat1 = cond_var.numpy()[0]
-            # yhat = mean.numpy()[0]
-            # y = outfields.numpy()[0]
-            # m = mask.numpy()[0] < 0.5
-            # yhat[m] = np.nan
-            # y[m] = np.nan
-            # yhat1[m] = np.nan
+            # yhat1 = cond_var.to("cpu").numpy()[0]
+            # yhat = mean.to("cpu").numpy()[0]
+            # y = outfields.to("cpu").numpy()[0]
+            # m = mask.to("cpu").numpy()[0] < 0.5
+            # # yhat[m] = np.nan
+            # # y[m] = np.nan
+            # # yhat1[m] = np.nan
             
             # nchan = yhat.shape[0]
             # import matplotlib.pyplot as plt
@@ -126,7 +125,6 @@ def main():
                         '\t ±',\
                         str(np.std(np.array(logs['train-loss'][-1]))))
                 flushed_print(timer)
-            break
             timer.start('data')
 
         timer.reset()
@@ -142,7 +140,6 @@ def main():
                 loss = criterion(outputs, outfields, mask)
                 val_loss+=loss.item()
                 num_val+=1
-                break
         logs['val-loss'].append(val_loss/num_val)
         logs['lr'].append(optimizer.param_groups[0]['lr'])
         scheduler.step(logs['val-loss'][-1])

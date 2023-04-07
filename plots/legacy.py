@@ -14,13 +14,19 @@ def main():
     target = LEGACY_PLOTS
     if not os.path.exists(target):
         os.makedirs(target)
-    lines = ['--filtering gaussian --min_precision 0.024 --domain four_regions --batchnorm 1 1 1 1 1 1 1 0 --widths 2 128 64 32 32 32 32 32 4 --kernels 5 5 3 3 3 3 3 3 --minibatch 4']
+    
+    from utils.slurm import read_args
+    from params import replace_params
+    args = read_args(2)
+    args = replace_params(args,'mode','eval','num_workers','1','disp','25','minibatch','1')
+
+    lines = [' '.join(args)]
     for line in lines:
         modelargs,modelid = options(line.split(),key = "model")
         snfile = os.path.join(root,modelid + '_.nc')
         if not os.path.exists(snfile):
             continue
-        sn = xr.open_dataset(snfile).sel(lat = slice(-85,85))#.isel(depth = [0],co2 = 0).drop(['co2'])
+        sn = xr.open_dataset(snfile).sel(lat = slice(-85,85)).load()#.isel(depth = [0],co2 = 0).drop(['co2'])
 
         sn = sn.isel(co2 = 0,depth= 0).drop('co2 depth'.split())
 
@@ -51,7 +57,7 @@ def main():
             mse = np.mean(var.values).item()
             subtitle = f"R2({name})"
             axs[ir,ic].set_title(subtitle,fontsize=24)
-        suptitle = 'asdf'
+        suptitle = f'GZ21 as Ground Truth'
         fig.suptitle(suptitle,fontsize=24)
         fig.savefig(targetfile)
         flushed_print(targetfile)

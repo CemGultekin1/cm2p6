@@ -248,17 +248,32 @@ def get_data(args,torch_flag = False,data_loaders = True,**kwargs):
         dsets = load_highres_dataset(args,torch_flag = torch_flag,**kwargs)
 
     if data_loaders:
-        minibatch = ns.minibatch
+        minibatch = ns.minibatch//len(REGIONS[ns.domain])
         if ns.mode != "train":
             minibatch = None
         params={'batch_size':minibatch,\
             'shuffle': ns.mode in ["train","view"],\
             'num_workers':ns.num_workers,\
-            'prefetch_factor':ns.prefetch_factor}
+            'prefetch_factor':ns.prefetch_factor,\
+            'collate_fn':collate_fn,\
+            'pin_memory':True}
+        if not torch_flag:
+            params.pop('collate_fn')
         torchdsets = (TorchDatasetWrap(dset_) for dset_ in dsets)
         return [torch.utils.data.DataLoader(tset_, **params) for tset_ in torchdsets]
     else:
         return dsets
+def collate_fn(samples):
+    nb = len(samples)
+    nt = len(samples[0])
+    chns = [[] for _ in range(nt)]
+    for i in range(nb):
+        smpl = samples[i]
+        for j in range(nt):
+            chns[j].append(smpl[j])
+    for j in range(nt):
+        chns[j] = torch.concatenate(chns[j],dim = 0)
+    return chns
 def get_filter_weights_generator(args,data_loaders = True,):
     ns,_ = options(args,key = "run")
     assert ns.filtering == 'gcm'
@@ -272,7 +287,8 @@ def get_filter_weights_generator(args,data_loaders = True,):
         params={'batch_size':minibatch,\
             'shuffle': False,\
             'num_workers':ns.num_workers,\
-            'prefetch_factor':ns.prefetch_factor}
+            'prefetch_factor':ns.prefetch_factor,\
+            'collate_fn':collate_fn}
         torchdsets = [TorchDatasetWrap(dset_)  for dset_ in dsets]
         return [torch.utils.data.DataLoader(torchdset, **params) for torchdset in torchdsets]
     else:

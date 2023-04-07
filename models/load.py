@@ -86,8 +86,7 @@ def get_conditional_mean_state_dict(args):
 
 def load_optimizer(args,net,):
     runargs,_ = options(args,key = "run")
-    
-    optimizer = torch.optim.Adam(net.parameters(), lr=runargs.lr,weight_decay = runargs.weight_decay)
+    optimizer = torch.optim.Adam(net.parameters(), lr=runargs.lr,weight_decay = runargs.weight_decay,)
     if runargs.scheduler == "ReduceLROnPlateau":
         scheduler=torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer,factor=0.5,patience=2)
     else:
