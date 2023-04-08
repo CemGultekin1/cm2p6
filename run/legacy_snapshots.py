@@ -2,18 +2,17 @@ import itertools
 import os
 import matplotlib.pyplot as plt
 from models.load import load_model
-from plots.metrics import metrics_dataset
 from run.legacy_comparison import get_legacy_args
 from utils.paths import LEGACY_PLOTS,LEGACY
 from utils.xarray import fromtorchdict2tensor, fromtorchdict,fromtensor
 import xarray as xr
 from utils.arguments import options
-from utils.slurm import flushed_print, read_args
 import numpy as np
 from params import replace_params
 from data.load import load_lowres_dataset
 import torch
 import matplotlib
+import sys
 def multi_dim_nparray_sort(arr):
     args = np.argsort(arr.flatten())[::-1]
     x = np.unravel_index(args,arr.shape)
@@ -68,9 +67,10 @@ def get_vmax_vmins(*args,absolute:bool = True):
         vmin = -vmax
     return dict(vmax = vmax,vmin = vmin)
 def main():
+    args = sys.argv[1:]
     # args = '--filtering gaussian --num_workers 1 --disp 1 --min_precision 0.024 --interior False --domain four_regions --batchnorm 1 1 1 1 1 1 1 0 --widths 2 128 64 32 32 32 32 32 4 --kernels 5 5 3 3 3 3 3 3 --minibatch 4 --mode eval'.split()args = read_args(1)
     
-    args = read_args(2)
+    # args = read_args(1)
     args_legacy = get_legacy_args(args)
     runargs,_ = options(args,key = "run")
 
