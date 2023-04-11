@@ -1,4 +1,4 @@
-from data.arthur_datagen import eddy_forcing,spatial_filter_dataset
+from data.legacy_datagen import eddy_forcing,spatial_filter_dataset
 from data.high_res_dataset import HighResCm2p6
 from utils.paths import FINE_CM2P6_PATH,TEMPORARY_DATA
 from utils.xarray import plot_ds,fromtorchdict

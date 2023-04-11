@@ -93,7 +93,7 @@ def generate_training_tasks():
         scheduler = "MultiStepLR",
         lr = 5e-4,
         batchnorm = tuple([0]*8),
-        min_precision = [0.024,0.025],
+        min_precision = 0.024,
         domain = 'four_regions',
         lossfun = 'heteroscedastic',
         maxepoch = 100
@@ -102,7 +102,7 @@ def generate_training_tasks():
         filtering = 'gaussian',
         interior = False,
         num_workers = 8,
-        min_precision = [0.024,0.025],
+        min_precision = 0.024,
         domain = 'four_regions',
         lossfun = 'heteroscedastic',
     )
