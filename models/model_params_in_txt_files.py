@@ -1,5 +1,5 @@
 import os
-from utils.paths import JOBS,statedict_path
+from constants.paths import JOBS,statedict_path
 from utils.arguments import options
 import os 
 def main():

@@ -1,7 +1,7 @@
 import xarray as xr
 import os
 from utils.arguments import options
-from utils.paths import SCALARS
+from constants.paths import SCALARS
 from utils.arguments import is_legacy_run
 def get_scalar_path(args):
     _,scalarid = options(args,key = 'scalars')

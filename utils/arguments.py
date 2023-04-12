@@ -2,8 +2,30 @@ import argparse
 import hashlib
 import itertools
 from typing import List
-from params import DATA_PARAMS,MODEL_PARAMS,ARCH_PARAMS,RUN_PARAMS, SCALAR_PARAMS, TRAIN_PARAMS,USUAL_PARAMS
+from constants.params import DATA_PARAMS,MODEL_PARAMS,ARCH_PARAMS,RUN_PARAMS, SCALAR_PARAMS, TRAIN_PARAMS,USUAL_PARAMS
 import numpy as np
+
+
+
+
+def replace_params(args,*ARGS):
+    for i in range(len(ARGS)//2):
+        args = replace_param(args,ARGS[2*i],ARGS[2*i+1])
+    return args
+
+
+def replace_param(args,param,newval):
+    if not isinstance(newval,str):
+        newval = repr(newval)
+    param_ = f'--{param}'
+    if param_ in args:
+        args[args.index(param_)+1] = newval
+    else:
+        args.append(param_)
+        args.append(newval)
+    return args
+
+
 
 def is_legacy_run(args):
     runargs,_ = options(args,key = 'run')

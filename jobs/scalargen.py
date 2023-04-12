@@ -1,7 +1,7 @@
 import itertools
 import os
 from jobs.job_body import create_slurm_job
-from utils.paths import JOBS_LOGS, JOBS
+from constants.paths import JOBS_LOGS, JOBS
 from data.coords import DEPTHS
 JobName = 'scalars'
 root = JOBS

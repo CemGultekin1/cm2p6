@@ -10,7 +10,7 @@ from models.load import load_model, load_old_model
 from utils.arguments import options, populate_data_options
 from utils.parallel import get_device
 import numpy as np
-from utils.paths import VIEWS
+from constants.paths import VIEWS
 from utils.xarray import fromtensor, fromtorchdict, fromtorchdict2tensor
 import xarray as xr
 

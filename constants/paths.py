@@ -1,14 +1,22 @@
 import os
+def read_paths_dictionary():
+    file1 = open('paths.txt', 'r')
+    lines = file1.readlines()
+    file1.close()
+    paths = {}
+    for line in lines:
+        line = line.strip()
+        key,value = [x.strip() for x in line.split('=')]
+        paths[key] = value
+    return paths
 
-file1 = open('paths.txt', 'r')
-lines = file1.readlines()
-file1.close()
+paths_dict = read_paths_dictionary()
 
-ROOT = lines[0]
-ENV_PATH = '/scratch/cg3306/climate/.ext3'
-CM2P6_PATH = '/scratch/zanna/data/cm2.6'
-OUTPUTS_PATH = '/scratch/cg3306/climate/outputs'
-AS15415_PATH = '/scratch/as15415/Data/CM26_Surface_UVT.zarr'
+ROOT = paths_dict['ROOT']
+ENV_PATH = paths_dict['ENV_PATH']#'/scratch/cg3306/climate/.ext3'
+CM2P6_PATH = paths_dict['CM2P6_PATH']#'/scratch/zanna/data/cm2.6'
+OUTPUTS_PATH = paths_dict['OUTPUTS_PATH']#'/scratch/cg3306/climate/outputs'
+AS15415_PATH = paths_dict['AS15415_PATH']#'/scratch/as15415/Data/CM26_Surface_UVT.zarr'
 
 REPO_NAME = 'cm2p6'
 REPO = os.path.join(ROOT,REPO_NAME)
@@ -87,6 +95,7 @@ VIEW_PLOTS = folder_tracker.join(PLOTS,'views')
 TIME_LAPSE_PLOTS = folder_tracker.join(PLOTS,'time_lapse')
 R2_PLOTS = folder_tracker.join(PLOTS,'r2')
 LEGACY_PLOTS = folder_tracker.join(PLOTS,'legacy')
+DISTRIBUTION_PLOTS = folder_tracker.join(PLOTS,'distribution')
 
 MODELS_JSON = os.path.join(OUTPUTS_PATH,'models_info.json')
 DATA_JSON = os.path.join(OUTPUTS_PATH,'data_info.json')

@@ -1,13 +1,11 @@
 
 
 import os
-from models.nets.cnn import adjustcnn
 from models.search import is_evaluated, is_trained
-from params import get_default, replace_param
+from utils.arguments  import replace_param
 from jobs.job_body import create_slurm_job
-from jobs.taskgen import python_args
 from utils.arguments import options
-from utils.paths import JOBS, JOBS_LOGS
+from constants.paths import JOBS, JOBS_LOGS
 
 JOBNAME = 'evaljob'
 root = JOBS

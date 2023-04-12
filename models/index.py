@@ -1,6 +1,6 @@
 import json
 from utils.parallel import random_wait
-from utils.paths import BACKUP_MODELIDS_JSON, MODELIDS_JSON
+from constants.paths import BACKUP_MODELIDS_JSON, MODELIDS_JSON
 
 def reset():
     data_info={}

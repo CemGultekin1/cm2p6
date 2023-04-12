@@ -3,7 +3,7 @@ import torch
 import json
 from models.load import load_modelsdict
 from models.search import is_trained
-from utils.paths import model_logs_json_path, modelsdict_path, statedict_path
+from constants.paths import model_logs_json_path, modelsdict_path, statedict_path
 
 def save_statedict(modelid,statedict,logs):
     statedictfile,logfile = statedict_path(modelid),model_logs_json_path(modelid)

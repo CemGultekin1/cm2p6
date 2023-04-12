@@ -1,5 +1,5 @@
 from data.coords import REGIONS
-from utils.paths import COARSE_CM2P6_PATH,LEGACY_PLOTS
+from constants.paths import COARSE_CM2P6_PATH,LEGACY_PLOTS
 import matplotlib.pyplot as plt
 import os
 import xarray as xr

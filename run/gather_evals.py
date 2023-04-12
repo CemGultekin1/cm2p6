@@ -2,7 +2,7 @@ import itertools
 import os
 from models.nets.cnn import kernels2spread
 from plots.metrics import metrics_dataset
-from utils.paths import JOBS, EVALS, all_eval_path
+from constants.paths import JOBS, EVALS, all_eval_path
 from utils.slurm import flushed_print
 from utils.xarray import plot_ds, skipna_mean
 import xarray as xr

@@ -1,5 +1,5 @@
 import itertools
-from utils.paths import coarse_graining_projection_weights_path, inverse_coarse_graining_weights_path
+from constants.paths import coarse_graining_projection_weights_path, inverse_coarse_graining_weights_path
 import xarray as xr
 import os
 import matplotlib.pyplot as plt

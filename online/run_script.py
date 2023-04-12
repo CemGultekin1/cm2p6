@@ -19,7 +19,7 @@ else:
 cem_testing_flag = False
 if cem_testing_flag:
     import os
-    from utils.paths import ONLINE_MODELS
+    from constants.paths import ONLINE_MODELS
     fn = f'cem_20230403.pth'
     path = os.path.join(ONLINE_MODELS,fn)
     nn_load_main_file = path

@@ -1,7 +1,7 @@
 import itertools
 import os
 import matplotlib.pyplot as plt
-from utils.paths import JOBS, TIME_LAPSE_PLOTS, TIME_LAPSE
+from constants.paths import JOBS, TIME_LAPSE_PLOTS, TIME_LAPSE
 import xarray as xr
 from utils.arguments import options
 from utils.slurm import flushed_print

@@ -1,6 +1,6 @@
 
 import os
-from .paths import JOBS
+from constants.paths import JOBS
 
 
 def flushed_print(*args,**kwargs):

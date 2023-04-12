@@ -1,7 +1,7 @@
 import itertools
 import os
 import matplotlib.pyplot as plt
-from utils.paths import  all_eval_path
+from constants.paths import  all_eval_path
 from utils.xarray import drop_unused_coords, skipna_mean
 import xarray as xr
 import numpy as np

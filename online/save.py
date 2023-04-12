@@ -1,9 +1,9 @@
 from models.search import find_best_match
-from params import replace_param
+from utils.arguments import replace_param
 from utils.arguments import options
 import itertools
 from models.load import get_statedict
-from utils.paths import ONLINE_MODELS
+from constants.paths import ONLINE_MODELS
 from utils.slurm import read_args
 import os
 import torch
@@ -31,7 +31,7 @@ def main():
     # replace_values = {
     #     'interior' : (['False',],['']),
     # }
-    argnums = [4]
+    argnums = [5]
     put_dict_keys = 'widths kernels seed batchnorm min_precision'.split()
 
     models_dict = {}

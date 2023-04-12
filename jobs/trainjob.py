@@ -1,19 +1,19 @@
 from copy import deepcopy
 import os
-from typing import Dict
+from typing import List
 from models.nets.cnn import adjustcnn
 from models.search import is_trained
-from params import get_default, replace_param,replace_params
+from constants.params import get_default
 from jobs.job_body import create_slurm_job
 from jobs.taskgen import python_args
-from utils.arguments import options
-from utils.paths import JOBS, JOBS_LOGS
+from utils.arguments import options,replace_param,replace_params
+from constants.paths import JOBS, JOBS_LOGS
 from data.coords import DEPTHS
 from utils.slurm import flushed_print
 TRAINJOB = 'trainjob'
 root = JOBS
 
-NCPU = 16
+NCPU = 8
 
 def get_arch_defaults():
     nms = ('widths','kernels','batchnorm','seed','model')
@@ -68,9 +68,9 @@ def fix_model_type(args):
     if 'MVARE' in args:
         args = replace_param(args,'model','dfcnn')
     return args
-def combine_all(kwargs:Dict[int,dict],base_kwargs):
+def combine_all(kwargs:List[dict],base_kwargs):
     argslist = []
-    for kwarg in kwargs.values():
+    for kwarg in kwargs:
         base_kwargs_ = deepcopy(base_kwargs)
         base_kwargs_.update(kwarg)
         argslist =  argslist + python_args(**base_kwargs_)
@@ -84,58 +84,74 @@ def generate_training_tasks():
         batchnorm = tuple([1]*7 + [0]),
         lossfun = ['heteroscedastic','MSE','MVARE'],
     )
-    kwargs = {}
-    kwargs[0] = dict(
-        filtering = 'gaussian',
-        interior = False,
-        num_workers = 8,
-        clip = 1.,
-        scheduler = "MultiStepLR",
-        lr = 5e-4,
-        batchnorm = tuple([0]*8),
-        min_precision = 0.024,
-        domain = 'four_regions',
-        lossfun = 'heteroscedastic',
-        maxepoch = 100
-    )
-    kwargs[1] = dict(
-        filtering = 'gaussian',
-        interior = False,
-        num_workers = 8,
-        min_precision = 0.024,
-        domain = 'four_regions',
-        lossfun = 'heteroscedastic',
-    )
-    kwargs[2] = dict(
-        lsrp = 0,     
-        depth = 0,
-        sigma = [4,8,12,16],
-        filtering = 'gcm',
-        temperature = False,
-        latitude = False,
-        domain = ['four_regions','global'],
-        seed = list(range(3))
-    )
-    kwargs[3] = dict(
-        lsrp = [0,1],     
-        depth = 0,
-        sigma = [4,8,12,16],
-        filtering = 'gcm',
-        temperature = True,
-        latitude = [False,True],
-        domain = ['four_regions','global'],
-        seed = list(range(3))
-    )
-    kwargs[4] = dict(
-        lsrp = [0,1],     
-        depth =[int(d) for d in DEPTHS],
-        sigma = [4,8,12,16],
-        filtering = 'gcm',
-        temperature = True,
-        latitude = [False,True],
-        domain = 'global',
-        seed = list(range(3))
-    )
+    kwargs = [
+        dict(
+            filtering = 'gaussian',
+            interior = False,
+            num_workers = 8,
+            clip = 1.,
+            scheduler = "MultiStepLR",
+            lr = 5e-4,
+            batchnorm = tuple([0]*8),
+            min_precision = 0.024,
+            domain = 'four_regions',
+            lossfun = 'heteroscedastic',
+            maxepoch = 100
+        ),
+        dict(
+            filtering = 'gaussian',
+            interior = False,
+            num_workers = 8,
+            min_precision = [0.024,0.025],
+            domain = 'four_regions',
+            lossfun = 'heteroscedastic',
+        ),
+        dict(
+            filtering = 'gaussian',
+            interior = False,
+            num_workers = 8,
+            domain = 'four_regions',
+            lossfun = 'heteroscedastic',
+        ),
+        dict(
+            filtering = 'gaussian',
+            interior = False,
+            wet_mask_threshold = 0.5,
+            domain = 'global',
+            lossfun = 'heteroscedastic',
+            
+        ),
+        dict(
+            lsrp = 0,     
+            depth = 0,
+            sigma = [4,8,12,16],
+            filtering = 'gcm',
+            temperature = False,
+            latitude = False,
+            domain = ['four_regions','global'],
+            seed = list(range(3))
+        ),
+        dict(
+            lsrp = [0,1],     
+            depth = 0,
+            sigma = [4,8,12,16],
+            filtering = 'gcm',
+            temperature = True,
+            latitude = [False,True],
+            domain = ['four_regions','global'],
+            seed = list(range(3))
+        ),
+        dict(
+            lsrp = [0,1],     
+            depth =[int(d) for d in DEPTHS],
+            sigma = [4,8,12,16],
+            filtering = 'gcm',
+            temperature = True,
+            latitude = [False,True],
+            domain = 'global',
+            seed = list(range(3))
+        )
+    ]
     
     argslist = combine_all(kwargs,base_kwargs)
     

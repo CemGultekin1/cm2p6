@@ -123,21 +123,3 @@ def get_default(key,instr = False):
     else:
         return return_val
 
-
-def replace_params(args,*ARGS):
-    for i in range(len(ARGS)//2):
-        args = replace_param(args,ARGS[2*i],ARGS[2*i+1])
-    return args
-
-
-def replace_param(args,param,newval):
-    if not isinstance(newval,str):
-        newval = repr(newval)
-    param_ = f'--{param}'
-    if param_ in args:
-        args[args.index(param_)+1] = newval
-    else:
-        args.append(param_)
-        args.append(newval)
-    return args
-

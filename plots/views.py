@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from data.load import pass_geo_grid
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-from utils.paths import JOBS, VIEW_PLOTS, VIEWS
+from constants.paths import JOBS, VIEW_PLOTS, VIEWS
 import xarray as xr
 from utils.arguments import options
 import numpy as np

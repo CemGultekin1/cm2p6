@@ -3,12 +3,12 @@ import os
 import matplotlib.pyplot as plt
 from models.load import load_model
 from run.legacy_comparison import get_legacy_args
-from utils.paths import LEGACY_PLOTS,LEGACY
+from constants.paths import LEGACY_PLOTS,LEGACY
 from utils.xarray import fromtorchdict2tensor, fromtorchdict,fromtensor
 import xarray as xr
 from utils.arguments import options
 import numpy as np
-from params import replace_params
+from utils.arguments import replace_params
 from data.load import load_lowres_dataset
 import torch
 import matplotlib

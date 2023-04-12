@@ -3,7 +3,7 @@ from models.load import load_modelsdict
 from models.save import update_modelsdict
 from models.search import is_trained
 from utils.arguments import options
-from utils.paths import MODELS, JOBS, model_logs_json_path, statedict_path
+from constants.paths import MODELS, JOBS, model_logs_json_path, statedict_path
 
 def read_job_txts():
     fns = os.listdir(JOBS)

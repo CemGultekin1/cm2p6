@@ -3,7 +3,7 @@ from data.paths import get_filter_weights_location
 from transforms.gcm_compression import FilterWeightCompression
 # from transforms.gcm_compression_spatially_variant import FilterWeightSpaceVariantCompression
 from utils.slurm import flushed_print
-from utils.paths import JOBS
+from constants.paths import JOBS
 from utils.arguments import options
 import xarray as xr
 import os

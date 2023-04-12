@@ -3,12 +3,12 @@ import os
 from models.bank import init_architecture
 from models.lossfuns import MSE, heteroscedasticGaussianLoss,MVARE
 from models.nets.cnn import LCNN, DoubleCNN, DoubleLCNNWrapper
-from params import replace_param
+from utils.arguments import replace_param
 import torch
 from torch.optim.lr_scheduler import MultiStepLR
 from utils.arguments import options
 from utils.parallel import get_device
-from utils.paths import model_logs_json_path, modelsdict_path, statedict_path
+from constants.paths import model_logs_json_path, modelsdict_path, statedict_path
 
 def update_statedict(state_dict_,net_,optimizer_,scheduler_,last_model = True):
     if state_dict_ is None:
@@ -141,4 +141,6 @@ def load_model(args):
     else:
         epoch = 0
     runargs.epoch = epoch
+    if runargs.mode != "train":
+        net.eval()
     return modelid,state_dict,net,criterion,optimizer,scheduler,logs,runargs

@@ -2,7 +2,7 @@
 import itertools
 import os
 from jobs.job_body import create_slurm_job
-from utils.paths import JOBS, JOBS_LOGS
+from constants.paths import JOBS, JOBS_LOGS
 
 JOBNAME = 'learndeconv'
 root = JOBS

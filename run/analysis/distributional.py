@@ -8,7 +8,7 @@ from models.load import load_model
 import matplotlib.pyplot as plt
 from utils.arguments import options, populate_data_options
 from utils.parallel import get_device
-from utils.paths import DISTS
+from constants.paths import DISTS
 from utils.slurm import flushed_print
 import numpy as np
 from utils.xarray import fromtensor, fromtorchdict, fromtorchdict2tensor, plot_ds

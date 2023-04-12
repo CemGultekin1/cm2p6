@@ -3,7 +3,7 @@ import itertools
 import os
 from re import X
 import matplotlib.pyplot as plt
-from utils.paths import JOBS, R2_PLOTS, EVALS
+from constants.paths import JOBS, R2_PLOTS, EVALS
 import xarray as xr
 from utils.arguments import options
 from utils.slurm import flushed_print

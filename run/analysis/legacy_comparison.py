@@ -10,9 +10,9 @@ from data.vars import get_var_mask_name
 from models.load import load_model, load_old_model
 import matplotlib.pyplot as plt
 from utils.arguments import options, populate_data_options
-from params import replace_params
+from utils.arguments import replace_params
 from utils.parallel import get_device
-from utils.paths import LEGACY
+from constants.paths import LEGACY
 from utils.slurm import flushed_print
 import numpy as np
 from utils.xarray import fromtensor, fromtorchdict, fromtorchdict2tensor, plot_ds

@@ -2,9 +2,9 @@ import json
 import os
 from models.load import load_modelsdict
 from utils.arguments import options
-from params import MODEL_PARAMS, get_default
+from constants.params import MODEL_PARAMS, get_default
 import numpy as np
-from utils.paths import get_eval_path, get_view_path, model_logs_json_path, statedict_path
+from constants.paths import get_eval_path, get_view_path, model_logs_json_path, statedict_path
 
 
 def is_viewed(modelid):

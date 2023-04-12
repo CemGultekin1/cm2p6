@@ -6,7 +6,7 @@ from torch.nn import Sequential
 from torch import nn
 import numpy as np
 import math
-from utils.paths import OUTPUTS_PATH,ONLINE_MODELS
+from constants.paths import OUTPUTS_PATH,ONLINE_MODELS
 import os
 import matplotlib.pyplot as plt
     

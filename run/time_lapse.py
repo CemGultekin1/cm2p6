@@ -1,14 +1,14 @@
 import os
 import sys
 from data.exceptions import RequestDoesntExist
-from params import replace_param
+from utils.arguments import replace_param
 from run.eval import get_lsrp_modelid
 import torch
 from data.load import get_data
 from models.load import load_model
 from utils.arguments import options, populate_data_options
 from utils.parallel import get_device
-from utils.paths import TIME_LAPSE
+from constants.paths import TIME_LAPSE
 from utils.slurm import flushed_print
 import numpy as np
 from utils.xarray import concat, fromtensor, fromtorchdict, fromtorchdict2tensor

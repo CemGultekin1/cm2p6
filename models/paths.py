@@ -3,7 +3,7 @@ import os
 import torch
 
 from utils.parallel import get_device
-from utils.paths import MODELS_JSON, OUTPUTS_PATH, model_logs_json_path, statedict_path
+from constants.paths import MODELS_JSON, OUTPUTS_PATH, model_logs_json_path, statedict_path
 
 root = OUTPUTS_PATH
 

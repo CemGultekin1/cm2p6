@@ -2,10 +2,10 @@
 
 import os
 from models.search import is_trained, is_viewed
-from params import replace_param
+from utils.arguments import replace_param
 from jobs.job_body import create_slurm_job
 from utils.arguments import options
-from utils.paths import JOBS, JOBS_LOGS
+from constants.paths import JOBS, JOBS_LOGS
 
 JOBNAME = 'viewjob'
 root = JOBS

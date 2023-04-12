@@ -28,7 +28,7 @@ def get_interior_wet_mask(datargs):
     return interior_wet_mask
 def run():
     arg = int(sys.argv[1]) - 1
-    from utils.paths import JOBS
+    from constants.paths import JOBS
     path = os.path.join(JOBS,'datagen.txt')
     with open(path) as f:
         ls = f.readlines()

@@ -1,7 +1,7 @@
 import sys
 from data.paths import  get_learned_deconvolution_location
 from utils.slurm import flushed_print
-from utils.paths import JOBS
+from constants.paths import JOBS
 from utils.arguments import options
 import xarray as xr
 import numpy as np

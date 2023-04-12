@@ -1,8 +1,8 @@
 import os
 import shutil
-from utils.paths import MODELS,JOBS,EVALS,TRAINING_LOGS
+from constants.paths import MODELS,JOBS,EVALS,TRAINING_LOGS
 from utils.arguments import options
-from params import replace_param
+from utils.arguments import replace_param
 def main():
     roots = [MODELS,EVALS,TRAINING_LOGS]
     exts = ['.pth','.nc','.json']

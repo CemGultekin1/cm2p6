@@ -1,7 +1,7 @@
 import sys
 from data.coords import TIMES
 from data.load import get_data, load_xr_dataset
-from utils.paths import average_highres_fields_path
+from constants.paths import average_highres_fields_path
 from utils.slurm import flushed_print
 import torch
 import numpy as np

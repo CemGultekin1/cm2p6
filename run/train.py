@@ -32,7 +32,7 @@ class Timer:
 def main():
     args = sys.argv[1:]
     # from utils.slurm import read_args
-    # from params import replace_params
+    # from utils.arguments import replace_params
     # args = read_args(2)
     # args =replace_params(args,'num_workers','1',)
 

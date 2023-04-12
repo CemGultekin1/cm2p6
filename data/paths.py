@@ -1,7 +1,7 @@
 import os
 
 from utils.arguments import options
-from utils.paths import GRID_INFO,FINE_CM2P6_PATH,COARSE_CM2P6_PATH,TEMPORARY_DATA,FILTER_WEIGHTS
+from constants.paths import GRID_INFO,FINE_CM2P6_PATH,COARSE_CM2P6_PATH,TEMPORARY_DATA,FILTER_WEIGHTS
 
 def get_filter_weights_location(args,preliminary:bool = False,utgrid = 'u',svd0213=False):
     svd_tag = '' if not svd0213 else '_svd0213'

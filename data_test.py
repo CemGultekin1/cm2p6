@@ -7,7 +7,7 @@ from torch import nn
 import numpy as np
 import math
 from utils.arguments import options
-from utils.paths import OUTPUTS_PATH,ONLINE_MODELS
+from constants.paths import OUTPUTS_PATH,ONLINE_MODELS
 import os
 import matplotlib.pyplot as plt
 

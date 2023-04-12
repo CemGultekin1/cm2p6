@@ -1,7 +1,7 @@
 import itertools
 from models.nets.cnn import adjustcnn
 from utils.arguments import options
-from utils.paths import JOBS
+from constants.paths import JOBS
 
 def get_arch_defaults():
     args = "--sigma 4".split()
