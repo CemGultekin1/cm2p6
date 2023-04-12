@@ -1,16 +1,12 @@
-import itertools
 import os
 import sys
 from data.exceptions import RequestDoesntExist
-from plots.metrics import metrics_dataset, moments_dataset
-from run.train import Timer
+from plots.metrics import  moments_dataset
 import torch
 from data.load import get_data
 from data.vars import get_var_mask_name
-from models.load import load_model, load_old_model
-import matplotlib.pyplot as plt
-from utils.arguments import options, populate_data_options
-from utils.arguments import replace_params
+from models.load import load_model
+from utils.arguments import options, populate_data_options,replace_params
 from utils.parallel import get_device
 from constants.paths import LEGACY
 from utils.slurm import flushed_print
