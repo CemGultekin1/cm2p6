@@ -71,6 +71,7 @@ BACKUP_MODELIDS_JSON = folder_tracker.join(REPO,'backup_modelids.json')
 
 JOBS_LOGS = folder_tracker.join(OUTPUTS_PATH,'slurm_logs')
 EVALS = folder_tracker.join(OUTPUTS_PATH,'evals')
+DISTS = folder_tracker.join(OUTPUTS_PATH,'distributions')
 LEGACY = folder_tracker.join(OUTPUTS_PATH,'legacy')
 TIME_LAPSE = folder_tracker.join(OUTPUTS_PATH,'time_lapse')
 VIEWS = folder_tracker.join(OUTPUTS_PATH,'views')

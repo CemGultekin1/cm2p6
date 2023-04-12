@@ -1,7 +1,7 @@
 import copy
 import itertools
 from typing import Dict, Tuple
-from utils.xarray import no_nan_input_mask #concat, 
+from utils.xarray import no_nan_input_mask, plot_ds #concat, 
 import xarray as xr
 import numpy as np
 from transforms.grids import bound_grid, divide2equals, fix_grid, larger_longitude_grid, lose_tgrid
@@ -115,7 +115,9 @@ class SingleDomain(CM2p6Dataset):
             ds = self.ds.isel(time =0).load()
             ds = self.get_grid_fixed_lres(ds)
             if self.interior:
+                # print('self.interior!!!')
                 wetmask = 1 - ds.interior_wet_mask
+                # plot_ds({'wetmask':wetmask},'wetmask0.png',ncols = 1)
             else:
                 if 'wet_density' in ds.data_vars:
                     wetmask = 1 - xr.where(ds.wet_density >= self.wet_mask_threshold,1,0)
@@ -128,6 +130,7 @@ class SingleDomain(CM2p6Dataset):
                 else:
                     wetmask += mask_
             wetmask = xr.where(wetmask > 0,0,1)
+            # plot_ds({'wetmask':wetmask},'wetmask1.png',ncols = 1)
             wetmask.name = 'wet_mask'
             if self.requested_boundaries is not None:
                 wmask = wetmask.values
@@ -160,7 +163,6 @@ class SingleDomain(CM2p6Dataset):
     def get_dataset(self,t):
         ds = self.ds.isel(time =t).load()
         ds = self.get_grid_fixed_lres(ds)
-
         def apply_mask(ds,wetmaskv,keys):
             for name in keys:
                 v = ds[name].values

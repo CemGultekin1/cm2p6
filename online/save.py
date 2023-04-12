@@ -4,6 +4,7 @@ from utils.arguments import options
 import itertools
 from models.load import get_statedict
 from utils.paths import ONLINE_MODELS
+from utils.slurm import read_args
 import os
 import torch
 from datetime import date
@@ -25,32 +26,25 @@ def model_transfer(state_dict):
         new_state_dict[newkey] = state_dict[key]
     return new_state_dict
 def main():
-    args = '--filtering gaussian --interior False --domain four_regions --batchnorm 1 1 1 1 1 1 1 0 --widths 2 128 64 32 32 32 32 32 4 --kernels 5 5 3 3 3 3 3 3 --minibatch 4'
+    # args = '--batchnorm 1 1 1 1 1 1 1 0 --lossfun heteroscedastic --filtering gaussian --interior False --min_precision 0.024 --domain four_regions --widths 2 128 64 32 32 32 32 32 4 --kernels 5 5 3 3 3 3 3 3'
     
-    replace_values = {
-        'interior' : (['False','True'],['interior','non_interior']),
-        'spacing' : (['asis','long_flat'],['true_derivatives','wrong_derivatives'])
-    }
-    put_dict_keys = 'widths kernels seed batchnorm min_precision'.split() + list(replace_values.keys())
-    name_parts = [vals[1] for key,vals in replace_values.items()]
-    name_parts = [nmp[0] for nmp in zip(name_parts)]
-
-    replace_values = [
-       [ (key,val) for val in vals[0] ]for key,vals in replace_values.items()]
+    # replace_values = {
+    #     'interior' : (['False',],['']),
+    # }
+    argnums = [4]
+    put_dict_keys = 'widths kernels seed batchnorm min_precision'.split()
 
     models_dict = {}
     names = []
-    for keyvalpairs,nmp in zip(itertools.product(*replace_values),itertools.product(*name_parts)):
-        args_ = args.split()
-        for key,val in keyvalpairs:
-            args_ = replace_param(args_,key,val)
-        name = '_'.join(nmp)
+    for argnum in argnums:
+        args_ = read_args(argnum)
+        
+        name = 'gaussian_four_regions'
         modelargs,modelid = options(args_,key = 'model')
         modelargsdict = {
             key:modelargs.__dict__[key] for key in put_dict_keys
         }
-        modelargsdict['modelid'] = modelid
-        print(name)
+        modelargsdict['modelid'] = args_
         models_dict[name] = (
             modelargsdict,{}
         )
@@ -61,14 +55,15 @@ def main():
 
     for name in names:
         modelargsdict,_ = models_dict[name]
-        modelid = modelargsdict['modelid']
-        statedict,_ = get_statedict(modelid)
+        args_ = modelargsdict['modelid']
+        statedict,_,_,modelid = get_statedict(args_)
+        modelargsdict['modelid'] = modelid
         if statedict is None:
             print(f'\t\t{name} is missing')
             models_dict.pop(name)
             continue            
         models_dict[name] = (modelargsdict,model_transfer(statedict['best_model']))
-    
+        print(f'models_dict[{name}] = ({modelargsdict["modelid"]},...')
     if not os.path.exists(ONLINE_MODELS):
         os.makedirs(ONLINE_MODELS)
     torch.save(models_dict,path)
