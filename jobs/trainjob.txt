@@ -1,1 +1,1 @@
---num_workers 8 --disp 50 --batchnorm 1 1 1 1 1 1 1 0 --lossfun heteroscedastic --filtering gaussian --interior False --min_precision 0.024 --final_activation square --domain four_regions --widths 2 128 64 32 32 32 32 32 4 --kernels 5 5 3 3 3 3 3 3 --minibatch 4
+--num_workers 8 --disp 50 --batchnorm 1 1 1 1 1 1 1 0 --lossfun heteroscedastic --filtering gaussian --interior False --min_precision 0.01 --final_activation square --domain four_regions --legacy_scalars True --widths 2 128 64 32 32 32 32 32 4 --kernels 5 5 3 3 3 3 3 3 --minibatch 4

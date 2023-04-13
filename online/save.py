@@ -32,7 +32,7 @@ def main():
     #     'interior' : (['False',],['']),
     # }
     argnums = [1]
-    put_dict_keys = 'widths kernels seed batchnorm min_precision'.split()
+    put_dict_keys = 'widths kernels seed batchnorm min_precision final_activation'.split()
 
     models_dict = {}
     names = []

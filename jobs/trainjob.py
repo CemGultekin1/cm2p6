@@ -89,10 +89,11 @@ def generate_training_tasks():
             filtering = 'gaussian',
             interior = False,
             num_workers = 8,
-            min_precision = 0.024,
+            min_precision = 0.01,
             final_activation = 'square',
             domain = 'four_regions',
             lossfun = 'heteroscedastic',
+            legacy_scalars = True
         ),
         # dict(
         #     filtering = 'gaussian',

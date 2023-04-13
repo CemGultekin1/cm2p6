@@ -121,9 +121,9 @@ def load_model(args):
     if state_dict is not None and not rerun_flag:
         # net.load_state_dict(state_dict["last_model"])
         if runargs.mode == "train":
-            net.load_state_dict(state_dict["last_model"],strict = False)
+            net.load_state_dict(state_dict["last_model"])
         else:
-            net.load_state_dict(state_dict["best_model"],strict = False)
+            net.load_state_dict(state_dict["best_model"])
         print(f"Loaded an existing model")
         if "optimizer" in state_dict and not runargs.reset_optimizer:
             optimizer.load_state_dict(state_dict["optimizer"])

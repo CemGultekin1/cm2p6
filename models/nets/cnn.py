@@ -42,7 +42,9 @@ class Softmax_Layer(Layer):
 class Square_Layer(Layer):
     def __init__(self,nn_layers:list,split,min_value = 0) -> None:
         super().__init__(nn_layers)
-        self.add(SquareTransform(min_value = min_value))
+        st = SquareTransform(min_value = min_value)
+        st.indices = [0,1]
+        self.add(st)
         self.min_value = min_value
         self.split = split
     def __call__(self, x):

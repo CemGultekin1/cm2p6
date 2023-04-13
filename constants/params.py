@@ -2,6 +2,7 @@ from argparse import ArgumentTypeError
 
 SCALAR_PARAMS = {
     "sigma" : {"type": int, "choices" : (4,8,12,16)},
+    "legacy_scalars" : {"type": bool, "default":False},
 }
 
 
