@@ -1,15 +1,12 @@
 import os
-import random
-import sys
 from data.exceptions import RequestDoesntExist
-from run.eval import lsrp_pred
+from run.analysis.eval import lsrp_pred
 import torch
 from data.load import get_data
-from data.vars import get_var_mask_name
-from models.load import load_model, load_old_model
+from models.load import load_model
 from utils.arguments import options, populate_data_options
 from utils.parallel import get_device
-import numpy as np
+from run.helpers import PrecisionToStandardDeviation
 from constants.paths import VIEWS
 from utils.xarray import fromtensor, fromtorchdict, fromtorchdict2tensor
 import xarray as xr
@@ -17,7 +14,13 @@ import xarray as xr
 
 
 def main():
-    args = sys.argv[1:]
+    # args = sys.argv[1:]
+    from utils.slurm import read_args
+    args = read_args(2,)
+    from utils.arguments import replace_params
+    args = replace_params(args,'mode','view','num_workers','1')
+    # args = replace_params(args,'gz21','True','legacy_scalars','True','mode','view','num_workers','1')
+    prec2std = PrecisionToStandardDeviation(args)
     
     modelid,_,net,_,_,_,_,runargs=load_model(args)
     # modelid,net = load_old_model(1)
@@ -32,7 +35,7 @@ def main():
     lsrpid = f'lsrp_{lsrp_flag}'
     assert runargs.mode == "view"
     
-    multidatargs = populate_data_options(args,non_static_params=[])
+    multidatargs = populate_data_options(args,non_static_params=[],domain = 'global',interior = False,wet_mask_threshold = 0.5)
     allstats = []
     for datargs in multidatargs:
         try:
@@ -55,8 +58,10 @@ def main():
             # mean = fromtorchdict2tensor(forcings,**kwargs).type(torch.float32)
             
             with torch.set_grad_enabled(False):
-                mean,_ =  net.forward(fields_tensor.to(device))
+                mean,precision =  net.forward(fields_tensor.to(device))
                 mean = mean.to("cpu")
+                precision = precision.to("cpu")
+            std = prec2std(precision)
             # outfields = fromtorchdict2tensor(forcings).type(torch.float32)
             # mask = fromtorchdict2tensor(forcing_mask).type(torch.float32)
 
@@ -81,6 +86,7 @@ def main():
 
 
             predicted_forcings = fromtensor(mean,forcings,forcing_coords, forcing_mask,denormalize = True,**kwargs)
+            predicted_std = fromtensor(std,forcings,forcing_coords, forcing_mask,denormalize = True,**kwargs)
             true_forcings = fromtorchdict(forcings,forcing_coords,forcing_mask,denormalize = True,**kwargs)
             true_fields = fromtorchdict(fields,field_coords,field_mask,denormalize = True,**kwargs)
 
@@ -93,9 +99,12 @@ def main():
                 return renames
 
             err_forcings = true_forcings - predicted_forcings
+            
             err_forcings = err_forcings.rename(rename_dict('err'))
+            predicted_std = predicted_std.rename(rename_dict('std'))
             true_forcings = true_forcings.rename(rename_dict('true'))
-            predictions_ = xr.merge([predicted_forcings,err_forcings,true_forcings,true_fields])
+            
+            predictions_ = xr.merge([predicted_forcings,err_forcings,true_forcings,true_fields,predicted_std])
             if lsrp_flag:
                 err_forcings = true_forcings - lsrp_forcings
                 err_forcings = err_forcings.rename(rename_dict('err'))

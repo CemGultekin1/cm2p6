@@ -64,7 +64,16 @@ def heteroscedasticGaussianLoss(output, target,eps=1e-5):
     precision=precision + eps
     err2=(target - mean)**2
     premeanloss = - 1 / 2 *  torch.log(precision) \
-            +  1 / 2 * err2 * precision \
-            + 1 / 2 * np.log(1e3)
+            +  1 / 2 * err2 * precision
+    loss=torch.mean(premeanloss,)
+    return loss
+
+@mask_decorator
+def heteroscedasticGaussianLossV2(output, target,):
+    mean, precision =output
+    precision=precision 
+    err2=(target - mean)**2
+    premeanloss = - torch.log(precision) \
+            +  1 / 2 * err2 * precision**2
     loss=torch.mean(premeanloss,)
     return loss

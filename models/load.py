@@ -1,7 +1,7 @@
 import json
 import os
 from models.bank import init_architecture
-from models.lossfuns import MSE, heteroscedasticGaussianLoss,MVARE
+from models.lossfuns import MSE, heteroscedasticGaussianLoss,MVARE,heteroscedasticGaussianLossV2
 from models.nets.cnn import LCNN, DoubleCNN, DoubleLCNNWrapper
 from utils.arguments import replace_param
 import torch
@@ -105,6 +105,8 @@ def load_model(args):
         
     if modelargs.lossfun == "heteroscedastic":
         criterion = heteroscedasticGaussianLoss
+    elif modelargs.lossfun == "heteroscedastic_v2":
+        criterion = heteroscedasticGaussianLossV2
     elif modelargs.lossfun == "MSE":
         criterion = MSE
     elif modelargs.lossfun == "MVARE":
@@ -117,24 +119,26 @@ def load_model(args):
     optimizer,scheduler = load_optimizer(args,net)
     
     
-    rerun_flag = runargs.reset_model and runargs.mode == 'train'
+    rerun_flag = runargs.reset and runargs.mode == 'train'
     if state_dict is not None and not rerun_flag:
-        # net.load_state_dict(state_dict["last_model"])
         if runargs.mode == "train":
-            net.load_state_dict(state_dict["last_model"])
+            net.load_state_dict(state_dict["last_model"],strict = False)
         else:
-            net.load_state_dict(state_dict["best_model"])
+            # print(state_dict["best_model"])
+            net.load_state_dict(state_dict["best_model"],strict = False)
+            # print(net)
+            # raise Exception
         print(f"Loaded an existing model")
-        if "optimizer" in state_dict and not runargs.reset_optimizer:
+        if "optimizer" in state_dict and not runargs.reset:
             optimizer.load_state_dict(state_dict["optimizer"])
-        if "scheduler" in state_dict and not runargs.reset_optimizer:
+        if "scheduler" in state_dict and not runargs.reset:
             scheduler.load_state_dict(state_dict["scheduler"])
     else:
         if state_dict is not None:
             print(f"Model was not found")
         elif rerun_flag:
             print(f"Model is re-initiated for rerun")
-    if runargs.relog:
+    if runargs.reset:
         logs = {"epoch":[],"train-loss":[],"test-loss":[],"val-loss":[],"lr":[],"batchsize":[]}
     if len(logs["epoch"])>0:
         epoch = logs["epoch"][-1]

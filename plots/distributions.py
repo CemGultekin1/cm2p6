@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 from models.load import load_model
 from constants.paths import DISTRIBUTION_PLOTS,DISTS
 import xarray as xr
-from utils.arguments import options
 from utils.slurm import flushed_print
 import numpy as np
 
@@ -16,9 +15,9 @@ def main():
     
     from utils.slurm import read_args
     from utils.arguments import replace_params
-    for arg_index in range(5):
+    for arg_index in range(1,2):
         args = read_args(arg_index + 1)
-        args = replace_params(args,'mode','eval','num_workers','1','disp','25','minibatch','1')
+        # args = replace_params(args,'mode','eval','num_workers','1','disp','25','minibatch','1','gz21','True')
 
         title_feats = 'scheduler min_precision'.split()
         

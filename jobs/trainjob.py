@@ -53,9 +53,11 @@ def check_training_task(args):
     runargs,_ = options(args,key = "run")
     if runargs.lsrp==1:# or runargs.lossfun == 'heteroscedastic':
         return True
+    if runargs.gz21:
+        return True
     if runargs.lossfun == 'MVARE':
         mse_model_args = replace_params(args.copy(),'model','fcnn','lossfun','MSE')
-        _,modelid = options(mse_model_args,key = "model")
+        _,modelid = options(mse_model_args,key = "model")        
         if not is_trained(modelid):
             return True
         if '--seed' in args:
@@ -90,10 +92,16 @@ def generate_training_tasks():
             interior = False,
             num_workers = 8,
             min_precision = 0.01,
-            final_activation = 'square',
+            clip = 1.,
+            scheduler = "MultiStepLR",
+            lr = 5e-4,
+            batchnorm = tuple([0]*8),
+            lossfun = 'heteroscedastic_v2',
+            final_activation = 'softplus_with_constant',
+            legacy_scalars = True,
+            maxepoch = 100,
             domain = 'four_regions',
-            lossfun = 'heteroscedastic',
-            legacy_scalars = True
+            gz21 = [True,False],
         ),
         # dict(
         #     filtering = 'gaussian',
@@ -211,8 +219,8 @@ def generate_training_tasks():
     out = os.path.join(JOBS_LOGS,TRAINJOB+ '_%A_%a.out')
     err = os.path.join(JOBS_LOGS,TRAINJOB+ '_%A_%a.err')
     create_slurm_job(slurmfile,\
-        time = "12:00:00",array = jobarray,\
-        mem = "150GB",job_name = TRAINJOB,\
+        time = "28:00:00",array = jobarray,\
+        mem = str(NCPU*10) + "GB",job_name = TRAINJOB,\
         output = out,error = err,\
         cpus_per_task = str(NCPU),
         nodes = "1",

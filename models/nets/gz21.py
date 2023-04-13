@@ -70,6 +70,7 @@ class PrecisionTransform(Transform):
     def __init__(self, min_value=0.1):
         super().__init__()
         self.min_value = Parameter(torch.tensor(min_value))
+        self.indices = slice(2,4)
 
     @property
     def min_value(self):
@@ -92,9 +93,9 @@ class PrecisionTransform(Transform):
         # Split in sections of size 2 along channel dimension
         # Careful: the split argument is the size of the sections, not the
         # number of them (although does not matter for 4 channels)
-        # result = torch.clone(input_)
-        result = self.transform_precision(
-            input_) + self.min_value
+        result = torch.clone(input_)
+        result[:, self.indices, :, :] = self.transform_precision(
+            input_[:, self.indices, :, :]) + self.min_value
         return result
 
     @staticmethod
@@ -112,7 +113,17 @@ class SquareTransform(PrecisionTransform):
 
     def __repr__(self):
         return ''.join(('SquareTransform(', str(self.min_value), ')'))
+    
+class SoftPlusTransform(PrecisionTransform):
+    def __init__(self, min_value=0.1):
+        super().__init__(min_value)
 
+    @staticmethod
+    def transform_precision(precision):
+        return softplus(precision)
+
+    def __repr__(self):
+        return ''.join(('SoftPlusTransform(', str(self.min_value), ')'))
 class FullyCNN(DetectOutputSizeMixin, Sequential):
 
     def __init__(self, n_in_channels: int = 2, n_out_channels: int = 4,
@@ -145,7 +156,7 @@ class FullyCNN(DetectOutputSizeMixin, Sequential):
         Sequential.__init__(self, *block1, *block2, *block3, *block4, *block5,
                             *block6, *block7, conv8)
         self.spread = 10
-        self.final_transformation = SquareTransform()
+        self.final_transformation = SoftPlusTransform()
     @property
     def final_transformation(self):
         return self._final_transformation
@@ -156,9 +167,10 @@ class FullyCNN(DetectOutputSizeMixin, Sequential):
 
     def forward(self, x):
         x = super().forward(x)
+        
+        x = self.final_transformation(x)
         x,y = torch.split(x,2,dim = 1)
-        y = self.final_transformation(y)
-        return x,y
+        return x,y**2
 
     def _make_subblock(self, conv):
         subbloc = [conv, nn.ReLU()]

@@ -3,7 +3,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 import numpy as np
-from .gz21 import SquareTransform
+from .gz21 import SoftPlusTransform,SquareTransform
 class Layer:
     def __init__(self,nn_layers:list) -> None:
         self.nn_layers =nn_layers
@@ -24,7 +24,7 @@ class CNN_Layer(Layer):
             self.add(nn.BatchNorm2d(widthout))
         if nnlnr:
             self.add(nn.ReLU(inplace = True))
-class Softmax_Layer(Layer):
+class SoftPlus_Layer(Layer):
     def __init__(self,nn_layers:list,split,min_value = 0) -> None:
         super().__init__(nn_layers)
         self.add(nn.Softplus())
@@ -43,17 +43,29 @@ class Square_Layer(Layer):
     def __init__(self,nn_layers:list,split,min_value = 0) -> None:
         super().__init__(nn_layers)
         st = SquareTransform(min_value = min_value)
-        st.indices = [0,1]
         self.add(st)
         self.min_value = min_value
         self.split = split
     def __call__(self, x):
         if self.split>1:
-            xs = list(torch.split(x,x.shape[1]//self.split,dim=1))
-            xs[-1] = super().__call__(xs[-1])
+            x = super().__call__(x)
+            xs = list(torch.split(x,x.shape[1]//self.split,dim=1))            
             return tuple(xs)
         return super().__call__(x)
-
+class SoftPlus_Layer_With_Constant(Layer):
+    def __init__(self,nn_layers:list,split,min_value = 0) -> None:
+        super().__init__(nn_layers)
+        st = SoftPlusTransform(min_value = min_value)
+        self.add(st)
+        self.min_value = min_value
+        self.split = split
+    def __call__(self, x):
+        if self.split>1:
+            x = super().__call__(x)
+            xs = list(torch.split(x,x.shape[1]//self.split,dim=1))            
+            return tuple(xs)
+        return super().__call__(x)
+    
 class Sequential(Layer):
     def __init__(self,nn_layers,widths,kernels,batchnorm,final_activation ,min_precision,split = 1):
         super().__init__(nn_layers)
@@ -65,10 +77,12 @@ class Sequential(Layer):
         self.spread = spread//2
         for i in range(self.nlayers):
             self.sections.append(CNN_Layer(nn_layers,widths[i],widths[i+1],kernels[i],batchnorm[i], i < self.nlayers - 1))
-        if final_activation == 'softmax':
-            self.sections.append(Softmax_Layer(nn_layers,split,min_value = min_precision))
-        if final_activation == 'square':
+        if final_activation == 'softplus':
+            self.sections.append(SoftPlus_Layer(nn_layers,split,min_value = min_precision))
+        elif final_activation == 'square':
             self.sections.append(Square_Layer(nn_layers,split,min_value = min_precision))
+        elif final_activation == 'softplus_with_constant':
+            self.sections.append(SoftPlus_Layer_With_Constant(nn_layers,split,min_value = min_precision))
     def __call__(self, x):
         for lyr in self.sections:
             x = lyr.__call__(x)

@@ -13,7 +13,7 @@ from utils.slurm import flushed_print
 import numpy as np
 from utils.xarray import fromtensor, fromtorchdict, fromtorchdict2tensor, plot_ds
 import xarray as xr
-
+from run.helpers import PrecisionToStandardDeviation
 
 def torch_stack(*dicts):
     dicts = list(dicts)
@@ -131,22 +131,24 @@ def get_lsrp_modelid(args):
 
 def get_legacy_args(args):
     leg_args = args.copy()
-    leg_args = replace_params(leg_args,'gz21','True')
+    leg_args = replace_params(leg_args,'gz21','True','legacy_scalars','True')
     return leg_args
 
 def main():
     args = sys.argv[1:]
-    # args = '--filtering gaussian --num_workers 1 --disp 1 --min_precision 0.024 --interior False --domain four_regions --batchnorm 1 1 1 1 1 1 1 0 --widths 2 128 64 32 32 32 32 32 4 --kernels 5 5 3 3 3 3 3 3 --minibatch 4 --mode eval'.split()
     # from utils.slurm import read_args
-    # from params import replace_params
-    # args = read_args(1)
-    # args = replace_params(args,'mode','eval','num_workers','1','disp','25','minibatch','1')
+    # from utils.arguments import replace_params
+    # args = read_args(2)
+    args = replace_params(args,'mode','eval','num_workers','1','disp','25','minibatch','1')
     args_legacy = get_legacy_args(args)
     runargs,_ = options(args,key = "run")
 
     modelid,_,net,_,_,_,_,runargs=load_model(args)
     _,_,gz21,_,_,_,_,_=load_model(args_legacy)
-    # modelid,net=load_old_model('0')
+    
+    prec2std = PrecisionToStandardDeviation(args)
+    prec2std_legacy = PrecisionToStandardDeviation(args_legacy)
+    
     device = get_device()
     net.to(device)
     gz21.to(device)
@@ -194,14 +196,15 @@ def main():
                 prec_legacy = prec_legacy.to("cpu")
                 # fields_legacy_tensor.to("cpu")
 
-
+            std = prec2std(prec)
+            std_legacy = prec2std_legacy(prec_legacy)
             predicted_forcings_mean = fromtensor(mean,forcings,forcing_coords, forcing_mask,denormalize = True,**kwargs)
-            predicted_forcings_std = fromtensor(torch.sqrt(1/prec),forcings,forcing_coords, forcing_mask,denormalize = True,**kwargs)
+            predicted_forcings_std = fromtensor(std,forcings,forcing_coords, forcing_mask,denormalize = True,**kwargs)
             true_forcings = fromtorchdict(forcings,forcing_coords,forcing_mask,denormalize = True,**kwargs)
             
             
             predicted_forcings_mean_legacy = fromtensor(mean_legacy,forcings_legacy,forcing_coords_legacy, forcing_mask,denormalize = True,**kwargs)
-            predicted_forcings_std_legacy = fromtensor(torch.sqrt(1/prec_legacy),forcings_legacy,forcing_coords, forcing_mask,denormalize = True,**kwargs)
+            predicted_forcings_std_legacy = fromtensor(std_legacy,forcings_legacy,forcing_coords, forcing_mask,denormalize = True,**kwargs)
             
             if lsrp_flag:
                 predicted_forcings_mean,_ = lsrp_pred(predicted_forcings_mean,true_forcings)

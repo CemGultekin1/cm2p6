@@ -14,7 +14,7 @@ def main():
     target = R2_PLOTS
     file1 = open(models, 'r')
     lines = file1.readlines()
-    lines = lines[18:19]
+    lines = lines[:1]
     file1.close()
     title_inc = ['sigma','domain','depth','latitude','lsrp','lossfun']
     title_name = ['sigma','train-domain','train-depth','latitude','lsrp','lossfun']

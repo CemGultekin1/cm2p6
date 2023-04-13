@@ -24,7 +24,7 @@ DATA_PARAMS = {
 
 TRAIN_PARAMS = {
     "lr" : {"type": float, "default" : 1e-2},
-    "lossfun" : {"type":str, "choices":["heteroscedastic","MSE","MVARE"]},
+    "lossfun" : {"type":str, "choices":["heteroscedastic","MSE","MVARE","heteroscedastic_v2"]},
     "weight_decay" : {"type":float, "default": 0.},
     "clip" : {"type":float, "default": -1},
     "scheduler" : {"type":str,"choices":["ReduceLROnPlateau","MultiStepLR"]}
@@ -45,7 +45,7 @@ ARCH_PARAMS = {
     "seed" : {"type":int,"default":0},
     "model" : {"type":str, "choices":["fcnn","dfcnn","lsrp:0"]},
     "min_precision" : {"type":float, "default":0.},
-    "final_activation" : {"type":str, "choices":["softmax","square",]},
+    "final_activation" : {"type":str, "choices":["softplus","square","softplus_with_constant"]},
     "gz21" : {"type":bool,"default":False},
 }
 
@@ -56,9 +56,7 @@ RUN_PARAMS = {
     "prefetch_factor" : {"type": int, "default": 1},
     "maxepoch" : {"type": int, "default" : 500},
     "persistent_workers" : {"type":bool,"default":True},
-    "reset_model":{"type":bool,"default":False},
-    "reset_optimizer":{"type":bool,"default":False},
-    "relog":{"type":bool,"default":False},
+    "reset":{"type":bool,"default":False},
     "disp" :  {"type":int,"default":-1},
     "mode" : {"type": str, "choices" : ["train","eval","data","scalars","view"],},
     "section" : {"type":int, "nargs": 2, "default":(0,1)},

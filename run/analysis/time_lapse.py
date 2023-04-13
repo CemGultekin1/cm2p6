@@ -2,7 +2,7 @@ import os
 import sys
 from data.exceptions import RequestDoesntExist
 from utils.arguments import replace_param
-from run.eval import get_lsrp_modelid
+from run.analysis.eval import get_lsrp_modelid
 import torch
 from data.load import get_data
 from models.load import load_model
@@ -10,6 +10,7 @@ from utils.arguments import options, populate_data_options
 from utils.parallel import get_device
 from constants.paths import TIME_LAPSE
 from utils.slurm import flushed_print
+from run.helpers import PrecisionToStandardDeviation
 import numpy as np
 from utils.xarray import concat, fromtensor, fromtorchdict, fromtorchdict2tensor
 import xarray as xr
@@ -64,13 +65,16 @@ def get_interiority(datargs,coords,net,localizer:CoordinateLocalizer):
             break
     return interiority
 def main():
-    args = sys.argv[1:]
+    from utils.slurm import read_args
+    args = read_args(2,)
+    from utils.arguments import replace_params
+    args = replace_params(args,'mode','eval','num_workers','1')
+
     runargs,_ = options(args,key = "run")
 
     modelid,_,net,_,_,_,_,runargs=load_model(args)
-    # modelid,net=load_old_model('0')
+    prec2std = PrecisionToStandardDeviation(args)
     print(f'modelid = {modelid}')
-    # return
     device = get_device()
     net.eval()
     net.to(device)
@@ -119,10 +123,10 @@ def main():
 
 
                 with torch.set_grad_enabled(False):
-                    mean,std =  net.forward(fields_tensor.to(device))
+                    mean,prec =  net.forward(fields_tensor.to(device))
                     mean = mean.to("cpu")
-                    std = std.to("cpu")
-                    std = torch.sqrt(1/std)
+                    prec = prec.to("cpu")
+                std = prec2std(prec)
                 
 
 

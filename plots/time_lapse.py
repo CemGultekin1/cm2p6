@@ -16,7 +16,7 @@ def main():
     lines = file1.readlines()
     file1.close()
 
-    lines = [lines[i] for i in [0]]
+    lines = [lines[i] for i in [1]]
     # lines = ['--lsrp 0 --depth 0 --sigma 4 --filtering gcm --temperature True --latitude False --domain global --num_workers 16 --disp 50 --batchnorm 1 1 1 1 1 1 1 0 --lossfun heteroscedastic --widths 3 128 64 32 32 32 32 32 6 --kernels 5 5 3 3 3 3 3 3 --minibatch 4']
 
     title_inc = ['sigma','domain','depth','interior','filtering','lossfun']
@@ -35,9 +35,7 @@ def main():
         title = [f"{name}: {val}" for name,val in zip(title_name,vals)]
         title = [st + ('\n' if i%3 == 2 else ',   ') for i,st in enumerate(title)]
         title = ''.join(title)
-        # if j <3:
-        #     title = title.replace('global','four_regions')
-            
+                    
         snfile = os.path.join(root,modelid + '.nc')
         if not os.path.exists(snfile):
             continue
@@ -85,7 +83,7 @@ def main():
 
             true_val = var['true_'+name].values.reshape([-1])
             pred_val = var['pred_'+name+'_mean'].values.reshape([-1])
-            if runargs.lossfun == 'heteroscedastic':
+            if 'heteroscedastic' in runargs.lossfun:
                 std_val = var['pred_'+name+'_std'].values.reshape([-1])
                 pred1 = 1.96*std_val + pred_val
                 pred_1 = -1.96*std_val + pred_val
@@ -95,7 +93,7 @@ def main():
 
             ax.plot(true_val,color = 'tab:blue', label = 'true',linewidth = 2)
             ax.plot(pred_val,color = 'tab:orange', label = 'mean',linewidth = 2)
-            if runargs.lossfun == 'heteroscedastic':
+            if 'heteroscedastic' in runargs.lossfun:
                 ax.plot(pred1,color = 'tab:green', label = '1.96-std',linestyle = 'dotted',alpha = 0.5)
                 ax.plot(pred_1,color = 'tab:green', linestyle = 'dotted',alpha = 0.5)#label = '1-std',
             ax.legend()

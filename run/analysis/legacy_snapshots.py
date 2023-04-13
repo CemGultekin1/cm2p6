@@ -68,9 +68,7 @@ def get_vmax_vmins(*args,absolute:bool = True):
     return dict(vmax = vmax,vmin = vmin)
 def main():
     args = sys.argv[1:]
-    # args = '--filtering gaussian --num_workers 1 --disp 1 --min_precision 0.024 --interior False --domain four_regions --batchnorm 1 1 1 1 1 1 1 0 --widths 2 128 64 32 32 32 32 32 4 --kernels 5 5 3 3 3 3 3 3 --minibatch 4 --mode eval'.split()args = read_args(1)
-    
-    # args = read_args(1)
+
     args_legacy = get_legacy_args(args)
     runargs,_ = options(args,key = "run")
 
