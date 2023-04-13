@@ -3,7 +3,7 @@ import os
 from typing import List
 from models.nets.cnn import adjustcnn
 from models.search import is_trained
-from constants.params import get_default
+from utils.arguments import get_default
 from jobs.job_body import create_slurm_job
 from jobs.taskgen import python_args
 from utils.arguments import options,replace_param,replace_params
@@ -102,59 +102,58 @@ def generate_training_tasks():
             filtering = 'gaussian',
             interior = False,
             num_workers = 8,
-            min_precision = [0.024,0.025],
+            min_precision = 0.024,
             domain = 'four_regions',
             lossfun = 'heteroscedastic',
         ),
-        dict(
-            filtering = 'gaussian',
-            interior = False,
-            num_workers = 8,
-            domain = 'four_regions',
-            lossfun = 'heteroscedastic',
-        ),
-        dict(
-            filtering = 'gaussian',
-            interior = False,
-            wet_mask_threshold = 0.5,
-            domain = 'global',
-            lossfun = 'heteroscedastic',
+        # dict(
+        #     filtering = 'gaussian',
+        #     interior = False,
+        #     num_workers = 8,
+        #     domain = 'four_regions',
+        #     lossfun = 'heteroscedastic',
+        # ),
+        # dict(
+        #     filtering = 'gaussian',
+        #     interior = False,
+        #     wet_mask_threshold = 0.5,
+        #     domain = 'global',
+        #     lossfun = 'heteroscedastic',
             
-        ),
-        dict(
-            lsrp = 0,     
-            depth = 0,
-            sigma = [4,8,12,16],
-            filtering = 'gcm',
-            temperature = False,
-            latitude = False,
-            domain = ['four_regions','global'],
-            seed = list(range(3))
-        ),
-        dict(
-            lsrp = [0,1],     
-            depth = 0,
-            sigma = [4,8,12,16],
-            filtering = 'gcm',
-            temperature = True,
-            latitude = [False,True],
-            domain = ['four_regions','global'],
-            seed = list(range(3))
-        ),
-        dict(
-            lsrp = [0,1],     
-            depth =[int(d) for d in DEPTHS],
-            sigma = [4,8,12,16],
-            filtering = 'gcm',
-            temperature = True,
-            latitude = [False,True],
-            domain = 'global',
-            seed = list(range(3))
-        )
+        # ),
+        # dict(
+        #     lsrp = 0,     
+        #     depth = 0,
+        #     sigma = [4,8,12,16],
+        #     filtering = 'gcm',
+        #     temperature = False,
+        #     latitude = False,
+        #     domain = ['four_regions','global'],
+        #     seed = list(range(3))
+        # ),
+        # dict(
+        #     lsrp = [0,1],     
+        #     depth = 0,
+        #     sigma = [4,8,12,16],
+        #     filtering = 'gcm',
+        #     temperature = True,
+        #     latitude = [False,True],
+        #     domain = ['four_regions','global'],
+        #     seed = list(range(3))
+        # ),
+        # dict(
+        #     lsrp = [0,1],     
+        #     depth =[int(d) for d in DEPTHS],
+        #     sigma = [4,8,12,16],
+        #     filtering = 'gcm',
+        #     temperature = True,
+        #     latitude = [False,True],
+        #     domain = 'global',
+        #     seed = list(range(3))
+        # )
     ]
     
     argslist = combine_all(kwargs,base_kwargs)
-    
     
     for i in range(len(argslist)):
         args = fix_architecture(argslist[i].split())
@@ -184,11 +183,11 @@ def generate_training_tasks():
             args = fix_model_type(args)
             argslist[i] = ' '.join(args)
         return argslist
-    kernel_factors = [float(f)/21. for f in [21,15,11,9,7,5,4,3,2,1]]
-    argslist_ = []
-    for kf in kernel_factors:
-        argslist_.extend(kernel_size_switched(kf))
-    argslist.extend(argslist_)
+    # kernel_factors = [float(f)/21. for f in [21,15,11,9,7,5,4,3,2,1]]
+    # argslist_ = []
+    # for kf in kernel_factors:
+    #     argslist_.extend(kernel_size_switched(kf))
+    # argslist.extend(argslist_)
 
     import numpy as np
     _,idx = np.unique(np.array(argslist),return_index=True)

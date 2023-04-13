@@ -2,10 +2,31 @@ import argparse
 import hashlib
 import itertools
 from typing import List
-from constants.params import DATA_PARAMS,MODEL_PARAMS,ARCH_PARAMS,RUN_PARAMS, SCALAR_PARAMS, TRAIN_PARAMS,USUAL_PARAMS
+from constants.params import DATA_PARAMS,MODEL_PARAMS,ARCH_PARAMS,RUN_PARAMS, SCALAR_PARAMS, TRAIN_PARAMS,USUAL_PARAMS,PARAMS
 import numpy as np
 
 
+def tuple2string(tpl):
+    if tpl is None:
+        return ""
+    if isinstance(tpl,tuple):
+        return " ".join([str(x) for x  in tpl])
+    else:
+        return str(tpl)
+
+def defaulting_dict(d:dict,key:str,**kwargs):
+    return d.get(key,get_default(key,**kwargs))
+
+def get_default(key,instr = False):
+    if key not in PARAMS:
+        return_val = None
+    else:
+        return_val = PARAMS[key]["default"]
+    if instr:
+        return tuple2string(return_val)
+    else:
+        return return_val
+    
 
 
 def replace_params(args,*ARGS):
@@ -16,7 +37,7 @@ def replace_params(args,*ARGS):
 
 def replace_param(args,param,newval):
     if not isinstance(newval,str):
-        newval = repr(newval)
+        newval = tuple2string(newval)
     param_ = f'--{param}'
     if param_ in args:
         args[args.index(param_)+1] = newval
@@ -101,7 +122,6 @@ def options(string_input,key:str = "model"):
     for argname,argdesc in prms.items():
         model_parser.add_argument(f"--{argname}",**argdesc)
         if f"--{argname}" in string_input:
-            # print(argname,argdesc)
             i = string_input.index(f"--{argname}")
             j = i+1
             st_inputs.append(f"--{argname}")
@@ -112,10 +132,7 @@ def options(string_input,key:str = "model"):
                 if j == len(string_input):
                     break
             
-    # print(st_inputs)
-    # model_parser.parse_known_intermixed_args
-    # print(string_input)
-    args,_ = model_parser.parse_known_args(st_inputs)#string_input)#parse_known_args
+    args,_ = model_parser.parse_known_args(st_inputs)
     return args,args2num(prms,args)
 
 def args2num(prms:dict,args:argparse.Namespace):

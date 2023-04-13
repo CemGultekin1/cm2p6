@@ -44,6 +44,7 @@ ARCH_PARAMS = {
     "seed" : {"type":int,"default":0},
     "model" : {"type":str, "choices":["fcnn","dfcnn","lsrp:0"]},
     "min_precision" : {"type":float, "default":0.},
+    "final_activation" : {"type":str, "choices":["softmax","square",]},
     "gz21" : {"type":bool,"default":False},
 }
 
@@ -102,24 +103,5 @@ for d in (DATA_PARAMS,ARCH_PARAMS,RUN_PARAMS,SCALAR_PARAMS,TRAIN_PARAMS,MODEL_PA
             d[key]["dest"] =key
             d[key]["type"] = str2bool
 
-def repr(tpl):
-    if tpl is None:
-        return ""
-    if isinstance(tpl,tuple):
-        return " ".join([str(x) for x  in tpl])
-    else:
-        return str(tpl)
 
-def defaulting_dict(d:dict,key:str,**kwargs):
-    return d.get(key,get_default(key,**kwargs))
-
-def get_default(key,instr = False):
-    if key not in PARAMS:
-        return_val = None
-    else:
-        return_val = PARAMS[key]["default"]
-    if instr:
-        return repr(return_val)
-    else:
-        return return_val
 
