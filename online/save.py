@@ -31,14 +31,14 @@ def main():
     # replace_values = {
     #     'interior' : (['False',],['']),
     # }
-    argnums = [5]
+    argnums = [1]
     put_dict_keys = 'widths kernels seed batchnorm min_precision'.split()
 
     models_dict = {}
     names = []
     for argnum in argnums:
         args_ = read_args(argnum)
-        
+        print(args_)
         name = 'gaussian_four_regions'
         modelargs,modelid = options(args_,key = 'model')
         modelargsdict = {

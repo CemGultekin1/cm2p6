@@ -3,7 +3,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 import numpy as np
-
+from .gz21 import SquareTransform
 class Layer:
     def __init__(self,nn_layers:list) -> None:
         self.nn_layers =nn_layers
@@ -38,10 +38,22 @@ class Softmax_Layer(Layer):
             xs[-1] = p
             return tuple(xs)
         return super().__call__(x)
-        
+
+class Square_Layer(Layer):
+    def __init__(self,nn_layers:list,split,min_value = 0) -> None:
+        super().__init__(nn_layers)
+        self.add(SquareTransform(min_value = min_value))
+        self.min_value = min_value
+        self.split = split
+    def __call__(self, x):
+        if self.split>1:
+            xs = list(torch.split(x,x.shape[1]//self.split,dim=1))
+            xs[-1] = super().__call__(xs[-1])
+            return tuple(xs)
+        return super().__call__(x)
 
 class Sequential(Layer):
-    def __init__(self,nn_layers,widths,kernels,batchnorm,softmax_layer = False,split = 1,min_precision = 0):
+    def __init__(self,nn_layers,widths,kernels,batchnorm,final_activation ,min_precision,split = 1):
         super().__init__(nn_layers)
         self.sections = []
         spread = 0
@@ -51,21 +63,23 @@ class Sequential(Layer):
         self.spread = spread//2
         for i in range(self.nlayers):
             self.sections.append(CNN_Layer(nn_layers,widths[i],widths[i+1],kernels[i],batchnorm[i], i < self.nlayers - 1))
-        if softmax_layer:
+        if final_activation == 'softmax':
             self.sections.append(Softmax_Layer(nn_layers,split,min_value = min_precision))
+        if final_activation == 'square':
+            self.sections.append(Square_Layer(nn_layers,split,min_value = min_precision))
     def __call__(self, x):
         for lyr in self.sections:
             x = lyr.__call__(x)
         return x
 
 class CNN(nn.Module):
-    def __init__(self,widths = None,kernels = None,batchnorm = None,seed = None,min_precision = 0 ,**kwargs):
+    def __init__(self,widths = None,kernels = None,batchnorm = None,seed = None,final_activation = None,min_precision = 0 ,**kwargs):
         super(CNN, self).__init__()
         torch.manual_seed(seed)
         self.nn_layers = nn.ModuleList()
         
         self.sequence = \
-            Sequential(self.nn_layers, widths,kernels,batchnorm,softmax_layer=True,min_precision = min_precision,split = 2)
+            Sequential(self.nn_layers, widths,kernels,batchnorm,final_activation,min_precision ,split = 2)
         spread = 0
         for k in kernels:
             spread += (k-1)/2
