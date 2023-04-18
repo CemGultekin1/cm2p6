@@ -9,19 +9,7 @@ import math
 from constants.paths import OUTPUTS_PATH,ONLINE_MODELS
 import os
 import matplotlib.pyplot as plt
-    
-u_scale = 1/0.09439346225350978
-v_scale = 1/0.07252696573672539
-Su_scale = 4.9041400042653195e-08
-Sv_scale = 4.8550991806254025e-08
-
-cnn_arguments = dict(
-        seed = 0,
-        min_precision = 0.024,
-        kernels=[5, 5, 3, 3, 3, 3, 3, 3],
-        widths=[2,128, 64, 32, 32, 32, 32, 32, 4],
-        batchnorm = [1, 1, 1, 1, 1, 1, 1, 0]
-)
+from online.run_script import u_scale,v_scale,Su_scale,Sv_scale,CNN
 
 class DetectOutputSizeMixin:
     def output_width(self, input_height, input_width):
@@ -114,79 +102,6 @@ class FullyCNN(DetectOutputSizeMixin, Sequential):
         if self.batch_norm:
             subbloc.append(nn.BatchNorm2d(conv.out_channels))
         return subbloc
-    
-    
-
-    
-class Layer:
-    def __init__(self,nn_layers:list) -> None:
-        self.nn_layers =nn_layers
-        self.section = []
-    def add(self,nn_obj):
-        self.section.append(len(self.nn_layers))
-        self.nn_layers.append(nn_obj)
-    def __call__(self,x):
-        for j in self.section:
-            x = self.nn_layers[j](x)
-        return x
-
-class CNN_Layer(Layer):
-    def __init__(self,nn_layers:list,widthin,widthout,kernel,batchnorm,nnlnr) -> None:
-        super().__init__(nn_layers)
-        self.add(nn.Conv2d(widthin,widthout,kernel))
-        if batchnorm:
-            self.add(nn.BatchNorm2d(widthout))
-        if nnlnr:
-            self.add(nn.ReLU(inplace = True))
-class Softmax_Layer(Layer):
-    def __init__(self,nn_layers:list,split,min_value = 0) -> None:
-        super().__init__(nn_layers)
-        self.add(nn.Softplus())
-        self.min_value = min_value
-        self.split = split
-    def __call__(self, x):
-        if self.split>1:
-            xs = list(torch.split(x,x.shape[1]//self.split,dim=1))
-            p = super().__call__(xs[-1])
-            p = p + self.min_value
-            xs[-1] = p
-            return tuple(xs)
-        return super().__call__(x)
-        
-
-class Sequential_(Layer):
-    def __init__(self,nn_layers,widths,kernels,batchnorm,softmax_layer = False,split = 1,min_precision = 0):
-        super().__init__(nn_layers)
-        self.sections = []
-        spread = 0
-        self.nlayers = len(kernels)
-        for i in range(self.nlayers):
-            spread+=kernels[i]-1
-        self.spread = spread//2
-        for i in range(self.nlayers):
-            self.sections.append(CNN_Layer(nn_layers,widths[i],widths[i+1],kernels[i],batchnorm[i], i < self.nlayers - 1))
-        if softmax_layer:
-            self.sections.append(Softmax_Layer(nn_layers,split,min_value = min_precision))
-    def __call__(self, x):
-        for lyr in self.sections:
-            x = lyr.__call__(x)
-        return x
-
-class CNN(nn.Module):
-    def __init__(self,widths = None,kernels = None,batchnorm = None,seed = None,min_precision = 0 ,**kwargs):
-        super(CNN, self).__init__()
-        torch.manual_seed(seed)
-        self.nn_layers = nn.ModuleList()
-        
-        self.sequence = \
-            Sequential_(self.nn_layers, widths,kernels,batchnorm,softmax_layer=True,min_precision = min_precision,split = 2)
-        spread = 0
-        for k in kernels:
-            spread += (k-1)/2
-        self.spread = int(spread)
-    def forward(self,x1):
-        return self.sequence(x1)
-    
 
 
 
@@ -244,7 +159,7 @@ def run_model(cnns_:dict,):
     from data.load import load_xr_dataset
 
     args = '--filtering gaussian --num_workers 1 --interior False'
-    ds,scs = load_xr_dataset(args.split(),high_res = False)
+    ds,_ = load_xr_dataset(args.split(),high_res = False)
 
     ds = ds.isel(time = 0,).fillna(0)
 
@@ -350,6 +265,8 @@ def load_model(path,old_model_flag,fully_cnn_flag:bool = False):
     else:
         modelsdict = {}
     for name,sttdict in statedict.items():
+        if not old_model_flag:
+            cnn_arguments,_ = sttdict
         if  not fully_cnn_flag:
             nn=CNN(**cnn_arguments)#cuda_flag=False,relu_flag= 1 - old_model_flag)
         else:        
@@ -373,7 +290,7 @@ def load_models():
     models['GZ21'] = load_model(path,True,fully_cnn_flag=True)
     
 
-    filenames = ['20230405']
+    filenames = ['20230418']
     for fn in filenames:
         path = os.path.join(ONLINE_MODELS,'cem_' + fn + '.pth')
         for name,model in load_model(path,False).items():

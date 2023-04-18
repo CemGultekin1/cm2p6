@@ -31,7 +31,7 @@ def main():
     # replace_values = {
     #     'interior' : (['False',],['']),
     # }
-    argnums = [1]
+    argnums = [2]
     put_dict_keys = 'widths kernels seed batchnorm min_precision final_activation'.split()
 
     models_dict = {}

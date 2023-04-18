@@ -15,7 +15,7 @@ def main():
     
     from utils.slurm import read_args
     from utils.arguments import replace_params
-    for arg_index in range(1):
+    for arg_index in range(1,2):
         args = read_args(arg_index+1)
         args = replace_params(args,'mode','eval','num_workers','1','disp','25','minibatch','1')
 
