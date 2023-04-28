@@ -29,7 +29,10 @@ def get_statedict(args):
     if modelargs.gz21:
         modelid = 'GZ21'
         if modelargs.direct_address:
-            modelid += '-'+str(abs(hash(modelargs.direct_address)))
+            name = '-'.join(modelargs.direct_address.split('/')[-5:])
+            name = name.replace('_','-')
+            name = name.split('.')[0]
+            modelid += '-'+name
     logfile = model_logs_json_path(modelid)
     device = get_device()
     state_dict = None
