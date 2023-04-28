@@ -23,7 +23,7 @@ def chan_nums(modelargs):
     return ninchans,noutchans
 def init_architecture(archargs:Namespace)->Union[CNN,FullyCNN]:
     if archargs.gz21:
-        return FullyCNN()
+        return FullyCNN(**archargs.__dict__)
     else:
         net= CNN(**archargs.__dict__)
         net = net.to(get_device())

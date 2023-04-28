@@ -107,11 +107,12 @@ def get_eval_path(modelid):
     return os.path.join(EVALS,modelid + '.nc')
 def modelsdict_path():
     return MODELS_JSON
-def statedict_path(modelid,legacy:bool = False):
-    if not legacy:
+def statedict_path(modelid,gz21:bool = False,direct_address:str = "",**kwargs):
+    if direct_address != "none":
+        return direct_address
+    if not gz21:
         return os.path.join(MODELS,f"{modelid}.pth")
     else:
-        modelid = "GZ21"
         return os.path.join(OUTPUTS_PATH,"GZ21.pth")
 def model_logs_json_path(modelid):
     return os.path.join(TRAINING_LOGS,f"{modelid}.json")

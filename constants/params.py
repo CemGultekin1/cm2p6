@@ -47,6 +47,7 @@ ARCH_PARAMS = {
     "min_precision" : {"type":float, "default":0.},
     "final_activation" : {"type":str, "choices":["softplus","square","softplus_with_constant"]},
     "gz21" : {"type":bool,"default":False},
+    "direct_address" : {"type":str,"default":"none"},
 }
 
 

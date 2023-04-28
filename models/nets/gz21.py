@@ -69,7 +69,7 @@ class Transform(Module, ABC):
 class PrecisionTransform(Transform):
     def __init__(self, min_value=0.1):
         super().__init__()
-        self.min_value = Parameter(torch.tensor(min_value))
+        self._min_value = Parameter(torch.tensor(min_value))
         self.indices = slice(2,4)
 
     @property
@@ -127,7 +127,7 @@ class SoftPlusTransform(PrecisionTransform):
 class FullyCNN(DetectOutputSizeMixin, Sequential):
 
     def __init__(self, n_in_channels: int = 2, n_out_channels: int = 4,
-                 padding=None, batch_norm=False):
+                 padding=None, batch_norm=False,final_activation:str = "softplus",**kwargs):
         if padding is None:
             padding_5 = 0
             padding_3 = 0
@@ -156,7 +156,13 @@ class FullyCNN(DetectOutputSizeMixin, Sequential):
         Sequential.__init__(self, *block1, *block2, *block3, *block4, *block5,
                             *block6, *block7, conv8)
         self.spread = 10
-        self.final_transformation = SoftPlusTransform()
+        if final_activation == "softplus":
+            self.final_transformation = SoftPlusTransform()
+        elif final_activation == "square":
+            self.final_transformation = SquareTransform()
+        else:
+            raise Exception
+        
     @property
     def final_transformation(self):
         return self._final_transformation

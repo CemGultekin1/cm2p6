@@ -130,8 +130,9 @@ def get_lsrp_modelid(args):
     return True, lsrpid
 
 def get_legacy_args(args):
+    # return '--gz21 True --legacy_scalars True'.split()
     leg_args = args.copy()
-    leg_args = replace_params(leg_args,'gz21','True','legacy_scalars','True')
+    leg_args = replace_params(leg_args,'gz21','True','legacy_scalars','True','direct_address','none')
     return leg_args
 
 def main():
@@ -139,8 +140,10 @@ def main():
     # from utils.slurm import read_args
     # from utils.arguments import replace_params
     # args = read_args(2)
+    
     args = replace_params(args,'mode','eval','num_workers','1','disp','25','minibatch','1')
     args_legacy = get_legacy_args(args)
+    # args_legacy = get_legacy_args(args)
     runargs,_ = options(args,key = "run")
 
     modelid,_,net,_,_,_,_,runargs=load_model(args)
@@ -158,6 +161,7 @@ def main():
     assert runargs.mode == "eval"
     net.eval()
     gz21.eval()
+    
     multidatargs = populate_data_options(args,non_static_params=[],domain = 'global',interior = False)
     multi_datargs_legacy = populate_data_options(args_legacy,non_static_params=[],domain = 'global',interior = False)
     allstats = {}

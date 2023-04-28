@@ -25,9 +25,11 @@ def update_statedict(state_dict_,net_,optimizer_,scheduler_,last_model = True):
 
 def get_statedict(args):
     modelargs,modelid = options(args,key = "model")
-    statedictfile =  statedict_path(modelid,legacy=modelargs.gz21)
+    statedictfile =  statedict_path(modelid,**modelargs.__dict__)
     if modelargs.gz21:
         modelid = 'GZ21'
+        if modelargs.direct_address:
+            modelid += '-'+str(abs(hash(modelargs.direct_address)))
     logfile = model_logs_json_path(modelid)
     device = get_device()
     state_dict = None
@@ -122,10 +124,14 @@ def load_model(args):
     rerun_flag = runargs.reset and runargs.mode == 'train'
     if state_dict is not None and not rerun_flag:
         if runargs.mode == "train":
-            net.load_state_dict(state_dict["last_model"],strict = False)
+            print("final_transformation._min_value" in state_dict["best_model"])
+            net.load_state_dict(state_dict["last_model"],)#strict = False)
         else:
-            # print(state_dict["best_model"])
-            net.load_state_dict(state_dict["best_model"],strict = False)
+            replaced_key = "final_transformation.min_value"
+            replacing_key = "final_transformation._min_value"
+            if replaced_key in state_dict["best_model"]:
+                state_dict["best_model"][replacing_key] = state_dict["best_model"].pop(replaced_key)
+            net.load_state_dict(state_dict["best_model"],)#strict = False)
             # print(net)
             # raise Exception
         print(f"Loaded an existing model")
