@@ -45,7 +45,7 @@ class PartialSoftPlusLayer(nn.Module):
         return self.__class__.__name__
 
 class CNN(nn.Sequential):
-    def __init__(self,widths = None,kernels = None,batchnorm = None,seed = None,min_precision = 0 ,final_activation = None,**kwargs):
+    def __init__(self,widths = None,kernels = None,batchnorm = None,seed = None,**kwargs):
         d = []
         zipwidths = zip(widths[:-1],widths[1:])
         nlayers = len(kernels)

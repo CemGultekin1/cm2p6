@@ -94,7 +94,7 @@ def load_optimizer(args,net,):
     if runargs.optimizer == "SGD":
         optimizer = torch.optim.SGD(net.parameters(), lr=runargs.lr,weight_decay = runargs.weight_decay,momentum= runargs.momentum)
     elif runargs.optimizer == "Adam":
-        optimizer = torch.optim.SGD(net.parameters(), lr=runargs.lr,weight_decay = runargs.weight_decay,)
+        optimizer = torch.optim.Adam(net.parameters(), lr=runargs.lr,weight_decay = runargs.weight_decay,)
     else:
         raise Exception
     print(f"Optimizer = {optimizer}")
@@ -105,7 +105,6 @@ def load_optimizer(args,net,):
             def step(self,*args):
                 return super().step()
         scheduler = MultiStepLRStepInputNeglect(optimizer, [10,20],gamma=0.1)
-        scheduler =  None
     return optimizer,scheduler
 
 def load_model(args):
@@ -145,8 +144,10 @@ def load_model(args):
             # raise Exception
         print(f"Loaded an existing model")
         if "optimizer" in state_dict and not runargs.reset:
+            print(f"Loaded an existing optimizer")
             optimizer.load_state_dict(state_dict["optimizer"])
         if "scheduler" in state_dict and not runargs.reset:
+            print(f"Loaded an existing scheduler")
             scheduler.load_state_dict(state_dict["scheduler"])
     else:
         if state_dict is not None:
