@@ -33,11 +33,11 @@ def main():
     args = sys.argv[1:]
     # from utils.slurm import read_args
     # from utils.arguments import replace_params
-    # args = read_args(2)
-    # args =replace_params(args,'num_workers','3','disp','1')
+    # args = read_args(9)
+    # args =replace_params(args,'num_workers','1','disp','1','reset','True')
 
     modelid,state_dict,net,criterion,optimizer,scheduler,logs,runargs=load_model(args)
-    clip = runargs.clip
+    print(net)
     flushed_print('torch.cuda.is_available():\t',torch.cuda.is_available())
     flushed_print('runargs:\t',runargs)
     training_generator,val_generator=get_data(args,half_spread = net.spread,torch_flag = True,data_loaders = True,groups = ('train','validation'))
@@ -54,74 +54,45 @@ def main():
         tt=0
         net.train()
         timer.start('data')
-        for infields,outfields,mask in training_generator:
+        for i,(infields,outfields,mask) in enumerate(training_generator):
             if not torch.any(mask>0):
                 continue
-            # infields = infields[0].numpy()
-            # outfields = outfields[0].numpy()
-            # mask = mask[0].numpy()
-            # import matplotlib.pyplot as plt
-            # def plot_method(field,name):
-            #     nchan = field.shape[0]
-            #     fig,axs = plt.subplots(nchan,1,figsize = (10,10*nchan))
-            #     for i in range(nchan):
-            #         print(name,i,np.mean(np.abs(field[i])))
-            #         ff = field[i]
-            #         ff = ff[::-1]
-            #         axs[i].imshow(ff,cmap = 'bwr')
-            #     fig.savefig(name)
-            #     plt.close()
-            # plot_method(np.log10(np.abs(infields)),'log10_infields.png')
-            # plot_method(np.log10(np.abs(outfields)),'log10_outfields.png')
-            # plot_method(infields,'infields.png')
-            # plot_method(outfields,'outfields.png')
-            # plot_method(mask,'mask.png')
-            # return
+            net.zero_grad()
+            # rin = torch.randn(*infields.shape)
+            # rin[infields != 0] = 0
+            # infields = rin
             infields,outfields,mask = infields.to(device),outfields.to(device),mask.to(device)
+            
             timer.end('data')
             timer.start('model')
             outputs = net.forward(infields)
-
-            # with torch.set_grad_enabled(False):
-            #     net.eval()
-            #     outputs = net.forward(infields)
-            # mean,cond_var = outputs
-            # yhat1 = cond_var.to("cpu").numpy()[0]
-            # yhat = mean.to("cpu").numpy()[0]
-            # y = outfields.to("cpu").numpy()[0]
-            # m = mask.to("cpu").numpy()[0] < 0.5
-            # # yhat[m] = np.nan
-            # # y[m] = np.nan
-            # # yhat1[m] = np.nan
-            
-            # nchan = yhat.shape[0]
-            # import matplotlib.pyplot as plt
-            # fig,axs = plt.subplots(nchan,3,figsize = (3*5,nchan*6))
-            # kwargs = dict(cmap = 'bwr')
-            # for chani in range(nchan):
-            #     for j,zh in zip(range(3),[y,yhat,yhat1]):
-            #         ax = axs[chani,j]
-            #         pos = ax.imshow(zh[chani,::-1],**kwargs)
-            #         fig.colorbar(pos,ax = ax)
-            # fig.savefig('train_intervention.png')
-            # return
-
-            
-
-            
             loss = criterion(outputs, outfields, mask)
+            
+            # train_interrupt = dict(
+            #     input = infields,
+            #     output = torch.cat(outputs,dim = 1),#outputs,
+            #     true_result = outfields,
+            #     mask = mask,
+            #     loss = loss.detach().item(),
+            #     **net.state_dict()
+            # )
+            # torch.save(train_interrupt,f'train_interrupt_{i}.pth')
+            # if i==12:
+            #     raise Exception
+            
+            
             logs['train-loss'][-1].append(loss.item())
-            optimizer.zero_grad()
+    
             loss.backward()
-            if clip>0:
-                clip_grad_norm_(net.parameters(), clip)
+            if runargs.clip>0:
+                clip_grad_norm_(net.parameters(), runargs.clip)
             optimizer.step()
             timer.end('model')
 
 
             tt+=1
-            if runargs.disp > 0 and tt%runargs.disp==0:
-                flushed_print('\t\t\t train-loss: ',str(np.mean(np.array(logs['train-loss'][-1]))),\
+            if runargs.disp > 0 and tt%runargs.disp==0:##np.mean(np.array(logs['train-loss'][-1]))),\
+                flushed_print('\t\t\t train-loss: ',str(logs['train-loss'][-1][-1]),\
                         '\t ±',\
                         str(np.std(np.array(logs['train-loss'][-1]))))
                 flushed_print(timer)

@@ -1,7 +1,11 @@
-Cartopy==0.21.0
-gcm_filters==0.3.0
-intake==0.6.8
-matplotlib==3.6.2
+dask==2023.4.0
+matplotlib==3.7.1
+mlflow==2.3.0
 numpy==1.23.5
-scipy==1.10.1
-torch==1.13.0
+pandas==2.0.1
+progressbar33==2.4
+PyYAML==6.0
+Requests==2.29.0
+setuptools==65.6.3
+torch==2.0.0
+xarray==2023.4.2

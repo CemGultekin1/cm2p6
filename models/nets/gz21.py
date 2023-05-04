@@ -76,10 +76,6 @@ class PrecisionTransform(Transform):
     def min_value(self):
         return softplus(self._min_value)
 
-    @min_value.setter
-    def min_value(self, value):
-        self._min_value = Parameter(torch.tensor(value))
-
     @property
     def indices(self):
         """Return the indices transformed"""
@@ -126,8 +122,10 @@ class SoftPlusTransform(PrecisionTransform):
         return ''.join(('SoftPlusTransform(', str(self.min_value), ')'))
 class FullyCNN(DetectOutputSizeMixin, Sequential):
 
-    def __init__(self, n_in_channels: int = 2, n_out_channels: int = 4,
+    def __init__(self, n_in_channels: int = 2, n_out_channels: int = 4,seed :int = 0,
                  padding=None, batch_norm=False,final_activation:str = "softplus",**kwargs):
+        print("class FullyCNN")
+        torch.manual_seed(seed)
         if padding is None:
             padding_5 = 0
             padding_3 = 0
@@ -156,12 +154,13 @@ class FullyCNN(DetectOutputSizeMixin, Sequential):
         Sequential.__init__(self, *block1, *block2, *block3, *block4, *block5,
                             *block6, *block7, conv8)
         self.spread = 10
-        if final_activation == "softplus":
-            self.final_transformation = SoftPlusTransform()
-        elif final_activation == "square":
-            self.final_transformation = SquareTransform()
-        else:
-            raise Exception
+        # if final_activation == "softplus":
+        #     self.final_transformation = SoftPlusTransform()
+        # elif final_activation == "square":
+        #     self.final_transformation = SquareTransform()
+        # else:
+        #     raise Exception
+        # print(self.final_transformation)
         
     @property
     def final_transformation(self):
@@ -173,10 +172,10 @@ class FullyCNN(DetectOutputSizeMixin, Sequential):
 
     def forward(self, x):
         x = super().forward(x)
-        
         x = self.final_transformation(x)
-        x,y = torch.split(x,2,dim = 1)
-        return x,y**2
+        # return self.final_transformation(x)
+        x,y = torch.split(x,x.shape[1]//2,dim = 1)
+        return x,y
 
     def _make_subblock(self, conv):
         subbloc = [conv, nn.ReLU()]

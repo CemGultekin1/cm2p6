@@ -54,8 +54,15 @@ def get_lsrp_modelid(args):
 
 def main():
     args = sys.argv[1:]
+    
+    
+    # from utils.slurm import read_args
+    # from utils.arguments import replace_params
+    # args = read_args(5)
+    # args =replace_params(args,'num_workers','3','disp','1','mode','eval')#'reset','True')
+    
     runargs,_ = options(args,key = "run")
-
+    
     modelid,_,net,_,_,_,_,runargs=load_model(args)
     device = get_device()
     net.to(device)

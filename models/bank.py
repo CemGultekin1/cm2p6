@@ -7,7 +7,7 @@ from models.nets.cnn import CNN,DoubleCNN
 from models.index import update_model_info
 from models.variations import qcnn_architecture,unet_architecture
 from models.nets.others import QCNN,UNET,GAN
-from models.nets.gz21 import FullyCNN
+from models.nets.gz21 import FullyCNN,SoftPlusTransform
 from models.regression import RegressionModel
 from utils.parallel import get_device
 
@@ -23,7 +23,9 @@ def chan_nums(modelargs):
     return ninchans,noutchans
 def init_architecture(archargs:Namespace)->Union[CNN,FullyCNN]:
     if archargs.gz21:
-        return FullyCNN(**archargs.__dict__)
+        cnn = FullyCNN(**archargs.__dict__)
+        cnn.final_transformation = SoftPlusTransform()
+        return cnn
     else:
         net= CNN(**archargs.__dict__)
         net = net.to(get_device())

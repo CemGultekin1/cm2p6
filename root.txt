@@ -1,0 +1,2 @@
+EXTFILE = overlay-15GB-500K.ext3
+CUDA_SINGULARITY = /scratch/work/public/singularity/cuda10.1-cudnn7-devel-ubuntu18.04.sif

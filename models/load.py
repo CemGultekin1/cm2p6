@@ -91,15 +91,21 @@ def get_conditional_mean_state_dict(args):
 
 def load_optimizer(args,net,):
     runargs,_ = options(args,key = "run")
-    optimizer = torch.optim.Adam(net.parameters(), lr=runargs.lr,weight_decay = runargs.weight_decay,)
+    if runargs.optimizer == "SGD":
+        optimizer = torch.optim.SGD(net.parameters(), lr=runargs.lr,weight_decay = runargs.weight_decay,momentum= runargs.momentum)
+    elif runargs.optimizer == "Adam":
+        optimizer = torch.optim.SGD(net.parameters(), lr=runargs.lr,weight_decay = runargs.weight_decay,)
+    else:
+        raise Exception
+    print(f"Optimizer = {optimizer}")
     if runargs.scheduler == "ReduceLROnPlateau":
         scheduler=torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer,factor=0.5,patience=2)
     else:
         class MultiStepLRStepInputNeglect(MultiStepLR):
             def step(self,*args):
                 return super().step()
-        scheduler = MultiStepLRStepInputNeglect(optimizer, milestones = [10,20],
-                           gamma=0.1)
+        scheduler = MultiStepLRStepInputNeglect(optimizer, [10,20],gamma=0.1)
+        scheduler =  None
     return optimizer,scheduler
 
 def load_model(args):

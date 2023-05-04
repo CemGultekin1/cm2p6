@@ -190,11 +190,6 @@ class MultiDomainDataset(MultiDomain):
             if not self.torch_flag:
                 data_vars[f"{varmask}_normalization"] = (['normalization'],np.array([0,1]))
         return data_vars
-    def fillna(self,values):
-        for key,v in values.items():
-            v[v!=v] = 0
-            values[key] = v
-        return values
     def __getitem__(self, i):
         ds = super().__getitem__(i)
         per_region = []
@@ -209,23 +204,34 @@ class MultiDomainDataset(MultiDomain):
                 return single_dom_out
             per_region.append(single_dom_out)
         cropped_per_region = []
+        def get_slice(length: int, length_to: int):
+            d_left = max(0, (length - length_to) // 2)
+            d_right = d_left + max(0, (length - length_to)) % 2
+            return slice(d_left, length - d_right)
         for var_inputs in zip(*per_region):
             shps = []
             for var_in in var_inputs:
                 shps.append(np.array(var_in.shape))
             shps = np.stack(shps,axis = 0)
-            shps = np.amin(shps,axis =0)
+            # shps = np.amin(shps,axis =0)
+            shps = np.amax(shps,axis =0)
             group = []
             for var_in in var_inputs:
-                var_in = var_in[:shps[0],:shps[1],:shps[2]]
-                group.append(var_in)
+                # slcs = [get_slice(shp,_shp) for shp,_shp in zip(var_in.shape,shps)]
+                # var_in = var_in[slcs[0],slcs[1],slcs[2]]
+                # var_in = var_in[:shps[0],:shps[1],:shps[2]]
+                # group.append(var_in)                
+                zer =torch.zeros(*shps)
+                shps_ = var_in.shape
+                zer[:shps_[0],:shps_[1],:shps_[2]] = var_in                
+                group.append(zer)
             group = torch.stack(group,dim = 0)
             cropped_per_region.append(group)
         min_gpu_reject_size = 200
         max_shape = np.stack([np.array(group.shape[2:]) for group in cropped_per_region],axis = 0)
         max_shape = np.amax(max_shape,axis = 0)
         pad_shape = np.maximum(min_gpu_reject_size - max_shape,0)
-        if np.all(pad_shape == 0) or not torch.cuda.is_available():
+        if True:#np.all(pad_shape == 0) or not torch.cuda.is_available():
             return tuple(cropped_per_region)
         cropped_per_region_ = []
         for group in cropped_per_region:

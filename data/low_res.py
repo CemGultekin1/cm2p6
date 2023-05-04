@@ -1,6 +1,6 @@
 import copy
 from typing import Tuple
-from utils.xarray import no_nan_input_mask
+from utils.xarray import no_nan_input_mask, plot_ds
 import xarray as xr
 import numpy as np
 from transforms.grids import bound_grid, fix_grid, larger_longitude_grid
@@ -84,6 +84,7 @@ class SingleDomain(CM2p6Dataset):
         self.interior = kwargs.get('interior')
         self.wet_mask_threshold = kwargs.get('wet_mask_threshold')
         # print(f'self.wet_mask_threshold = {self.wet_mask_threshold}')
+        # print(f'self.interior = {self.interior}')
 
     @property
     def shape(self,):
@@ -175,9 +176,11 @@ class SingleDomain(CM2p6Dataset):
             if key in ds.data_vars.keys():
                 ds = ds.drop(key)
 
-        # ds = apply_mask(ds,self.fieldwetmask.values,list(ds.data_vars))
-        # ds = apply_mask(ds,self.forcingwetmask.values,[field for field in list(ds.data_vars) if 'S' in field])
-
+        ds = apply_mask(ds,self.fieldwetmask.values,list(ds.data_vars))
+        ds = apply_mask(ds,self.forcingwetmask.values,[field for field in list(ds.data_vars) if 'S' in field])
+        # plot_ds(
+        #     dict(fields = self.fieldwetmask,forcings = self.forcingwetmask),'masks.png',ncols = 2
+        # )
         return ds
 
     def get_grid_fixed_lres(self,ds):

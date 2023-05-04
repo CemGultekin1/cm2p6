@@ -27,7 +27,9 @@ TRAIN_PARAMS = {
     "lossfun" : {"type":str, "choices":["heteroscedastic","MSE","MVARE","heteroscedastic_v2"]},
     "weight_decay" : {"type":float, "default": 0.},
     "clip" : {"type":float, "default": -1},
-    "scheduler" : {"type":str,"choices":["ReduceLROnPlateau","MultiStepLR"]}
+    "scheduler" : {"type":str,"choices":["ReduceLROnPlateau","MultiStepLR"]},
+    "optimizer":{"type":str,"choices":["Adam","SGD"]},
+    "momentum":{"type":float,"default":0.},
 }
 
 
