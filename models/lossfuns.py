@@ -29,17 +29,23 @@ def logLoss(output, target,mask,eps=1e-5):
 def mask_decorator(func,):
     @functools.wraps(func)
     def _wrap(output,target,premask):
-        # mask = premask>0.5
-        # if isinstance(output,tuple) or isinstance(output,list):
-        #     mean, prec =output
-        #     mean = mean[mask]
-        #     prec = prec[mask]
-        #     output = (mean,prec)
-        # else:
-        #     output = output[mask]
-        # target = target[mask]
-        loss = func(output,target)
-        return loss
+        mask = premask>0.5
+        if isinstance(output,tuple) or isinstance(output,list):
+            mean, prec =output
+            mean = mean[mask]
+            prec = prec[mask]
+            output = (mean,prec)
+            target = target[mask]
+            loss = func(output,target)
+            return loss
+        else:
+            mean,prec = torch.split(output,output.shape[1]//2,dim = 1)
+            mean = mean*mask
+            prec = prec*mask
+            output = (mean,prec)
+            target = target*mask
+            loss = func(output,target)
+            return loss
     return _wrap
 
 @mask_decorator

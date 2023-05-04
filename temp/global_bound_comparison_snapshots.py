@@ -67,26 +67,24 @@ def get_vmax_vmins(*args,absolute:bool = True):
         vmin = -vmax
     return dict(vmax = vmax,vmin = vmin)
 def main():
-    args = sys.argv[1:]
-    # from utils.slurm import read_args
-    # from utils.arguments import replace_params
-    # args = read_args(11)
+    args1 = '--num_workers 8 --disp 50 --batchnorm 0 0 0 0 0 0 0 0 --lossfun heteroscedastic_v2 --filtering gaussian --interior False --min_precision 0.01 --clip 1.0 --scheduler MultiStepLR --lr 0.0005 --final_activation square --legacy_scalars True --maxepoch 100 --domain four_regions --gz21 True --widths 2 128 64 32 32 32 32 32 4 --kernels 5 5 3 3 3 3 3 3 --minibatch 4 --direct_address /scratch/cg3306/climate/subgrid/gz21/temp/global_interior/trained_model.pth'.split()
+    args0 = '--num_workers 8 --disp 50 --batchnorm 0 0 0 0 0 0 0 0 --lossfun heteroscedastic_v2 --filtering gaussian --interior False --min_precision 0.01 --clip 1.0 --scheduler MultiStepLR --lr 0.0005 --final_activation square --legacy_scalars True --maxepoch 100 --domain four_regions --gz21 True --widths 2 128 64 32 32 32 32 32 4 --kernels 5 5 3 3 3 3 3 3 --minibatch 4 --direct_address /scratch/cg3306/climate/subgrid/gz21/temp/tmputijzpt_/models/trained_model.pth'.split()
     
-    args = replace_params(args,'mode','eval','num_workers','1','disp','25','minibatch','1')
-    args_legacy = get_legacy_args(args)
-    runargs,_ = options(args,key = "run")
-
-    modelid,_,net,_,_,_,_,runargs=load_model(args)
+    args = replace_params(args0,'mode','eval','num_workers','1','disp','25','minibatch','1')
+    args_legacy = replace_params(args1,'mode','eval','num_workers','1','disp','25','minibatch','1')
+    
+    modelid,_,net,_,_,_,_,_=load_model(args)
     _,_,gz21,_,_,_,_,_=load_model(args_legacy)
+    
     gz21.spread = 10
     net.eval()
     gz21.eval()
     net.to("cpu")
     gz21.to("cpu")
-    args = replace_params(args,'mode','eval','domain','global','wet_mask_threshold','0.5')
+    args = replace_params(args,'mode','eval','domain','global','interior','False')
     mdd = load_lowres_dataset(args,half_spread = net.spread, )[0]
     
-    args = replace_params(args_legacy,'mode','eval','domain','global','wet_mask_threshold','0.5')
+    args = replace_params(args_legacy,'mode','eval','domain','global','interior','False')
     mdd_legacy = load_lowres_dataset(args,half_spread = gz21.spread, )[0]
     
     
@@ -138,9 +136,9 @@ def main():
             vms.pop('vmin',None)
             vms.pop('vmax',None)   
             diff.plot(ax = axs[ri,2],**vms)
-            axs[ri,0].set_title(f'GZ21 {name}-{ftype}')
-            axs[ri,1].set_title(f'R4 {name}-{ftype}')
-            axs[ri,2].set_title(f'|GZ21-R2| {name}-{ftype}')
+            axs[ri,0].set_title(f'glbl-interior-no-bound {name}-{ftype}')
+            axs[ri,1].set_title(f'glbl-interior-with-bound {name}-{ftype}')
+            axs[ri,2].set_title(f'abs-difference {name}-{ftype}')
             axs[ri,3].set_title(f'true {name}-{ftype}')
             
             for j in range(4):

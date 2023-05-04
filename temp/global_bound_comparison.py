@@ -136,14 +136,17 @@ def get_legacy_args(args):
     return leg_args
 
 def main():
-    args = sys.argv[1:]
+    # args = sys.argv[1:]
     # from utils.slurm import read_args
     # from utils.arguments import replace_params
-    # args = read_args(12)
+    # args = read_args(2)
     
-    args = replace_params(args,'mode','eval','num_workers','1','disp','25','minibatch','1')
-    args_legacy = get_legacy_args(args)
-    # args_legacy = get_legacy_args(args)
+    args1 = '--num_workers 8 --disp 50 --batchnorm 0 0 0 0 0 0 0 0 --lossfun heteroscedastic_v2 --filtering gaussian --interior False --min_precision 0.01 --clip 1.0 --scheduler MultiStepLR --lr 0.0005 --final_activation square --legacy_scalars True --maxepoch 100 --domain four_regions --gz21 True --widths 2 128 64 32 32 32 32 32 4 --kernels 5 5 3 3 3 3 3 3 --minibatch 4 --direct_address /scratch/cg3306/climate/subgrid/gz21/temp/global_interior/trained_model.pth'.split()
+    args0 = '--num_workers 8 --disp 50 --batchnorm 0 0 0 0 0 0 0 0 --lossfun heteroscedastic_v2 --filtering gaussian --interior False --min_precision 0.01 --clip 1.0 --scheduler MultiStepLR --lr 0.0005 --final_activation square --legacy_scalars True --maxepoch 100 --domain four_regions --gz21 True --widths 2 128 64 32 32 32 32 32 4 --kernels 5 5 3 3 3 3 3 3 --minibatch 4 --direct_address /scratch/cg3306/climate/subgrid/gz21/temp/tmputijzpt_/models/trained_model.pth'.split()
+    
+    args = replace_params(args0,'mode','eval','num_workers','1','disp','25','minibatch','1')
+    args_legacy = replace_params(args1,'mode','eval','num_workers','1','disp','25','minibatch','1')
+    
     runargs,_ = options(args,key = "run")
 
     modelid,_,net,_,_,_,_,runargs=load_model(args)

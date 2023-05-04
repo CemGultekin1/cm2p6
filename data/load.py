@@ -263,6 +263,33 @@ def get_data(args,torch_flag = False,data_loaders = True,**kwargs):
         return [torch.utils.data.DataLoader(tset_, **params) for tset_ in torchdsets]
     else:
         return dsets
+    
+
+
+def get_data_(args,torch_flag = False,data_loaders = True,**kwargs):
+    ns,_ = options(args,key = "run")
+    if ns.mode != "data":
+        dsets = load_lowres_dataset(args,torch_flag = torch_flag,**kwargs)
+    else:
+        dsets = load_highres_dataset(args,torch_flag = torch_flag,**kwargs)
+
+    if data_loaders:
+        minibatch = ns.minibatch//len(REGIONS[ns.domain])
+        if ns.mode != "train":
+            minibatch = None
+        params={'batch_size':minibatch,\
+            'shuffle': False,\
+            'num_workers':ns.num_workers,\
+            'prefetch_factor':ns.prefetch_factor,\
+            'collate_fn':collate_fn,\
+            'pin_memory':True}
+        if not torch_flag:
+            params.pop('collate_fn')
+        torchdsets = (TorchDatasetWrap(dset_) for dset_ in dsets)
+        return [torch.utils.data.DataLoader(tset_, **params) for tset_ in torchdsets]
+    else:
+        return dsets
+
 def collate_fn(samples):
     nb = len(samples)
     nt = len(samples[0])

@@ -58,7 +58,7 @@ def main():
     
     # from utils.slurm import read_args
     # from utils.arguments import replace_params
-    # args = read_args(5)
+    # args = read_args(11)
     # args =replace_params(args,'num_workers','3','disp','1','mode','eval')#'reset','True')
     
     runargs,_ = options(args,key = "run")

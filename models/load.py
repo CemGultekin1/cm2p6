@@ -97,7 +97,7 @@ def load_optimizer(args,net,):
         optimizer = torch.optim.Adam(net.parameters(), lr=runargs.lr,weight_decay = runargs.weight_decay,)
     else:
         raise Exception
-    print(f"Optimizer = {optimizer}")
+    # print(f"Optimizer = {optimizer}")
     if runargs.scheduler == "ReduceLROnPlateau":
         scheduler=torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer,factor=0.5,patience=2)
     else:

@@ -47,8 +47,7 @@ def main():
     print(f"using device: {device}")
     flushed_print("epochs started")
     timer = Timer()
-    # print(runargs.epoch,runargs.maxepoch)
-    # return
+
     for epoch in range(runargs.epoch,runargs.maxepoch):
         logs['train-loss'].append([])
         tt=0
@@ -96,9 +95,9 @@ def main():
                         '\t ±',\
                         str(np.std(np.array(logs['train-loss'][-1]))))
                 flushed_print(timer)
-                break
+
             timer.start('data')
-            # break
+
 
         timer.reset()
         with torch.set_grad_enabled(False):
@@ -113,8 +112,7 @@ def main():
                 loss = criterion(outputs, outfields, mask)
                 val_loss+=loss.item()
                 num_val+=1
-                break
-                # break
+
         logs['val-loss'].append(val_loss/num_val)
         logs['lr'].append(optimizer.param_groups[0]['lr'])
         scheduler.step(logs['val-loss'][-1])
@@ -135,7 +133,7 @@ def main():
         if np.amin(logs['val-loss']) == logs['val-loss'][-1]:
             state_dict = update_statedict(state_dict,net,optimizer,scheduler,last_model = False)
         save_statedict(modelid,state_dict,logs)
-        if logs['lr'][-1]<1e-7:
+        if logs['lr'][-1]<1e-8:
             break
 
 
