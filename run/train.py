@@ -96,7 +96,9 @@ def main():
                         '\t ±',\
                         str(np.std(np.array(logs['train-loss'][-1]))))
                 flushed_print(timer)
+                break
             timer.start('data')
+            # break
 
         timer.reset()
         with torch.set_grad_enabled(False):
@@ -111,6 +113,8 @@ def main():
                 loss = criterion(outputs, outfields, mask)
                 val_loss+=loss.item()
                 num_val+=1
+                break
+                # break
         logs['val-loss'].append(val_loss/num_val)
         logs['lr'].append(optimizer.param_groups[0]['lr'])
         scheduler.step(logs['val-loss'][-1])

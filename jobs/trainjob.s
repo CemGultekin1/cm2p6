@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --time=2:00:00
+#SBATCH --time=48:00:00
 #SBATCH --array=7,8,9
 #SBATCH --mem=80GB
 #SBATCH --job-name=trainjob
@@ -14,7 +14,7 @@ ARGS=$(sed -n "$SLURM_ARRAY_TASK_ID"p /scratch/cg3306/climate/cm2p6/jobs/trainjo
 module purge
 singularity exec --nv --overlay /scratch/cg3306/climate/cm2p6/overlay-15GB-500K.ext3:ro /scratch/work/public/singularity/cuda11.2.2-cudnn8-devel-ubuntu20.04.sif /bin/bash -c "\
 	source /ext3/env.sh;\
-	python3 run/train.py $ARGS;\
+	python3 run/train.py $ARGS --reset True;\
 	python3 run/analysis/eval.py $ARGS --mode eval;\
 	python3 run/analysis/distributional.py $ARGS --mode eval;\
 	python3 run/analysis/legacy_comparison.py $ARGS --mode eval;\

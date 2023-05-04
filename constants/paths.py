@@ -107,7 +107,7 @@ def get_eval_path(modelid):
     return os.path.join(EVALS,modelid + '.nc')
 def modelsdict_path():
     return MODELS_JSON
-def statedict_path(modelid,gz21:bool = False,direct_address:str = "",**kwargs):
+def statedict_path(modelid,gz21:bool = False,direct_address:str = "none",**kwargs):
     if direct_address != "none":
         return direct_address
     if not gz21:
