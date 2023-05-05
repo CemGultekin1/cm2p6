@@ -2,7 +2,7 @@ import argparse
 import hashlib
 import itertools
 from typing import List
-from constants.params import DATA_PARAMS,MODEL_PARAMS,ARCH_PARAMS,RUN_PARAMS, SCALAR_PARAMS, TRAIN_PARAMS,USUAL_PARAMS,PARAMS
+from options.params import DATA_PARAMS,MODEL_PARAMS,ARCH_PARAMS,RUN_PARAMS, SCALAR_PARAMS, TRAIN_PARAMS,USUAL_PARAMS,PARAMS
 import numpy as np
 
 

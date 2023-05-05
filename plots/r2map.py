@@ -14,7 +14,7 @@ def main():
     target = R2_PLOTS
     file1 = open(models, 'r')
     lines = file1.readlines()
-    lines = lines[:1]
+    lines = lines[15:16]
     file1.close()
     title_inc = ['sigma','domain','depth','latitude','lsrp','lossfun']
     title_name = ['sigma','train-domain','train-depth','latitude','lsrp','lossfun']
@@ -25,7 +25,8 @@ def main():
         vals = [modelargs.__getattribute__(key) for key in title_inc]
         vals = [int(val) if isinstance(val,float) else val for val in vals]
         title = ',   '.join([f"{name}: {val}" for name,val in zip(title_name,vals)])
-        snfile = os.path.join(root,modelid + '.nc')
+        snfile = os.path.join(root,'GZ21-subgrid-gz21-temp-global-trained-model.nc')#modelid + '.nc')
+        print(f'looking for {snfile}')
         if not os.path.exists(snfile):
             continue
         print(line)

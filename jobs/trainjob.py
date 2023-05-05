@@ -1,29 +1,47 @@
 from copy import deepcopy
 import os
 from typing import List
+from options.params import ARCH_PARAMS
 from models.nets.cnn import adjustcnn
 from models.search import is_trained
 from utils.arguments import get_default
 from jobs.job_body import create_slurm_job
-from jobs.taskgen import python_args
+from options.taskgen import python_args
 from utils.arguments import options,replace_param,replace_params
 from constants.paths import JOBS, JOBS_LOGS
-from data.coords import DEPTHS
 from utils.slurm import flushed_print
 TRAINJOB = 'trainjob'
 root = JOBS
 
 NCPU = 8
 
-def get_arch_defaults():
-    nms = ('widths','kernels','batchnorm','seed','model')
-    return {nm : get_default(nm) for nm in nms}
-def constant_nparam_model(sigma,kernel_factor = None):
-    if kernel_factor is None:
-        kernel_factor = 4/sigma
-    kwargs = get_arch_defaults()
-    widths,kernels = adjustcnn(**kwargs,kernel_factor = kernel_factor,constant_nparam = True)
-    return widths,kernels
+
+class Task:
+    line:str
+    key_group:str
+    def __init__(self,line:str,key_group:str = "run"):
+        self.line = line
+        self.key_group = key_group
+    @property
+    def modelid(self,)->str:
+        return options(self.line.split(),key = self.key_group)
+    def replace_args(self,*args):
+        spl = self.line.split()
+        spl = replace_params(spl,*args)
+        self.line = " ".join(spl)
+
+class NeuralNetworkTask(Task):
+    @staticmethod
+    def get_arch_defaults():
+        return {nm : get_default(nm) for nm in ARCH_PARAMS.keys()}
+
+    @staticmethod
+    def constant_nparam_model(sigma,kernel_factor = None):
+        if kernel_factor is None:
+            kernel_factor = 4/sigma
+        kwargs = NeuralNetworkTask.get_arch_defaults()
+        widths,kernels = adjustcnn(**kwargs,kernel_factor = kernel_factor,constant_nparam = True)
+        return widths,kernels
 def getarch(args,**kwargs):
     modelargs,_ = options(args,'model')
     widths,kernels = constant_nparam_model(modelargs.sigma,**kwargs)
@@ -77,6 +95,7 @@ def combine_all(kwargs:List[dict],base_kwargs):
         base_kwargs_.update(kwarg)
         argslist =  argslist + python_args(**base_kwargs_)
     return argslist
+
 
 
 def generate_training_tasks():

@@ -1,0 +1,2 @@
+--num_workers 8 --disp 50 --filtering gaussian --batchnorm 1 1 1 1 1 1 1 0 --lossfun heteroscedastic --lr 0.01 --legacy_scalars True --maxepoch 500 --optimizer SGD --momentum 0.9 --interior False --domain four_regions --widths 2 128 64 32 32 32 32 32 4 --kernels 5 5 3 3 3 3 3 3 --minibatch 4
+--num_workers 8 --disp 50 --filtering gaussian --batchnorm 1 1 1 1 1 1 1 0 --lossfun heteroscedastic --lr 0.01 --legacy_scalars True --maxepoch 500 --optimizer SGD --momentum 0.9 --interior True --domain global --widths 2 128 64 32 32 32 32 32 4 --kernels 5 5 3 3 3 3 3 3 --minibatch 4

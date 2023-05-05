@@ -31,10 +31,10 @@ class Timer:
 
 def main():
     args = sys.argv[1:]
-    # from utils.slurm import read_args
-    # from utils.arguments import replace_params
-    # args = read_args(9)
-    # args =replace_params(args,'num_workers','1','disp','1','reset','True')
+    from utils.slurm import read_args
+    from utils.arguments import replace_params
+    args = read_args(1,filename = 'sgdtst.txt')
+    args =replace_params(args,'num_workers','1','disp','1','reset','True','disp','1')
 
     modelid,state_dict,net,criterion,optimizer,scheduler,logs,runargs=load_model(args)
     print(net)
@@ -91,14 +91,15 @@ def main():
 
             tt+=1
             if runargs.disp > 0 and tt%runargs.disp==0:##np.mean(np.array(logs['train-loss'][-1]))),\
-                flushed_print('\t\t\t train-loss: ',str(logs['train-loss'][-1][-1]),\
+                flushed_print('\t\t\t train-loss: ',str(np.mean(np.array(logs['train-loss'][-1]))),\
                         '\t ±',\
                         str(np.std(np.array(logs['train-loss'][-1]))))
-                flushed_print(timer)
+                # flushed_print(timer)
 
             timer.start('data')
 
-
+            # if tt == 24:
+            #     break
         timer.reset()
         with torch.set_grad_enabled(False):
             net.eval()
@@ -112,6 +113,8 @@ def main():
                 loss = criterion(outputs, outfields, mask)
                 val_loss+=loss.item()
                 num_val+=1
+                # if num_val == 24:
+                #     break
 
         logs['val-loss'].append(val_loss/num_val)
         logs['lr'].append(optimizer.param_groups[0]['lr'])

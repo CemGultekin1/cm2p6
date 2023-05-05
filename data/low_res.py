@@ -116,20 +116,20 @@ class SingleDomain(CM2p6Dataset):
             ds = self.get_grid_fixed_lres(ds)
             if self.interior:
                 # print('self.interior!!!')
-                wetmask = 1 - ds.interior_wet_mask
+                landmask = 1 - ds.interior_wet_mask
                 # plot_ds({'wetmask':wetmask},'wetmask0.png',ncols = 1)
             else:
                 if 'wet_density' in ds.data_vars:
-                    wetmask = 1 - xr.where(ds.wet_density >= self.wet_mask_threshold,1,0)
+                    landmask = 1 - xr.where(ds.wet_density >= self.wet_mask_threshold,1,0)
                 else:
-                    wetmask = None
+                    landmask = None
             for key in ds.data_vars.keys():
                 mask_ = np.isnan(ds[key])
-                if wetmask is None:
-                    wetmask  = mask_
+                if landmask is None:
+                    landmask  = mask_
                 else:
-                    wetmask += mask_
-            wetmask = xr.where(wetmask > 0,0,1)
+                    landmask += mask_
+            wetmask = xr.where(landmask > 0,0,1)
             # plot_ds({'wetmask':wetmask},'wetmask1.png',ncols = 1)
             wetmask.name = 'wet_mask'
             if self.requested_boundaries is not None:
@@ -156,7 +156,7 @@ class SingleDomain(CM2p6Dataset):
     @property
     def forcingwetmask(self,):
         if self._forcingmask is None:
-            forcing_mask = no_nan_input_mask(self._wetmask,self.half_spread,lambda x: x==0,same_size = True)
+            forcing_mask = no_nan_input_mask(self.fieldwetmask,self.half_spread,lambda x: x==0,same_size = True)
             self._forcingmask =  xr.where(forcing_mask==0,1,0)
         return self._forcingmask
             
@@ -175,9 +175,9 @@ class SingleDomain(CM2p6Dataset):
         for key in 'interior_wet_mask wet_mask'.split():
             if key in ds.data_vars.keys():
                 ds = ds.drop(key)
-        if self.interior:
-            ds = apply_mask(ds,self.fieldwetmask.values,list(ds.data_vars))
-            ds = apply_mask(ds,self.forcingwetmask.values,[field for field in list(ds.data_vars) if 'S' in field])
+
+        # ds = apply_mask(ds,self.fieldwetmask.values,list(ds.data_vars))
+        ds = apply_mask(ds,self.forcingwetmask.values,[field for field in list(ds.data_vars) if 'S' in field])
         return ds
 
     def get_grid_fixed_lres(self,ds):
@@ -192,6 +192,4 @@ class SingleDomain(CM2p6Dataset):
 
     def __getitem__(self,i):
         ds = self.get_dataset(i)
-        # print(ds)
-        # raise Exception
         return ds

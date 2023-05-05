@@ -17,6 +17,8 @@ ENV_PATH = paths_dict['ENV_PATH']#'/scratch/cg3306/climate/.ext3'
 CM2P6_PATH = paths_dict['CM2P6_PATH']#'/scratch/zanna/data/cm2.6'
 OUTPUTS_PATH = paths_dict['OUTPUTS_PATH']#'/scratch/cg3306/climate/outputs'
 AS15415_PATH = paths_dict['AS15415_PATH']#'/scratch/as15415/Data/CM26_Surface_UVT.zarr'
+# EXT3 = ENV_PATH.split('/')[-1]
+CUDA_SINGULARITY = '/scratch/work/public/singularity/cuda10.1-cudnn7-devel-ubuntu18.04.sif'
 
 REPO_NAME = 'cm2p6'
 REPO = os.path.join(ROOT,REPO_NAME)

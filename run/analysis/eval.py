@@ -53,12 +53,12 @@ def get_lsrp_modelid(args):
 
 
 def main():
-    args = sys.argv[1:]
+    # args = sys.argv[1:]
     
     
     # from utils.slurm import read_args
     # from utils.arguments import replace_params
-    # args = read_args(11)
+    # args = read_args(15,filename = 'temp_trainjob.txt')
     # args =replace_params(args,'num_workers','3','disp','1','mode','eval')#'reset','True')
     
     runargs,_ = options(args,key = "run")
@@ -70,7 +70,7 @@ def main():
     
     kwargs = dict(contained = '' if not lsrp_flag else 'res')
     assert runargs.mode == "eval"
-    multidatargs = populate_data_options(args,non_static_params=['depth','co2'],domain = 'global',interior = False)
+    multidatargs = populate_data_options(args,non_static_params=[],domain = 'global',interior = False)
     # multidatargs = [args]
     allstats = {}
     for datargs in multidatargs:
@@ -161,7 +161,7 @@ def main():
                     
             #     fig.savefig(f'_{nt}_{key}.png')
             #     plt.close()
-            # if nt >300:
+            # if nt >900:
             #     break
             # break
 

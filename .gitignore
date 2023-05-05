@@ -1,9 +1,10 @@
 *.png
 *.nc
 *.npy
+*.pth
+*.pyc
 /utils/paths.py
 */__pycache__
-*.pyc
 __pycache__
 paths.txt
 overlay-*

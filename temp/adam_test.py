@@ -15,13 +15,14 @@ from utils.slurm import flushed_print
 
 
 def load_model(args):
-    # archargs,_ = options(args,key = "arch")
-    net = FullyCNN()#**archargs.__dict__)
+    net = FullyCNN()#batch_norm = True)
     net.final_transformation = SoftPlusTransform()
+    print(net)
     criterion = heteroscedasticGaussianLossV2
     
     runargs,_ = options(args,key = "run")
-    optimizer = torch.optim.Adam(net.parameters(), lr=5e-4)
+    # optimizer = torch.optim.Adam(net.parameters(), lr=1e-2)
+    optimizer = torch.optim.SGD(net.parameters(), lr=1e-2,momentum = 0.9)
 
     return net,criterion,optimizer,runargs
 
@@ -30,7 +31,7 @@ def main():
     from utils.slurm import read_args
     from utils.arguments import replace_params
     args = read_args(3)
-    args =replace_params(args,'num_workers','1','disp','1','reset','True','interior','False')
+    args =replace_params(args,'domain','global','num_workers','1','disp','1','reset','True','interior','True',)#'wet_mask_threshold','0.5')
 
     net,criterion,optimizer,runargs=load_model(args)
 
@@ -42,22 +43,23 @@ def main():
         infields,outfields,mask = infields.to(device),outfields.to(device),mask.to(device)
         net.zero_grad()
         outputs = net.forward(infields)
-        loss = criterion(outputs, outfields, mask)
+        mean,precision = outputs
+        loss = criterion((mean*mask,precision*mask), outfields*mask,)
         
         train_interrupt = dict(
             input = infields,
             output = torch.cat(outputs,dim = 1),
-            true_result = outfields,
+            true_result = outfields*mask,
             mask = mask,
             loss = loss.detach().item(),
             **net.state_dict()
         )
         torch.save(train_interrupt,f'temp/train_interrupt_{i}.pth')
-        if i==24:
+        if i==1:
             raise Exception        
         loss.backward()
-        if runargs.clip>0:
-            clip_grad_norm_(net.parameters(), runargs.clip)
+        # if runargs.clip>0:
+        #     clip_grad_norm_(net.parameters(), runargs.clip)
         optimizer.step()
         flushed_print(loss.item())
 

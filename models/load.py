@@ -49,8 +49,8 @@ def get_statedict(args):
             with open(logfile) as f:
                 logs = json.load(f)
     else:
-        print(f"model {modelid} state_dict has not been found")
-        
+        print(f"model {modelid} state_dict has not been found in {statedictfile}")
+    
         
     return state_dict,logs,modelargs,modelid 
 
