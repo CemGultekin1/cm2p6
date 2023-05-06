@@ -74,7 +74,7 @@ class SingleDomain(CM2p6Dataset):
     final_local_lres_coords : Tuple[np.ndarray,...] # smaller lres grid
     initiated : bool
     all_land : bool
-    def __init__(self,*args,**kwargs):
+    def __init__(self,*args,apply_mask:bool = True,**kwargs):
         super().__init__(*args,**kwargs)
         self.confine(*self.preboundaries)
         self.initiated = False
@@ -83,6 +83,7 @@ class SingleDomain(CM2p6Dataset):
         self._forcingmask = None
         self.interior = kwargs.get('interior')
         self.wet_mask_threshold = kwargs.get('wet_mask_threshold')
+        self.apply_mask = apply_mask
         # print(f'self.wet_mask_threshold = {self.wet_mask_threshold}')
         # print(f'self.interior = {self.interior}')
 
@@ -175,9 +176,9 @@ class SingleDomain(CM2p6Dataset):
         for key in 'interior_wet_mask wet_mask'.split():
             if key in ds.data_vars.keys():
                 ds = ds.drop(key)
-
-        # ds = apply_mask(ds,self.fieldwetmask.values,list(ds.data_vars))
-        ds = apply_mask(ds,self.forcingwetmask.values,[field for field in list(ds.data_vars) if 'S' in field])
+        if self.apply_mask:
+            # ds = apply_mask(ds,self.fieldwetmask.values,list(ds.data_vars))
+            ds = apply_mask(ds,self.forcingwetmask.values,[field for field in list(ds.data_vars) if 'S' in field])
         return ds
 
     def get_grid_fixed_lres(self,ds):

@@ -1,3 +1,4 @@
+from models.nets.cnn import CNN
 from utils.parallel import get_device
 from models.save import save_statedict
 from models.load import load_model,update_statedict
@@ -28,13 +29,18 @@ class Timer:
         return "\n".join(keys)
     def reset(self,):
         self.times = {}
-
+def dummy_gpu_fill(infields:torch.Tensor,net:CNN):
+    nchan = infields.shape[1]
+    shp = (1,nchan,1000,1000)
+    x = torch.zeros(shp,).to(infields.device,dtype = torch.float32)
+    net(x)
+    
 def main():
     args = sys.argv[1:]
-    from utils.slurm import read_args
-    from utils.arguments import replace_params
-    args = read_args(1,filename = 'sgdtst.txt')
-    args =replace_params(args,'num_workers','1','disp','1','reset','True','disp','1')
+    # from utils.slurm import read_args
+    # from utils.arguments import replace_params
+    # args = read_args(1,filename = 'sgdtst.txt')
+    # args =replace_params(args,'num_workers','2','disp','1','reset','True',)
 
     modelid,state_dict,net,criterion,optimizer,scheduler,logs,runargs=load_model(args)
     print(net)
@@ -94,12 +100,10 @@ def main():
                 flushed_print('\t\t\t train-loss: ',str(np.mean(np.array(logs['train-loss'][-1]))),\
                         '\t ±',\
                         str(np.std(np.array(logs['train-loss'][-1]))))
-                # flushed_print(timer)
+                flushed_print(timer)
 
             timer.start('data')
-
-            # if tt == 24:
-            #     break
+            dummy_gpu_fill(infields,net)
         timer.reset()
         with torch.set_grad_enabled(False):
             net.eval()

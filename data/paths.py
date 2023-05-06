@@ -45,7 +45,6 @@ def get_filename(sigma,depth,co2,filtering,locdir = COARSE_CM2P6_PATH):
             path = path.replace('.zarr',f'_{filtering}.zarr')
     else:
         path = FINE_CM2P6_PATH(depth < 1e-3,co2)
-    print(f'get_filename({sigma},{depth},{co2},{filtering},locdir = COARSE_CM2P6_PATH) = {path}')
     return path
 
 def get_high_res_grid_location():

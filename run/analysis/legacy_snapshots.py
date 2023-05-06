@@ -46,7 +46,20 @@ def data_at_time_and_point(time,ilat,ilon,mdd,net,ftype,name):
     predicted_forcings_mean = fromtensor(zmean,forcings,forcing_coords, forcing_mask,denormalize = True,**kwargs)
     predicted_forcings_std = fromtensor(zstd,forcings,forcing_coords, forcing_mask,denormalize = True,**kwargs)
     true_forcings = fromtorchdict(forcings,forcing_coords,forcing_mask,denormalize = True,**kwargs)
-    fwetmask = mdd.fieldwetmask.isel(lat = slice(net.spread,-net.spread),lon = slice(net.spread,-net.spread))
+    fwetmask = mdd.fieldwetmask#.isel(lat = slice(net.spread,-net.spread),lon = slice(net.spread,-net.spread))
+    fwetmask = fwetmask.sel(
+        lat = slice(true_forcings.lat.values[0],true_forcings.lat.values[-1]),
+        lon = slice(true_forcings.lon.values[0],true_forcings.lon.values[-1])
+    )
+    # print('-'*64)
+    # print(f'net.spread = {net.spread}')
+    # print('-'*64)
+    # print(fwetmask)
+    # print(true_forcings)
+    # print('-'*64)
+    # print(fwetmask.lat.values[[0,-1]])
+    # print(true_forcings.lat.values[[0,-1]])
+    # print('-'*64)
     true_forcings = xr.where(fwetmask,true_forcings,np.nan)
     true_forcings = true_forcings.isel(lat = forcing_slices[0],lon = forcing_slices[1])
     predicted_forcings_mean = predicted_forcings_mean.isel(lat = forcing_slices[0],lon = forcing_slices[1])
@@ -68,9 +81,10 @@ def get_vmax_vmins(*args,absolute:bool = True):
     return dict(vmax = vmax,vmin = vmin)
 def main():
     args = sys.argv[1:]
+    
     # from utils.slurm import read_args
     # from utils.arguments import replace_params
-    # args = read_args(11)
+    # args = read_args(22,filename = 'temp_trainjob.txt')
     
     args = replace_params(args,'mode','eval','num_workers','1','disp','25','minibatch','1')
     args_legacy = get_legacy_args(args)
@@ -83,15 +97,16 @@ def main():
     gz21.eval()
     net.to("cpu")
     gz21.to("cpu")
-    args = replace_params(args,'mode','eval','domain','global','wet_mask_threshold','0.5')
-    mdd = load_lowres_dataset(args,half_spread = net.spread, )[0]
+    args = replace_params(args,'mode','eval','domain','global','wet_mask_threshold','0.5','interior','False')
+    mdd = load_lowres_dataset(args,half_spread = net.spread, apply_mask = False)[0]
     
-    args = replace_params(args_legacy,'mode','eval','domain','global','wet_mask_threshold','0.5')
-    mdd_legacy = load_lowres_dataset(args,half_spread = gz21.spread, )[0]
+    args = replace_params(args_legacy,'mode','eval','domain','global','wet_mask_threshold','0.5','interior','False')
+    mdd_legacy = load_lowres_dataset(args,half_spread = gz21.spread,apply_mask = False )[0]
     
     
     snfile = os.path.join(LEGACY,modelid + '_.nc')
     if not os.path.exists(snfile):
+        print(f'{snfile} not found !')
         return
     sn = xr.open_dataset(snfile).sel(lat = slice(-85,85)).load()
     sn = sn.isel(co2 = 0,depth= 0).drop('co2 depth'.split())

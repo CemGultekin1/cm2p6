@@ -137,9 +137,11 @@ def get_legacy_args(args):
 
 def main():
     args = sys.argv[1:]
+    
     # from utils.slurm import read_args
     # from utils.arguments import replace_params
-    # args = read_args(12)
+    # args = read_args(22,filename = 'temp_trainjob.txt')
+    # args =replace_params(args,'num_workers','3','disp','1','mode','eval')#'reset','True')
     
     args = replace_params(args,'mode','eval','num_workers','1','disp','25','minibatch','1')
     args_legacy = get_legacy_args(args)

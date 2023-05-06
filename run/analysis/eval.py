@@ -53,12 +53,12 @@ def get_lsrp_modelid(args):
 
 
 def main():
-    # args = sys.argv[1:]
+    args = sys.argv[1:]
     
     
     # from utils.slurm import read_args
     # from utils.arguments import replace_params
-    # args = read_args(15,filename = 'temp_trainjob.txt')
+    # args = read_args(20,filename = 'temp_trainjob.txt')
     # args =replace_params(args,'num_workers','3','disp','1','mode','eval')#'reset','True')
     
     runargs,_ = options(args,key = "run")

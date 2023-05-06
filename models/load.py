@@ -24,7 +24,7 @@ def update_statedict(state_dict_,net_,optimizer_,scheduler_,last_model = True):
 
 
 def get_statedict(args):
-    modelargs,modelid = options(args,key = "model")
+    modelargs,modelid = options(args,key = "run")
     statedictfile =  statedict_path(modelid,**modelargs.__dict__)
     if modelargs.gz21:
         modelid = 'GZ21'
@@ -39,6 +39,10 @@ def get_statedict(args):
     logs = {"epoch":[],"train-loss":[],"test-loss":[],"val-loss":[],"lr":[],"batchsize":[]}
     if os.path.exists(statedictfile):
         print(f"model {modelid} state_dict has been found")
+    else:
+        return state_dict,logs,modelargs,modelid 
+    
+    if not modelargs.reset:
         state_dict = torch.load(statedictfile,map_location=torch.device(device))
         if modelargs.gz21:
             state_dict = dict(
@@ -49,7 +53,7 @@ def get_statedict(args):
             with open(logfile) as f:
                 logs = json.load(f)
     else:
-        print(f"model {modelid} state_dict has not been found in {statedictfile}")
+        print(f"...starting from fresh")
     
         
     return state_dict,logs,modelargs,modelid 
