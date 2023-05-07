@@ -37,10 +37,10 @@ def dummy_gpu_fill(infields:torch.Tensor,net:CNN):
     
 def main():
     args = sys.argv[1:]
-    # from utils.slurm import read_args
-    # from utils.arguments import replace_params
-    # args = read_args(1,filename = 'sgdtst.txt')
-    # args =replace_params(args,'num_workers','2','disp','1','reset','True',)
+    from utils.slurm import read_args
+    from utils.arguments import replace_params
+    args = read_args(1,filename = 'sgdtst.txt')
+    args =replace_params(args,'num_workers','2','disp','1','reset','True',)
 
     modelid,state_dict,net,criterion,optimizer,scheduler,logs,runargs=load_model(args)
     print(net)
@@ -103,12 +103,16 @@ def main():
                 flushed_print(timer)
 
             timer.start('data')
+            # if i == 24:
+            #     break
+            net.eval()
             dummy_gpu_fill(infields,net)
+            net.train()
         timer.reset()
         with torch.set_grad_enabled(False):
             net.eval()
             val_loss=0.
-            num_val=0
+            num_val = 0
             for infields,outfields,mask in val_generator:
                 if not torch.any(mask>0):
                     continue
