@@ -37,10 +37,10 @@ def dummy_gpu_fill(infields:torch.Tensor,net:CNN):
     
 def main():
     args = sys.argv[1:]
-    # from utils.slurm import read_args
-    # from utils.arguments import replace_params
-    # args = read_args(1,filename = 'sgdtst.txt')
-    # args = replace_params(args,'num_workers','1','disp','1','reset','True')
+    from utils.slurm import read_args
+    from utils.arguments import replace_params
+    args = read_args(1,filename = 'sgdtst.txt')
+    args = replace_params(args,'num_workers','1','disp','1','reset','True')
 
     modelid,state_dict,net,criterion,optimizer,scheduler,logs,runargs = load_model(args)
     print(net)
