@@ -104,7 +104,7 @@ def load_optimizer(args,net,):
         raise Exception
     # print(f"Optimizer = {optimizer}")
     if runargs.scheduler == "ReduceLROnPlateau":
-        scheduler=torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer,factor=0.5,patience=5)#factor = 0.1,patience = 2)#factor=0.5,patience=5)
+        scheduler=torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer,factor=0.5,patience=5)#factor = 0.1,patience = 2)
     else:
         class MultiStepLRStepInputNeglect(MultiStepLR):
             def step(self,*args):
