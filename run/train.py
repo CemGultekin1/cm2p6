@@ -37,12 +37,12 @@ def dummy_gpu_fill(infields:torch.Tensor,net:CNN):
     
 def main():
     args = sys.argv[1:]
-    from utils.slurm import read_args
-    from utils.arguments import replace_params
-    args = read_args(1,filename = 'sgdtst.txt')
-    args =replace_params(args,'num_workers','2','disp','1','reset','True',)
+    # from utils.slurm import read_args
+    # from utils.arguments import replace_params
+    # args = read_args(1,filename = 'sgdtst.txt')
+    # args = replace_params(args,'num_workers','1','disp','1','reset','True')
 
-    modelid,state_dict,net,criterion,optimizer,scheduler,logs,runargs=load_model(args)
+    modelid,state_dict,net,criterion,optimizer,scheduler,logs,runargs = load_model(args)
     print(net)
     flushed_print('torch.cuda.is_available():\t',torch.cuda.is_available())
     flushed_print('runargs:\t',runargs)
@@ -63,34 +63,32 @@ def main():
             if not torch.any(mask>0):
                 continue
             net.zero_grad()
-            # rin = torch.randn(*infields.shape)
-            # rin[infields != 0] = 0
-            # infields = rin
             infields,outfields,mask = infields.to(device),outfields.to(device),mask.to(device)
             
             timer.end('data')
             timer.start('model')
             outputs = net.forward(infields)
             loss = criterion(outputs, outfields, mask)
-            
+            # mean,prec = mean*mask,prec*mask
             # train_interrupt = dict(
             #     input = infields,
-            #     output = torch.cat(outputs,dim = 1),#outputs,
+            #     mean = outputs[0],
+            #     prec = outputs[1],
             #     true_result = outfields,
             #     mask = mask,
             #     loss = loss.detach().item(),
             #     **net.state_dict()
             # )
-            # torch.save(train_interrupt,f'train_interrupt_{i}.pth')
-            # if i==12:
+            # torch.save(train_interrupt,f'temp/train_interrupt_{i}.pth')
+            # if i==0:
             #     raise Exception
             
             
             logs['train-loss'][-1].append(loss.item())
     
             loss.backward()
-            if runargs.clip>0:
-                clip_grad_norm_(net.parameters(), runargs.clip)
+            # if runargs.clip>0:
+            #     clip_grad_norm_(net.parameters(), runargs.clip)
             optimizer.step()
             timer.end('model')
 
@@ -100,7 +98,7 @@ def main():
                 flushed_print('\t\t\t train-loss: ',str(np.mean(np.array(logs['train-loss'][-1]))),\
                         '\t ±',\
                         str(np.std(np.array(logs['train-loss'][-1]))))
-                flushed_print(timer)
+                # flushed_print(timer)
 
             timer.start('data')
             # if i == 24:
@@ -144,7 +142,7 @@ def main():
         if np.amin(logs['val-loss']) == logs['val-loss'][-1]:
             state_dict = update_statedict(state_dict,net,optimizer,scheduler,last_model = False)
         save_statedict(modelid,state_dict,logs)
-        if logs['lr'][-1]<1e-8:
+        if logs['lr'][-1]<1e-7:
             break
 
 

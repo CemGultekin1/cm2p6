@@ -159,6 +159,8 @@ class SingleDomain(CM2p6Dataset):
         if self._forcingmask is None:
             forcing_mask = no_nan_input_mask(self.fieldwetmask,self.half_spread,lambda x: x==0,same_size = True)
             self._forcingmask =  xr.where(forcing_mask==0,1,0)
+            # plot_ds({'wetmask':self._forcingmask},'wetmask1.png',ncols = 1)
+            # raise Exception
         return self._forcingmask
             
     def get_dataset(self,t):

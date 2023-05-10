@@ -36,10 +36,12 @@ class SoftPlusLayer_(nn.Module):
         return f'SoftPlusLayer({self.min_value.item()})'
     
 class PartialSoftPlusLayer(nn.Module):
-    def forward(self, x_):
-        x = torch.clone(x_)
+    def __init__(self) -> None:
+        super().__init__()
+        self._min_value = Parameter(torch.tensor(0.1))
+    def forward(self, x):
         x0,x1 = torch.split(x,x.shape[1]//2,dim=1)
-        x1 = softplus(x1)
+        x1 = softplus(x1) + softplus(self._min_value)        
         return x0,x1
     def __repr__(self) -> str:
         return self.__class__.__name__
@@ -123,7 +125,7 @@ def kernels2spread(kernels):
 
 
 class LCNN(nn.Module):
-    def __init__(self,widths,kernels,batchnorm,skipconn,seed):#,**kwargs):
+    def __init__(self,widths = None,kernels = None,batchnorm = None,seed = None,**kwargs):
         super(LCNN, self).__init__()
         if torch.cuda.is_available():
             device = "cuda:0"

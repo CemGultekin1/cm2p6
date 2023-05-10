@@ -16,7 +16,7 @@ from utils.slurm import flushed_print
 import numpy as np
 from utils.xarray import fromtensor, fromtorchdict, fromtorchdict2tensor, plot_ds
 import xarray as xr
-
+from utils.arguments import replace_params
 
 def lsrp_pred(respred,tr):
     keys= list(respred.data_vars.keys())
@@ -55,13 +55,26 @@ def get_lsrp_modelid(args):
 def main():
     args = sys.argv[1:]
     
-    
     # from utils.slurm import read_args
-    # from utils.arguments import replace_params
-    # args = read_args(20,filename = 'temp_trainjob.txt')
-    # args =replace_params(args,'num_workers','3','disp','1','mode','eval')#'reset','True')
     
-    runargs,_ = options(args,key = "run")
+    
+    # args = read_args(3,filename = 'sgdtst.txt')
+    # args = replace_params(args,'mode','eval')
+    
+    # for i in range(1,4):
+    #     args = read_args(i,filename = 'sgdtst.txt')
+    #     # print(' '.join(args))
+    #     _,runid1 = options(args,key = "model")
+    #     args = replace_params(args,'reset','True')
+    #     _,runid0 = options(args,key = "run")
+    #     path0 = f'/scratch/cg3306/climate/outputs/training_logs/{runid0}.json'
+    #     path1 = f'/scratch/cg3306/climate/outputs/training_logs/{runid1}.json'
+    #     assert os.path.exists(path0)
+    #     # assert not os.path.exists(path1)
+    #     print(f'mv {path0} {path1}')
+    # return
+    # args =replace_params(args,'num_workers','3','disp','1','mode','eval')
+    
     
     modelid,_,net,_,_,_,_,runargs=load_model(args)
     device = get_device()

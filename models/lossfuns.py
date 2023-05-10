@@ -28,16 +28,13 @@ def logLoss(output, target,mask,eps=1e-5):
 
 def mask_decorator(func,):
     @functools.wraps(func)
-    def _wrap(output,target,premask):
-        mask = (premask>0.5)*1
+    def _wrap(output,target,mask):
+        # mask = (premask>0.5).to(dtype = torch.float32)
+        mask = mask.to(dtype = torch.int)
         if isinstance(output,tuple) or isinstance(output,list):
             mean, prec =output
-            mean,prec,target = mean*mask,prec*mask,target*mask
-            _mask = prec>0
-            mean = mean[_mask]
-            target = target[_mask]
-            prec = prec[_mask]
-            loss = func((mean,target),target)
+            mean,prec,target = mean[mask],prec[mask],target[mask]
+            loss = func((mean,prec),target)
             return loss
         else:
             mean,prec = torch.split(output,output.shape[1]//2,dim = 1)
@@ -68,13 +65,7 @@ def MVARE(output,target,):
 @mask_decorator
 def heteroscedasticGaussianLoss(output, target,eps=1e-5):
     mean, precision = output
-    
-    zmap = precision > 0
-    precision = precision[zmap]
-    target = target[zmap]
-    mean= mean[zmap]
-    
-    # precision = precision + eps
+    precision = precision + eps
     err2 = ( target - mean )**2
     premeanloss = - 1 / 2 *  torch.log(precision) \
             +  1 / 2 * err2 * precision

@@ -5,7 +5,7 @@ import os
 import numpy as np
 def main():
     t = 0
-    interrupt_loc0 = f'/scratch/cg3306/climate/temp/gz21/temp/train_interrupt_{t}.pth'
+    interrupt_loc0 =  f'temp/train_interrupt_{t}.pth'
     tf = torch.load(interrupt_loc0, map_location=torch.device('cpu'))
     imgs_folder = 'temp/imgs'
     if not os.path.exists(imgs_folder):
@@ -17,36 +17,38 @@ def main():
     # print(list(tf.keys()))
     # print(list(tf1.keys()))
     key = 'true_result'
-    for key in 'output true_result mask'.split():
+    for key in 'input mean prec true_result mask'.split():
         
         
         # print(f"{key} = {tf[key].shape}")
         # print(f"{key} = {tf1[key].shape}")
         # print()
         # continue
-        mask = tf1['mask'][:1,:1]
-        
-        err = torch.mean(torch.abs(tf[key]*mask - tf1[key]*mask),dim = (0,2,3)).detach().numpy()
-        print(f'{key} discrepency = {err}')
-        nrow = 1#tf[key].shape[0]
-        
+        mask = tf1['mask'].detach().numpy()
+        mask[mask == 0] = np.nan
+        # err = torch.mean(torch.abs(tf[key]*mask - tf1[key]*mask),dim = (0,2,3)).detach().numpy()
+        # print(f'{key} discrepency = {err}')
+        nrow = 4#tf[key].shape[0]
+        fig,axs = plt.subplots(nrow,2,figsize = (30,15))
         for j in range(min(tf[key].shape[1],tf[key].shape[1])):
-            fig,axs = plt.subplots(nrow,1,figsize = (30,15))
             for i in range(nrow):
-                a = tf[key][i].detach().numpy()
-                b = tf1[key][i].detach().numpy()
-                
-                diff = np.log10(np.abs(b-a))
-                # neg = axs[i,0].imshow(a[j,::-1])
-                # neg = axs[i,1].imshow(b[j,::-1])
-                neg = axs.imshow(diff[j,::-1])
-                fig.colorbar(neg,ax = axs)
-            # axs[0,0].set_title(interrupt_loc0)
-            # axs[0,1].set_title(interrupt_loc1)
+                a = tf[key].detach().numpy()
+                # b = tf1[key].detach().numpy()
+                if key != 'input':
+                    a = a*mask
+                    # b = b*mask
+                print(f'{key}\t:{a.shape}')
+                # diff = np.log10(np.abs(b-a))
+                neg = axs[i,j].imshow(a[i,j,::-1])
+                # neg = axs[i,j].imshow(b[i,j,::-1])
+                # neg = axs.imshow(diff[j,::-1])
+                # fig.colorbar(neg,ax = axs)
+            axs[i,j].set_title(interrupt_loc0)
+            # axs[1,j].set_title(interrupt_loc1)
             # axs[0,2].set_title('diff')
-            axs.set_title('diff')
-            fig.savefig(f'{imgs_folder}/{key}_{j}_{t}.png')
-            plt.close()
+            # axs.set_title('diff')
+        fig.savefig(f'{imgs_folder}/{key}_{t}.png')
+        plt.close()
     print(f"tf['loss']-tf1['loss'] = {tf['loss']-tf1['loss']}")
     # return
 

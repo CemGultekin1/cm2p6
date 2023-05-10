@@ -1,8 +1,7 @@
 #!/bin/env python
-
-from abc import abstractmethod,ABC
+from collections import OrderedDict
 import torch
-from torch.nn import  Module, Parameter
+from torch.nn import  Parameter
 from torch import nn
 import numpy as np
 import math
@@ -36,185 +35,61 @@ Sv_scale = 1e-7 #4.8550991806254025e-08
 
     
 
-
-class Transform(Module, ABC):
-    """Abstract Base Class for all transforms"""
-
-    def __init__(self):
-        super().__init__()
-
-    @abstractmethod
-    def transform(self, input):
-        pass
-
-    def forward(self, input_):
-        return self.transform(input_)
-
-    @abstractmethod
-    def __repr__(self):
-        pass
-    
-    def __call__(self,input_):
-        return self.forward(input_)
-
-class PrecisionTransform(Transform):
-    def __init__(self, min_value=0.1):
-        super().__init__()
-        self.min_value = Parameter(torch.tensor(min_value))
-        self.indices = slice(2,4)
-
-    @property
-    def min_value(self):
-        return softplus(self._min_value)
-
-    @min_value.setter
-    def min_value(self, value):
-        self._min_value = Parameter(torch.tensor(value))
-
-    @property
-    def indices(self):
-        """Return the indices transformed"""
-        return self._indices
-
-    @indices.setter
-    def indices(self, values):
-        self._indices = values
-
-    def transform(self, input_):
-        # Split in sections of size 2 along channel dimension
-        # Careful: the split argument is the size of the sections, not the
-        # number of them (although does not matter for 4 channels)
-        result = torch.clone(input_)
-        result[:, self.indices, :, :] = self.transform_precision(
-            input_[:, self.indices, :, :]) + self.min_value
-        return result
-
-    @staticmethod
-    @abstractmethod
-    def transform_precision(precision):
-        pass
-
-class SquareTransform(PrecisionTransform):
-    def __init__(self, min_value=0.1):
-        super().__init__(min_value)
-
-    @staticmethod
-    def transform_precision(precision):
-        return precision**2
-
-    def __repr__(self):
-        return ''.join(('SquareTransform(', str(self.min_value), ')'))
-    
-class SoftPlusTransform(PrecisionTransform):
-    def __init__(self, min_value=0.1):
-        super().__init__(min_value)
-
-    @staticmethod
-    def transform_precision(precision):
-        return softplus(precision)
-
-    def __repr__(self):
-        return ''.join(('SoftPlusTransform(', str(self.min_value), ')'))
-
-class Layer:
-    def __init__(self,nn_layers:list) -> None:
-        self.nn_layers =nn_layers
-        self.section = []
-    def add(self,nn_obj):
-        self.section.append(len(self.nn_layers))
-        self.nn_layers.append(nn_obj)
-    def __call__(self,x):
-        for j in self.section:
-            x = self.nn_layers[j](x)
-        return x
-
-class CNN_Layer(Layer):
-    def __init__(self,nn_layers:list,widthin,widthout,kernel,batchnorm,nnlnr) -> None:
-        super().__init__(nn_layers)
-        self.add(nn.Conv2d(widthin,widthout,kernel))
-        if batchnorm:
-            self.add(nn.BatchNorm2d(widthout))
+class ConvLayer(nn.Sequential):
+    def __init__(self,width0:int,width1:int,kernel0:int,kernel1:int = None,batchnorm:bool = False,nnlnr:bool = True):
+        if kernel1 is None:
+            kernel1 = kernel0
+        d = []
+        d.append(('conv',nn.Conv2d(width0,width1,(kernel0,kernel1))))
+        if batchnorm and nnlnr:
+            assert nnlnr
+            d.append(('bnorm', nn.BatchNorm2d(width1)))
         if nnlnr:
-            self.add(nn.ReLU(inplace = True))
-class SoftPlus_Layer(Layer):
-    def __init__(self,nn_layers:list,split,min_value = 0) -> None:
-        super().__init__(nn_layers)
-        self.add(nn.Softplus())
-        self.min_value = min_value
-        self.split = split
-    def __call__(self, x):
-        if self.split>1:
-            xs = list(torch.split(x,x.shape[1]//self.split,dim=1))
-            p = super().__call__(xs[-1])
-            p = p + self.min_value
-            xs[-1] = p
-            return tuple(xs)
-        return super().__call__(x)
-
-class Square_Layer(Layer):
-    def __init__(self,nn_layers:list,split,min_value = 0) -> None:
-        super().__init__(nn_layers)
-        st = SquareTransform(min_value = min_value)
-        self.add(st)
-        self.min_value = min_value
-        self.split = split
-    def __call__(self, x):
-        if self.split>1:
-            x = super().__call__(x)
-            xs = list(torch.split(x,x.shape[1]//self.split,dim=1))            
-            return tuple(xs)
-        return super().__call__(x)
-class SoftPlus_Layer_With_Constant(Layer):
-    def __init__(self,nn_layers:list,split,min_value = 0) -> None:
-        super().__init__(nn_layers)
-        st = SoftPlusTransform(min_value = min_value)
-        self.add(st)
-        self.min_value = min_value
-        self.split = split
-    def __call__(self, x):
-        if self.split>1:
-            x = super().__call__(x)
-            xs = list(torch.split(x,x.shape[1]//self.split,dim=1))            
-            return tuple(xs)
-        return super().__call__(x)
-    
-class Sequential(Layer):
-    def __init__(self,nn_layers,widths,kernels,batchnorm,final_activation ,min_precision,split = 1):
-        super().__init__(nn_layers)
-        self.sections = []
-        spread = 0
-        self.nlayers = len(kernels)
-        for i in range(self.nlayers):
-            spread+=kernels[i]-1
-        self.spread = spread//2
-        for i in range(self.nlayers):
-            self.sections.append(CNN_Layer(nn_layers,widths[i],widths[i+1],kernels[i],batchnorm[i], i < self.nlayers - 1))
-        if final_activation == 'softplus':
-            self.sections.append(SoftPlus_Layer(nn_layers,split,min_value = min_precision))
-        elif final_activation == 'square':
-            self.sections.append(Square_Layer(nn_layers,split,min_value = min_precision))
-        elif final_activation == 'softplus_with_constant':
-            self.sections.append(SoftPlus_Layer_With_Constant(nn_layers,split,min_value = min_precision))
-    def __call__(self, x):
-        for lyr in self.sections:
-            x = lyr.__call__(x)
-        return x
-
-class CNN(nn.Module):
-    def __init__(self,widths = None,kernels = None,batchnorm = None,seed = None,final_activation = None,min_precision = 0 ,**kwargs):
-        super(CNN, self).__init__()
-        torch.manual_seed(seed)
-        self.nn_layers = nn.ModuleList()
+            d.append(('nnlnr',nn.ReLU(inplace = True)))
+        super().__init__(OrderedDict(d))
         
-        self.sequence = \
-            Sequential(self.nn_layers, widths,kernels,batchnorm,final_activation,min_precision ,split = 2)
+class SoftPlusLayer_(nn.Module):
+    def __init__(self,min_value = 0) -> None:
+        super().__init__()
+        self._min_value = Parameter(torch.tensor(min_value))
+    @property
+    def min_value(self,):
+        return softplus(self._min_value)
+    def forward(self, x_):
+        x = torch.clone(x_)
+        x0,x1 = torch.split(x,x.shape[1]//2,dim=1)
+        x1 = softplus(x1) + self.min_value
+        return x0,x1
+    def __repr__(self) -> str:
+        return f'SoftPlusLayer({self.min_value.item()})'
+    
+class PartialSoftPlusLayer(nn.Module):
+    def forward(self, x_):
+        x = torch.clone(x_)
+        x0,x1 = torch.split(x,x.shape[1]//2,dim=1)
+        x1 = softplus(x1)
+        return x0,x1
+    def __repr__(self) -> str:
+        return self.__class__.__name__
+
+class CNN(nn.Sequential):
+    def __init__(self,widths = None,kernels = None,batchnorm = None,seed = None,**kwargs):
+        d = []
+        zipwidths = zip(widths[:-1],widths[1:])
+        nlayers = len(kernels)
+        torch.manual_seed(seed)
+        for i,((w0,w1),k,b,) in enumerate(zip(zipwidths,kernels,batchnorm)):
+            d.append(
+                (f'layer-{i}',ConvLayer(w0,w1,k,k,b,nnlnr = i < nlayers - 1))
+            )
+        d.append(
+            (f'layer-{i+1}',PartialSoftPlusLayer())
+        )
+        super().__init__(OrderedDict(d))
         spread = 0
         for k in kernels:
             spread += (k-1)/2
         self.spread = int(spread)
-    def forward(self,x1):
-        return self.sequence(x1)
-
 
 
 statedict = torch.load(nn_load_main_file)

@@ -24,7 +24,8 @@ def update_statedict(state_dict_,net_,optimizer_,scheduler_,last_model = True):
 
 
 def get_statedict(args):
-    modelargs,modelid = options(args,key = "run")
+    _,modelid = options(args,key = "model")
+    modelargs,_ = options(args,key = "run")
     statedictfile =  statedict_path(modelid,**modelargs.__dict__)
     if modelargs.gz21:
         modelid = 'GZ21'
@@ -103,7 +104,7 @@ def load_optimizer(args,net,):
         raise Exception
     # print(f"Optimizer = {optimizer}")
     if runargs.scheduler == "ReduceLROnPlateau":
-        scheduler=torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer,factor=0.5,patience=2)
+        scheduler=torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer,)#factor = 0.1,patience = 2)#factor=0.5,patience=5)
     else:
         class MultiStepLRStepInputNeglect(MultiStepLR):
             def step(self,*args):
