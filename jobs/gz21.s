@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --time=2:00:00
-#SBATCH --array=34,40,43,46,35,30,36,31,37
+#SBATCH --array=52-54
 #SBATCH --mem=60GB
 #SBATCH --job-name=gz21
 #SBATCH --output=/scratch/cg3306/climate/outputs/slurm_logs/gz21_%A_%a.out
