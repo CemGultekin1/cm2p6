@@ -30,10 +30,12 @@ def mask_decorator(func,):
     @functools.wraps(func)
     def _wrap(output,target,mask):
         # mask = (premask>0.5).to(dtype = torch.float32)
-        mask = mask.to(dtype = torch.int)
+        mask = mask>0.5
         if isinstance(output,tuple) or isinstance(output,list):
             mean, prec =output
-            mean,prec,target = mean[mask],prec[mask],target[mask]
+            mean = mean[mask]
+            prec = prec[mask]
+            target = target[mask]
             loss = func((mean,prec),target)
             return loss
         else:

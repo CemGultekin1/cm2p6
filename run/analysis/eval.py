@@ -56,9 +56,7 @@ def main():
     args = sys.argv[1:]
     
     # from utils.slurm import read_args
-    
-    
-    # args = read_args(3,filename = 'sgdtst.txt')
+    # args = read_args(46,filename = 'gz21.txt')
     # args = replace_params(args,'mode','eval')
     
     # for i in range(1,4):

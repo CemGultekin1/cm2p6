@@ -40,6 +40,7 @@ def get_statedict(args):
     logs = {"epoch":[],"train-loss":[],"test-loss":[],"val-loss":[],"lr":[],"batchsize":[]}
     if os.path.exists(statedictfile):
         print(f"model {modelid} state_dict has been found")
+        pass
     else:
         return state_dict,logs,modelargs,modelid 
     

@@ -65,10 +65,11 @@ def get_interiority(datargs,coords,net,localizer:CoordinateLocalizer):
             break
     return interiority
 def main():
-    from utils.slurm import read_args
-    args = read_args(2,)
-    from utils.arguments import replace_params
-    args = replace_params(args,'mode','eval','num_workers','1')
+    args = sys.argv[1:]
+    # from utils.slurm import read_args
+    # args = read_args(2,)
+    # from utils.arguments import replace_params
+    # args = replace_params(args,'mode','eval','num_workers','1')
 
     runargs,_ = options(args,key = "run")
 

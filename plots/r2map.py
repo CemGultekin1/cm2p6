@@ -7,35 +7,54 @@ from utils.xarray import skipna_mean
 import xarray as xr
 from utils.arguments import options
 from utils.slurm import flushed_print
+from models.load import get_statedict, load_model
 import numpy as np
 def main():
     root = EVALS
-    models = os.path.join(JOBS,'sgdtst.txt')
+    models = os.path.join(JOBS,'gz21.txt')
     target = R2_PLOTS
     file1 = open(models, 'r')
+    
     lines = file1.readlines()
-    # lines = lines[15:16]
+    lines = lines[28:31] + [lines[48]] + lines[33:37] + [lines[40]] + [lines[43]] + [lines[46]]
+    suptitles = '20230512_1_four_regions_fixed_branch 20230512_four_regions_fixed_branch 20230511_1_four_regions_fixed_branch'.split()
+    suptitles.append('original GZ21')
+    
+    suptitles.extend(
+        [
+            f'first_of_the_four_regions_attempt_{i}' for i in range(4)
+        ]
+    )
+    suptitles.extend(
+        [
+            f'{st}_of_the_four_regions' for st in 'second third fourth'.split()
+        ]
+    )
+    
+    
     file1.close()
     title_inc = ['sigma','domain','depth','latitude','lsrp','lossfun']
     title_name = ['sigma','train-domain','train-depth','latitude','lsrp','lossfun']
-    for line in lines:
+    for suptitle,line in zip(suptitles,lines):
         # line = '--lsrp 1 --depth 0 --sigma 4 --temperature True --lossfun MSE --latitude True --domain global --num_workers 16 --disp 50 --widths 5 128 64 32 32 32 32 32 6 --kernels 5 5 3 3 3 3 3 3 --minibatch 2'
         modelargs,modelid = options(line.split(),key = "model")
+        _,_,_,modelid = get_statedict(line.split())
+
         # modelid = 'G-0'
         vals = [modelargs.__getattribute__(key) for key in title_inc]
         vals = [int(val) if isinstance(val,float) else val for val in vals]
         title = ',   '.join([f"{name}: {val}" for name,val in zip(title_name,vals)])
         snfile = os.path.join(root,modelid + '.nc')#'GZ21-subgrid-gz21-temp-global-trained-model.nc')
-        print(f'looking for {snfile}')
+        # print(f'looking for {snfile}')
         if not os.path.exists(snfile):
             continue
-        print(line)
+        # print(line)
         sn = xr.open_dataset(snfile).sel(lat = slice(-85,85))#.isel(depth = [0],co2 = 0).drop(['co2'])
         msn = metrics_dataset(sn,dim = [])
         tmsn = metrics_dataset(sn,dim = ['lat','lon'])
 
         depthvals = msn.depth.values
-        targetfolder = os.path.join(target,modelid)
+        targetfolder = os.path.join(target,'12052023')#modelid)
         if not os.path.exists(targetfolder):
             os.makedirs(targetfolder)
         for i in range(len(depthvals)):
@@ -44,7 +63,7 @@ def main():
 
             depthval = depthvals[i]
 
-            suptitle = f"{title}\ntest-depth: {depthval}"
+            # suptitle = f"{title}\ntest-depth: {depthval}"
             names = "Su Sv Stemp".split()
             unames = np.unique([n.split('_')[0] for n in list(s.data_vars)])
             names = [n for n in names if n in unames]
@@ -57,7 +76,7 @@ def main():
                 n = f"{names[ii]}_{ftypes[jj]}"
                 _names[ii,jj] = n
 
-            targetfile = os.path.join(targetfolder,f'depth_{i}.png')
+            targetfile = os.path.join(targetfolder,suptitle.replace(' ','_') + '.png')#f'depth_{i}.png')
 
             fig,axs = plt.subplots(nrows,ncols,figsize = (ncols*6,nrows*5))
             for ir,ic in itertools.product(range(nrows),range(ncols)):
@@ -73,7 +92,7 @@ def main():
                 axs[ir,ic].set_title(subtitle,fontsize=24)
             fig.suptitle(suptitle,fontsize=24)
             fig.savefig(targetfile)
-            flushed_print(suptitle,'\n\t',targetfile)
+            flushed_print(targetfile)
             plt.close()
 
 

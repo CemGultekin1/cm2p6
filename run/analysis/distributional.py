@@ -49,10 +49,14 @@ def get_lsrp_modelid(args):
 
 def main():
     args = sys.argv[1:]
+    
     # from utils.slurm import read_args
-    # args = read_args(2)
     # from utils.arguments import replace_params
-    # args = replace_params(args,'mode','eval','num_workers','3','disp','50')
+    # from utils.slurm import read_args
+    # args = read_args(29,filename = 'gz21.txt')
+    # args = replace_params(args,'mode','eval')
+    
+    
     runargs,_ = options(args,key = "run")
     prec2std = PrecisionToStandardDeviation(args)
     if not os.path.exists(DISTS):
@@ -113,9 +117,9 @@ def main():
                 density = adaptive_histogram.get_density_xarray()
                 filename = os.path.join(DISTS,modelid+'.nc')
                 density.to_netcdf(filename,mode = 'w')
-                density.Su_density.plot()
-                plt.savefig('density_su.png')
-                plt.close()
+                # density.Su_density.plot()
+                # plt.savefig('density_su.png')
+                # plt.close()
                 flushed_print(nt)
     density = adaptive_histogram.get_density_xarray()
     filename = os.path.join(DISTS,modelid+'.nc')    
