@@ -1,8 +1,9 @@
 from transforms.coarse_graining import BaseTransform, GcmFiltering,GreedyCoarseGrain, GreedyScipyFiltering, PlainCoarseGrain, ScipyFiltering,WetMask
-from transforms.coarse_graining_inverse import  MatmultFiltering
+from transforms.coarse_graining_inverse import  MatMultFiltering
 from transforms.grids import forward_difference
 from transforms.krylov import  krylov_inversion
 import numpy as np
+from utils.xarray import plot_ds
 import xarray as xr
 
 
@@ -39,6 +40,7 @@ class BaseSubgridForcing(BaseTransform):
         forcings =  { rn : self._subgrid_forcing_formula(hres,lres,hres_flux,lres_flux,key) for key,rn in zip(keys,rename) }
         
         forcings = {key:self.coarse_grain(x) for key,x in forcings.items()}
+        
         return forcings,(clres,lres)
 
 
@@ -56,7 +58,7 @@ class BaseLSRPSubgridForcing(BaseSubgridForcing):
     inv_filtering_class = None
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
-        self.inv_filtering : MatmultFiltering = self.inv_filtering_class(*args,**kwargs)
+        self.inv_filtering : MatMultFiltering = self.inv_filtering_class(*args,**kwargs)
     def __call__(self, hres, keys,rename,lres = {},clres = {},\
                              hres0= {},lres0 = {},clres0 = {}):
         forcings,(clres, lres) = super().__call__(hres,keys,rename,lres =  lres,clres = clres)
@@ -114,11 +116,10 @@ class xr2np_utility:
         ds.data = xx
         return ds
 
-class landfilling_krylov_lsrp_subgrid_forcing(BaseLSRPSubgridForcing):
+class KrylovSubgridForcing(BaseLSRPSubgridForcing):
     def __call__(self, hres:dict, keys,rename,lres = {},clres = {},\
                              hres0= {},lres0 = {},clres0 = {}):
-        forcings,(clres,lres) = super(BaseLSRPSubgridForcing,self).__call__(hres,keys,rename,lres = lres,clres = clres)
-
+        forcings,(clres,lres) = super(BaseLSRPSubgridForcing,self).__call__(hres,keys,rename,lres = lres,clres = clres)        
         dwxr = xr2np_utility(list(clres.values())[0])
         class orthproj_class:
             def __init__(self,subgrid_forcing:BaseLSRPSubgridForcing):
@@ -132,6 +133,7 @@ class landfilling_krylov_lsrp_subgrid_forcing(BaseLSRPSubgridForcing):
                 cres =  self.coarse_grain(self.filtering(hres)).fillna(0)
                 # plot_ds({'hres':hres},f'krylov_hres_{self.counter}.png',ncols = 1)
                 # plot_ds({'lres':lres,'cres':cres},f'krylov_lres_{self.counter}.png',ncols = 2)
+                # raise Exception
                 self.counter+=1
                 return cres
         orthproj = orthproj_class(self)
@@ -143,7 +145,7 @@ class landfilling_krylov_lsrp_subgrid_forcing(BaseLSRPSubgridForcing):
         def run_gmres(u:xr.DataArray):
             # orthu = orthproj(u)
 
-            solver = krylov_inversion(16,1e-2,decorated_matmultip)
+            solver = krylov_inversion(2,1e-2,decorated_matmultip)
             # landfill_np = solver.solve( u.fillna(0).values.reshape([-1]))
             # landfill_u = dwxr.zero_wet_part(dwxr.np2xr(landfill_np))
             # filled_u =  u + landfill_u
@@ -172,43 +174,43 @@ class landfilling_krylov_lsrp_subgrid_forcing(BaseLSRPSubgridForcing):
 
 
 
-class GcmSubgridForcing(BaseSubgridForcing):
-    filtering_class = GcmFiltering
-    coarse_grain_class = GreedyCoarseGrain
-
-class ScipySubgridForcing(BaseSubgridForcing):
-    filtering_class = ScipyFiltering
-    coarse_grain_class =  PlainCoarseGrain
-
-class GreedyScipySubgridForcing(ScipySubgridForcing):
-    filtering_class = GreedyScipyFiltering
-    coarse_grain_class =  GreedyCoarseGrain
-
-
-
-
-
-# class scipy_lsrp_subgrid_forcing(landfilling_krylov_lsrp_subgrid_forcing):
-#     filtering_class = ScipyFiltering
-#     coarse_grain_class =  PlainCoarseGrain
-#     inv_filtering_class = MatmultFiltering
-
-
-# class greedy_scipy_lsrp_subgrid_forcing(landfilling_krylov_lsrp_subgrid_forcing):
-#     filtering_class = GreedyScipyFiltering
-#     coarse_grain_class =  GreedyCoarseGrain
-#     inv_filtering_class = matmult_masked_filtering
-
-# class gcm_lsrp_subgrid_forcing(landfilling_krylov_lsrp_subgrid_forcing):
+# class GcmSubgridForcing(BaseSubgridForcing):
 #     filtering_class = GcmFiltering
 #     coarse_grain_class = GreedyCoarseGrain
-#     inv_filtering_class = matmult_masked_filtering
+
+# class ScipySubgridForcing(BaseSubgridForcing):
+#     filtering_class = ScipyFiltering
+#     coarse_grain_class =  PlainCoarseGrain
+
+# class GreedyScipySubgridForcing(ScipySubgridForcing):
+#     filtering_class = GreedyScipyFiltering
+#     coarse_grain_class =  GreedyCoarseGrain
+
+
+
+
+
+class ScipySubgridForcingWithLSRP(KrylovSubgridForcing):
+    filtering_class = ScipyFiltering
+    coarse_grain_class =  PlainCoarseGrain
+    inv_filtering_class = MatMultFiltering
+
+
+class GreedyScipySubgridForcingWithLSRP(KrylovSubgridForcing):
+    filtering_class = GreedyScipyFiltering
+    coarse_grain_class =  GreedyCoarseGrain
+    inv_filtering_class = MatMultFiltering
+
+class GcmSubgridForcingWithLSRP(KrylovSubgridForcing):
+    filtering_class = GcmFiltering
+    coarse_grain_class = GreedyCoarseGrain
+    inv_filtering_class = MatMultFiltering
 
 
 
         
 filtering_classes = {
-    "gcm":GcmSubgridForcing,\
-    "gaussian":ScipySubgridForcing,\
-    "greedy_gaussian":GreedyScipySubgridForcing
+    "gcm":GcmSubgridForcingWithLSRP,\
+    "gaussian":ScipySubgridForcingWithLSRP,\
+    "greedy_gaussian":GreedyScipySubgridForcingWithLSRP
 }

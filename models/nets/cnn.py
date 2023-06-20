@@ -6,61 +6,74 @@ from torch.nn import Parameter
 from torch.nn import functional as F
 from torch.nn.functional import softplus
 import numpy as np
+class Layer:
+    def __init__(self,nn_layers:list) -> None:
+        self.nn_layers =nn_layers
+        self.section = []
+    def add(self,nn_obj):
+        self.section.append(len(self.nn_layers))
+        self.nn_layers.append(nn_obj)
+    def __call__(self,x):
+        for j in self.section:
+            x = self.nn_layers[j](x)
+        return x
 
-class ConvLayer(nn.Sequential):
-    def __init__(self,width0:int,width1:int,kernel0:int,kernel1:int = None,batchnorm:bool = False,nnlnr:bool = True):
-        if kernel1 is None:
-            kernel1 = kernel0
-        d = []
-        d.append(('conv',nn.Conv2d(width0,width1,(kernel0,kernel1))))
-        if batchnorm and nnlnr:
-            assert nnlnr
-            d.append(('bnorm', nn.BatchNorm2d(width1)))
+class CNN_Layer(Layer):
+    def __init__(self,nn_layers:list,widthin,widthout,kernel,batchnorm,nnlnr) -> None:
+        super().__init__(nn_layers)
+        self.add(nn.Conv2d(widthin,widthout,kernel))
+        if batchnorm:
+            self.add(nn.BatchNorm2d(widthout))
         if nnlnr:
-            d.append(('nnlnr',nn.ReLU(inplace = True)))
-        super().__init__(OrderedDict(d))
+            self.add(nn.ReLU(inplace = True))
+class Softmax_Layer(Layer):
+    def __init__(self,nn_layers:list,split,min_value = 0) -> None:
+        super().__init__(nn_layers)
+        self.add(nn.Softplus())
+        self.min_value = min_value
+        self.split = split
+    def __call__(self, x):
+        if self.split>1:
+            xs = list(torch.split(x,x.shape[1]//self.split,dim=1))
+            p = super().__call__(xs[-1])
+            p = p + self.min_value
+            xs[-1] = p
+            return tuple(xs)
+        return super().__call__(x)
         
-class SoftPlusLayer_(nn.Module):
-    def __init__(self,min_value = 0) -> None:
-        super().__init__()
-        self._min_value = Parameter(torch.tensor(min_value))
-    @property
-    def min_value(self,):
-        return softplus(self._min_value)
-    def forward(self, x_):
-        x = torch.clone(x_)
-        x0,x1 = torch.split(x,x.shape[1]//2,dim=1)
-        x1 = softplus(x1) + self.min_value
-        return x0,x1
-    def __repr__(self) -> str:
-        return f'SoftPlusLayer({self.min_value.item()})'
-    
-class PartialSoftPlusLayer(nn.Module):
-    def forward(self, x):
-        x0,x1 = torch.split(x,x.shape[1]//2,dim=1)
-        x1 = softplus(x1)
-        return x0,x1
-    def __repr__(self) -> str:
-        return self.__class__.__name__
 
-class CNN(nn.Sequential):
-    def __init__(self,widths = None,kernels = None,batchnorm = None,seed = None,**kwargs):
-        d = []
-        zipwidths = zip(widths[:-1],widths[1:])
-        nlayers = len(kernels)
+class Sequential(Layer):
+    def __init__(self,nn_layers,widths,kernels,batchnorm,softmax_layer = False,split = 1,min_precision = 0):
+        super().__init__(nn_layers)
+        self.sections = []
+        spread = 0
+        self.nlayers = len(kernels)
+        for i in range(self.nlayers):
+            spread+=kernels[i]-1
+        self.spread = spread//2
+        for i in range(self.nlayers):
+            self.sections.append(CNN_Layer(nn_layers,widths[i],widths[i+1],kernels[i],batchnorm[i], i < self.nlayers - 1))
+        if softmax_layer:
+            self.sections.append(Softmax_Layer(nn_layers,split,min_value = min_precision))
+    def __call__(self, x):
+        for lyr in self.sections:
+            x = lyr.__call__(x)
+        return x
+
+class CNN(nn.Module):
+    def __init__(self,widths = None,kernels = None,batchnorm = None,seed = None,min_precision = 0 ,**kwargs):
+        super(CNN, self).__init__()
         torch.manual_seed(seed)
-        for i,((w0,w1),k,b,) in enumerate(zip(zipwidths,kernels,batchnorm)):
-            d.append(
-                (f'layer-{i}',ConvLayer(w0,w1,k,k,b,nnlnr = i < nlayers - 1))
-            )
-        d.append(
-            (f'layer-{i+1}',PartialSoftPlusLayer())
-        )
-        super().__init__(OrderedDict(d))
+        self.nn_layers = nn.ModuleList()
+        
+        self.sequence = \
+            Sequential(self.nn_layers, widths,kernels,batchnorm,softmax_layer=True,min_precision = min_precision,split = 2)
         spread = 0
         for k in kernels:
             spread += (k-1)/2
         self.spread = int(spread)
+    def forward(self,x1):
+        return self.sequence(x1)
     
 class DoubleCNN(CNN):
     def __init__(self, cnn1:CNN,widths=None, kernels=None, batchnorm=None, seed=None, **kwargs):

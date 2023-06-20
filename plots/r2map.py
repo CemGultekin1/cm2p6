@@ -16,20 +16,8 @@ def main():
     file1 = open(models, 'r')
     
     lines = file1.readlines()
-    lines = lines[28:31] + [lines[48]] + lines[33:37] + [lines[40]] + [lines[43]] + [lines[46]]
-    suptitles = '20230512_1_four_regions_fixed_branch 20230512_four_regions_fixed_branch 20230511_1_four_regions_fixed_branch'.split()
-    suptitles.append('original GZ21')
-    
-    suptitles.extend(
-        [
-            f'first_of_the_four_regions_attempt_{i}' for i in range(4)
-        ]
-    )
-    suptitles.extend(
-        [
-            f'{st}_of_the_four_regions' for st in 'second third fourth'.split()
-        ]
-    )
+    lines = lines[51:56]
+    suptitles = 'cheng_20230601_1 cheng_20230601_2 cheng_20230601_3 cheng_20230601_4 cheng_20230601_5'.split()
     
     
     file1.close()
@@ -54,7 +42,7 @@ def main():
         tmsn = metrics_dataset(sn,dim = ['lat','lon'])
 
         depthvals = msn.depth.values
-        targetfolder = os.path.join(target,'12052023')#modelid)
+        targetfolder = os.path.join(target,'20230602')#modelid)
         if not os.path.exists(targetfolder):
             os.makedirs(targetfolder)
         for i in range(len(depthvals)):

@@ -1,8 +1,8 @@
 from typing import Callable
-from utils.xarray import concat, tonumpydict
+from utils.xarray import concat, plot_ds, tonumpydict
 import xarray as xr
 from transforms.grids import get_grid_vars, ugrid2tgrid_interpolation
-from transforms.subgrid_forcing import BaseLSRPSubgridForcing, filtering_classes, ScipySubgridForcing
+from transforms.subgrid_forcing import BaseLSRPSubgridForcing, filtering_classes
 import numpy as np
 
 class HighResCm2p6:
@@ -122,6 +122,10 @@ class HighResCm2p6:
         return coarse_wet_density.compute(),coarse_interior_wet_mask.compute()
     def get_forcings(self,i):
         u,v,temp = self._base_get_hres(i)
+        print(u)
+        plot_ds(dict(u=u,v=v,),f'get_forcings_uv.png',ncols = 1)
+        plot_ds(dict(temp = temp),f'get_forcings_temp.png',ncols = 1)
+        raise Exception
         ff =  self.fields2forcings(i,u,v,temp)
         return ff
     def fields2forcings(self,i,u,v,temp,ScipyFiltering = False):

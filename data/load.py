@@ -252,7 +252,7 @@ def get_data(args,torch_flag = False,data_loaders = True,**kwargs):
         if ns.mode != "train":
             minibatch = None
         params={'batch_size':minibatch,\
-            'shuffle': ns.mode in ["train","view"],\
+            'shuffle': ns.mode in ["train","view"] or kwargs.get('shuffle',False),\
             'num_workers':ns.num_workers,\
             'prefetch_factor':ns.prefetch_factor,\
             'collate_fn':collate_fn,\

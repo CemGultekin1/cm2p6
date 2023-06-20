@@ -1,99 +1,154 @@
-from argparse import Namespace
 import itertools
 import os
-from re import X
 import matplotlib.pyplot as plt
-from constants.paths import JOBS, R2_PLOTS, EVALS
+from constants.paths import  all_eval_path
+from utils.xarray import drop_unused_coords, skipna_mean
 import xarray as xr
-from utils.arguments import options
-from utils.slurm import flushed_print
 import numpy as np
+
+def class_functions(Foo):
+    return [func for func in dir(Foo) if callable(getattr(Foo, func)) and not func.startswith("__")]
+
+MODELCODES = {
+    'model': {'fcnn':'','lsrp:0':'lsrp','lsrp:1':'lsrp1'},
+    'domain': {'four_regions':'R4','global':'G'},
+    'latitude':{1:'L',0:''},
+    'temperature':{1:'T',0:''},
+    'lsrp':{0:'',1:'-lsr',2:'-lsr1'},
+}
+namecut = dict(
+    model =  ['lsrp:0','lsrp:1'],
+)
+
+
+def group_by_extension(ds,groups):
+    grouping = {}
+    for name in ds.data_vars.keys():
+        for kc in groups:
+            if kc in name:
+                if kc not in grouping:
+                    grouping[kc] = []
+                v = ds[name]
+                v.name = v.name.replace(f"_{kc}",'')
+                grouping[kc].append(v)
+                break
+
+    for kc,vals in grouping.items():
+        grouping[kc] = xr.merge(vals)
+    return list(grouping.values())
+
+def ax_sel_data(dsl,i,j):
+    ds = dsl[j]
+    keys = list(ds.data_vars.keys())
+    keysi = keys[i] 
+    return ds[keysi],keysi
+def separate_lsrp_values(stats):
+    # lossfun = 'MSE',
+    lsrpmodel = stats.isel(seed = 0,latitude = 0, domain = 0,\
+                temperature = 0,lsrp = 0,training_depth = 0,\
+                co2 = 0,model = 1).sel(lossfun = 'heteroscedastic',kernel_size = 21,)
+    
+    nonlsrp = stats.isel(model = 0,).sel(lossfun = 'MSE')
+    return drop_unused_coords(nonlsrp),drop_unused_coords(lsrpmodel)
+
+def depth_plot(stats):
+    stats,lsrp_ = separate_lsrp_values(stats)#.isel(sigma= range(1,4))
+    kernels_dict = {
+        4:21,
+        8:11,
+        12:7,
+        16:7
+    }
+    
+    stats_ = stats.isel(seed = 0,latitude = 0, \
+            domain = 1, temperature = 1, sigma = range(4),co2= 0,training_depth =[i for i in range(8) if i!=2 ] ,)
+    from data.coords import DEPTHS
+    DEPTHS = list(DEPTHS)
+    DEPTHS.pop(2)
+    for sigma_i,r2corr in itertools.product(range(4),range(2)):
+        sigma = stats_.sigma.values[sigma_i]
+        kernel_size = kernels_dict[sigma]
+        
+        stats = stats_.isel(sigma = sigma_i).sel(kernel_size = kernel_size)
+        lsrp = lsrp_.isel(sigma = sigma_i)#.sel(kernel_size = kernel_size)
+
+        fcnn = group_by_extension(stats,'r2 corr'.split())[r2corr]
+        lsrp = group_by_extension(lsrp,'r2 corr'.split())[r2corr]
+        r2corr_str = 'r2' if not r2corr else 'corr'
+        # fcnn = stats.isel(model = 0,)
+        fcnn_lsrp = fcnn.isel(lsrp = 1)
+        fcnn = fcnn.isel(lsrp = 0)
+
+        fcnn,fcnn_lsrp,lsrp = drop_unused_coords(fcnn),drop_unused_coords(fcnn_lsrp),drop_unused_coords(lsrp)
+
+        ylim = [0,1]
+        nrows = 3
+        ncols = 1#2
+        fig,axs = plt.subplots(nrows,ncols,figsize = (9*ncols,6*nrows))
+        varnames = 'Su Sv Stemp'.split()
+        for i,j in itertools.product(range(nrows),range(ncols)):
+            # ax = axs[i,j]
+            ax = axs[i]
+            # y,rowsel = ax_sel_data([fcnn,fcnn_lsrp],i,j)
+            y,rowsel = ax_sel_data([fcnn,],i,j)
+            ylsrp,_ = ax_sel_data([lsrp,lsrp],i,j)
+            ixaxis = np.arange(len(y.training_depth))
+            # print(y.training_depth.values)
+            # print(y.depth.values)
+            # print(DEPTHS)
+            # raise Exception
+            
+            minimumr2 = np.amin(y.values)
+            minimumr2 = np.minimum(minimumr2,np.amin(ylsrp.values ))
+            negative_r2_management = minimumr2 < 0
+            if negative_r2_management:
+                ymin = np.floor(minimumr2)
+                ymax = 1.
+                y = xr.where(y < 0, -y/ymin/5,y)
+                ylsrp = xr.where(ylsrp < 0, -ylsrp/ymin/5,ylsrp)
+                yticks = [-.2,-.1,0,0.2,0.4,0.6,0.8,1.]
+                yticklabels = [
+                    str(int(ymin)),str(ymin/2),'0','0.2','0.4','0.6','0.8','1.'
+                ]
+                
+                
+            markers = ['^','v','<','>','s','p','D']
+            for l in range(len(DEPTHS)):
+                yl = y.isel(training_depth =l)
+                ax.plot(ixaxis,yl,f'{markers[l]}--',label = f'{str(int(DEPTHS[l]))} m',markersize = 4)
+            for l in range(len(DEPTHS)):
+                yl = y.isel(training_depth =l)
+                ax.plot(ixaxis[l],yl.values[l],'k.',markersize = 12)
+            ax.plot(ixaxis,ylsrp,f'{markers[-1]}--',label = 'LSRP',markersize = 4)
+            if negative_r2_management:
+                ax.set_ylim([-.25,1.05])
+                ax.set_yticks(yticks)
+                ax.set_yticklabels(yticklabels)
+            else:
+                ax.set_ylim(ylim)
+            ax.set_xticks(ixaxis)
+            xaxis = DEPTHS#y.depth.values
+            xaxis = [int(v) for v in xaxis]#["{:.2e}".format(v) for v in xaxis]
+            
+            ax.set_xticklabels(xaxis)
+            ax.legend()
+            ax.grid(which = 'major',color='k', linestyle='--',linewidth = 1,alpha = 0.8)
+            ax.grid(which = 'minor',color='k', linestyle='--',linewidth = 1,alpha = 0.6)
+            # if j==0:
+            #     ax.set_ylabel(rowsel)
+            title = varnames[i] + ' '+ r2corr_str.capitalize() + f' \u03C3={sigma}'
+            ax.set_title(title)
+            ax.set_xlabel('depths (m)')
+        target_folder = 'paper_images/depth'
+        if not os.path.exists(target_folder):
+            os.makedirs(target_folder)
+        fig.savefig(os.path.join(target_folder,f'{r2corr_str}_sigma_{sigma}.png'))
+        print(os.path.join(target_folder,f'{r2corr_str}_sigma_{sigma}.png'))
 
 
 def main():
-    root = EVALS
-    models = os.path.join(JOBS,'trainjob.txt')
-    target = R2_PLOTS
-    file1 = open(models, 'r')
-    lines = file1.readlines()
-    file1.close()
-    lines = lines[40:] + ['lsrp']
-    coords = ['latitude','linsupres','depth','seed']
-    coordnames = ['latitude_features','CNN_LSRP','training_depth','seed']
-    r2vals = None
-    for line in lines:
-        if line == 'lsrp':
-            modelid = 'lsrp'
-            coordvals = {}
-            for cn,coord in zip(coordnames,coords):
-                coordvals[cn] = [0]
-            coordvals['LSRP'] = [1]
-        else:
-            modelargs,modelid = options(line.split(),key = "model")
-            coordvals = {}
-            for cn,coord in zip(coordnames,coords):
-                val = modelargs.__getattribute__(coord)
-                if isinstance(val,bool):
-                    val = int(val)
-                coordvals[cn] = [val]
-            coordvals['LSRP'] = [0]
-        snfile = os.path.join(root,modelid + '.nc')
-        if not os.path.exists(snfile):
-            continue
-        sn = xr.open_dataset(snfile)
-        r2s = []
-        for key in 'Su Sv ST'.split():
-            mse = sn[f"{key}_mse"]
-            sc2 = sn[f"{key}_sc2"]
-            sc2 = sc2.fillna(0)
-            mse = mse.fillna(0)
-            r2 = 1 - mse.sum(dim = ["lat","lon"])/sc2.sum(dim = ["lat","lon"])
-            r2 = r2.expand_dims(**coordvals)
-            r2.name = key
-            r2s.append(r2)
-        xr2s = xr.merge(r2s)
-        if r2vals is None:
-            r2vals = xr2s
-        else:
-            r2vals = xr.merge([r2vals,xr2s])
-    r2vals = r2vals.mean(dim = "seed")
-    ylim = [0,1]
-    colsep = {'latitude_features':[0,1,0,1],'CNN_LSRP':[0,0,1,1]}
-    title_naming = ['latitude','LSRP']
-    linsep = 'training_depth'
-    xaxisname = 'depth'
-    ncol = 4
-    rowsep = list(r2vals.data_vars)
-    nrow = len(rowsep)
-    fig,axs = plt.subplots(nrow,ncol,figsize = (9*ncol,6*nrow))
-    for i,j in itertools.product(range(nrow),range(ncol)):
-        ax = axs[i,j]
-        colsel = {key:val[j] for key,val in colsep.items()}
-        rowsel = rowsep[i]
-        y = r2vals[rowsel]
-        ylsrp = y.sel(LSRP = 1).isel(**{key:0 for key in colsel})
-        ylsrp = ylsrp.isel({linsep : 0})
-        y = y.sel(**colsel)        
-        y = y.sel(LSRP = 0)
-        ixaxis = np.arange(len(ylsrp))
-        for l in range(len(y[linsep])):
-            yl = y.isel({linsep : l})
-            ax.plot(ixaxis,yl,label = str(yl[linsep].values))
-            ax.plot(ixaxis[l],yl.values[l],'k.',markersize = 12)
-        ax.plot(ixaxis,ylsrp,'--',label = 'LSRP')
-        ax.set_ylim(ylim)
-        ax.set_xticks(ixaxis)
-        xaxis = ylsrp[xaxisname].values
-        xaxis = ["{:.2e}".format(v) for v in xaxis]
-        ax.set_xticklabels(xaxis)
-        ax.legend()
-        ax.grid(which = 'major',color='k', linestyle='--',linewidth = 1,alpha = 0.8)
-        ax.grid(which = 'minor',color='k', linestyle='--',linewidth = 1,alpha = 0.6)
-        if j==0:
-            ax.set_ylabel(rowsel)
-        if i==0:
-            title = ", ".join([f"{n}:{bool(v)}" for n,v in zip(title_naming,colsel.values())])
-            ax.set_title(title)
-    fig.savefig(os.path.join(target,'depth_comparison.png'))
+    all_eval_filename = '/scratch/cg3306/climate/outputs/evals/all20230615.nc' #all_eval_path()
+    stats = xr.open_dataset(all_eval_filename).sel(filtering = 'gcm')
+    depth_plot(stats)
 if __name__=='__main__':
     main()

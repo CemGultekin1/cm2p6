@@ -41,9 +41,10 @@ def filter_weights(sigma):
 class matmult_1d(BaseTransform):
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
-        area = self.grid.area.values
+        area = self.grid.area.values.flatten()
         n = len(area)
         self.weights =filter_weights_1d(self.sigma)
+
         filter_mat = np.zeros((n, n))
         m = len(self.weights)//2
 
@@ -123,15 +124,16 @@ def coordinatewise_matmultip(lw,sigma):
     return q
 
 
-class slicewise_MatmultFiltering_saver(BaseTransform):
+class slicewise_MatMultFiltering_saver(BaseTransform):
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
         self.lat_area,self.lon_area = \
             wet_density(self.grid.wet_mask,self.grid.area,self.sigma,self.dims)    
         
-class MatmultFiltering(BaseTransform):
+class MatMultFiltering(BaseTransform):
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
+
         lon_area = self.grid.mean(dim = self.dims[0])
         lat_area = self.grid.mean(dim = self.dims[1])                
         self._lonfilt = matmult_1d(self.sigma,lon_area,**kwargs)
@@ -142,7 +144,8 @@ class MatmultFiltering(BaseTransform):
         self.coarse_wet_mask = xr.where(self.coarse_wet_mask >0,1,0)
         self.fine_wet_mask = self.grid.wet_mask
     def np2xr(self,xvv,finegrid :bool = False):
-        dims = self.dims
+        dims = self.dims.copy()
+        dims = ['depth'] + dims
         if finegrid:
             return xr.DataArray(
                 data = xvv,
@@ -156,7 +159,9 @@ class MatmultFiltering(BaseTransform):
                 data = xvv,
                 dims = dims,
                 coords = {
-                    key : self.grid[key].coarsen(**{key : self.sigma,'boundary' : 'trim'}).mean().values for key in dims
+                    key : self.grid[key].coarsen(**{key : self.sigma,'boundary' : 'trim'}).mean().values
+                    if key != 'depth' else self.grid[key].values                    
+                    for key in dims
                 }
             )
     def __call__(self,x,inverse = False):
@@ -168,18 +173,18 @@ class MatmultFiltering(BaseTransform):
         # else:
         #     xvv = xr.where(self.coarse_wet_mask,xvv,np.nan)
         return xvv
-class matmult_masked_filtering(MatmultFiltering):
+class MatMultMaskedFiltering(MatMultFiltering):
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
         self.coarse_wet_density = super().__call__(self.grid.wet_mask)
     def __call__(self,x,inverse = False,wet_density = None):
-        if wet_density is None:
-            wet_density = self.coarse_wet_density
-        if inverse:
-            x = x*wet_density
+        # if wet_density is None:
+        #     wet_density = self.coarse_wet_density
+        # if inverse:
+        #     x = x*wet_density
         cx = super().__call__(x,inverse = inverse)
-        if not inverse:
-            cx = cx/wet_density
+        # if not inverse:
+        #     cx = cx/wet_density
         return cx
 
 

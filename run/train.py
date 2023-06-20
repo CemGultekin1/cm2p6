@@ -8,7 +8,6 @@ import time
 import torch
 import numpy as np
 import sys
-from torch.nn.utils import clip_grad_norm_
 
 from utils.slurm import flushed_print
 
@@ -39,7 +38,7 @@ def main():
     args = sys.argv[1:]
     # from utils.slurm import read_args
     # from utils.arguments import replace_params
-    # args = read_args(2,filename = 'sgdtst.txt')
+    # args = read_args(35,filename = 'offline_sweep.txt')
     # args = replace_params(args,'num_workers','1','disp','1','reset','True','minibatch','1')
 
     modelid,state_dict,net,criterion,optimizer,scheduler,logs,runargs = load_model(args)

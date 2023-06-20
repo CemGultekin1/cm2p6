@@ -138,8 +138,7 @@ def load_model(args):
     rerun_flag = runargs.reset and runargs.mode == 'train'
     if state_dict is not None and not rerun_flag:
         if runargs.mode == "train":
-            print("final_transformation._min_value" in state_dict["best_model"])
-            net.load_state_dict(state_dict["last_model"],)#strict = False)
+            net.load_state_dict(state_dict["last_model"],)
         else:
             replaced_key = "final_transformation.min_value"
             replacing_key = "final_transformation._min_value"

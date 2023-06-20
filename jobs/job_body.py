@@ -11,12 +11,13 @@ def job(argsfile,python_file,add_eval:bool = False,**kwargs):
     bodystart = ["module purge",\
        f"singularity exec --nv --overlay {env}:ro /scratch/work/public/singularity/cuda11.2.2-cudnn8-devel-ubuntu20.04.sif /bin/bash -c \"\\"]
     codebody = [
-        "source src.sh;",
+        "source /ext3/env.sh;",
         f"python3 {python_file} $ARGS;"
     ]
     if add_eval:
         os.listdir()
-        eval_py_files = 'eval distributional legacy_comparison legacy_snapshots'.split()
+        # eval_py_files = 'eval distributional legacy_comparison legacy_snapshots'.split()
+        eval_py_files = 'eval'.split()
         for py_file in eval_py_files:
             codebody.append(f"python3 run/analysis/{py_file}.py $ARGS --mode eval;")
     codebody = ['\t' + cb + '\\' for cb in codebody]

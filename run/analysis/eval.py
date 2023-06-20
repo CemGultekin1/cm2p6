@@ -56,22 +56,8 @@ def main():
     args = sys.argv[1:]
     
     # from utils.slurm import read_args
-    # args = read_args(46,filename = 'gz21.txt')
+    # args = read_args(289,filename = 'offline_sweep.txt')
     # args = replace_params(args,'mode','eval')
-    
-    # for i in range(1,4):
-    #     args = read_args(i,filename = 'sgdtst.txt')
-    #     # print(' '.join(args))
-    #     _,runid1 = options(args,key = "model")
-    #     args = replace_params(args,'reset','True')
-    #     _,runid0 = options(args,key = "run")
-    #     path0 = f'/scratch/cg3306/climate/outputs/training_logs/{runid0}.json'
-    #     path1 = f'/scratch/cg3306/climate/outputs/training_logs/{runid1}.json'
-    #     assert os.path.exists(path0)
-    #     # assert not os.path.exists(path1)
-    #     print(f'mv {path0} {path1}')
-    # return
-    # args =replace_params(args,'num_workers','3','disp','1','mode','eval')
     
     
     modelid,_,net,_,_,_,_,runargs=load_model(args)
@@ -81,7 +67,7 @@ def main():
     
     kwargs = dict(contained = '' if not lsrp_flag else 'res')
     assert runargs.mode == "eval"
-    multidatargs = populate_data_options(args,non_static_params=[],domain = 'global',interior = False)
+    multidatargs = populate_data_options(args,non_static_params=['depth'],domain = 'global',interior = False)
     # multidatargs = [args]
     allstats = {}
     for datargs in multidatargs:
@@ -105,6 +91,7 @@ def main():
                 )
             if nt ==  0:
                 flushed_print(depth,co2)
+                # break
 
             with torch.set_grad_enabled(False):
                 mean,_ =  net.forward(fields_tensor.to(device))
@@ -141,7 +128,8 @@ def main():
                 predicted_forcings,lsrp_forcings = predicted_forcings
                 stats = update_stats(stats,lsrp_forcings,true_forcings,lsrpid)
             stats = update_stats(stats,predicted_forcings,true_forcings,modelid)
-            
+            # print(list(stats.keys()))
+            # return
             # err = np.log10(np.abs(true_forcings - predicted_forcings))
             # plot_ds(predicted_forcings,'predicted_forcings_2',ncols = 1)
             # plot_ds(true_forcings,'true_forcings_2',ncols = 1)           

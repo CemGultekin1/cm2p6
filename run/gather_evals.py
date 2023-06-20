@@ -20,7 +20,6 @@ def get_lsrp_modelid(args):
     vals[0] = f'lsrp:{lsrpid}'
     line =' '.join([f'--{k} {v}' for k,v in zip(keys,vals)])
     _,lsrpid = options(line.split(),key = "model")
-    print(line)
     return True, lsrpid,line
 def turn_to_lsrp_models(lines):
     lsrplines = []
@@ -52,24 +51,26 @@ def append_statistics(sn:xr.Dataset,coordvals):
 def merge_and_save(stats):
     xr.merge(list(stats.values())).to_netcdf(all_eval_path(),mode = 'w')
 
-def kernel_size_fun(kernels):
-    return kernels2spread(kernels)*2 + 1
+def kernel_size_fun(kernels):    
+    ks = kernels2spread(kernels)*2 + 1
+    return ks
 def main():
     root = EVALS
-    models = os.path.join(JOBS,'trainjob.txt')
+    models = os.path.join(JOBS,'offline_sweep.txt')
     file1 = open(models, 'r')
     lines = file1.readlines()
     file1.close()
 
 
-    lines = lines  + turn_to_lsrp_models(lines)
+    # lines = turn_to_lsrp_models(lines) + lines  
+    
     transform_funs = dict(
         kernel_size = dict(
             inputs = ['kernels'],
             fun = kernel_size_fun
         )
     )
-    coords = ['sigma','temperature','domain','latitude','lsrp','depth','seed','model','kernel_size','lossfun']
+    coords = ['sigma','temperature','domain','latitude','lsrp','depth','seed','kernel_size','lossfun','model','filtering']
     rename = dict(depth = 'training_depth')
     data = {}
     coord = {}
@@ -87,6 +88,7 @@ def main():
         # print(sn.isel(co2 = 0,depth = 0,lat = slice(100,103),lon = slice(100,103)))
         data[modelid] = append_statistics(sn,coordvals)
         flushed_print(i,snfile.split('/')[-1])
+        print(f'\t\t {[key + " "+ str(val) for key,val in coordvals.items()]}')
         # if i == 32:
         #     break
     merged_coord = {}
@@ -96,8 +98,6 @@ def main():
                 merged_coord[key] = []
             merged_coord[key].extend(val.values.tolist())
             merged_coord[key] = np.unique(merged_coord[key]).tolist()
-    # print(merged_coord)
-    # return
     shape = [len(v) for v in merged_coord.values()]
     def empty_arr():
         return np.ones(np.prod(shape))*np.nan
@@ -119,11 +119,11 @@ def main():
     for key,val in data_vars.items():
         data_vars[key] = (list(merged_coord.keys()),val.reshape(shape))
     ds = xr.Dataset(data_vars = data_vars,coords = merged_coord)
-    # print(ds.Su_r2.isel(training_depth = 0,model =0,seed = 0,lsrp = 0,latitude = 0,).values.reshape([-1]))
+    # print(ds.Su_r2.isel(training_depth = 0,seed = 0,lsrp = 0,latitude = 0,).values.reshape([-1]))
     # return 
-   
-    ds.to_netcdf(all_eval_path(),mode = 'w')
+    filename = all_eval_path().replace('.nc','20230620.nc')
+    ds.to_netcdf(filename,mode = 'w')
 
-    print(all_eval_path())
+    print(filename)
 if __name__=='__main__':
     main()

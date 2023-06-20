@@ -181,15 +181,26 @@ def ax_sel_data(dsl,i,j):
 def get_lsrp_values(stats):
     return drop_unused_coords(stats.isel(seed = 0,latitude = 0, domain = 0, temperature = 0,lsrp = 0,training_depth = 0, kernel_size = 7, depth = 0, co2 = 0,model = 1))
 
+
+def fillna(fcnn:xr.Dataset):
+    for v in fcnn.data_vars:
+        val = fcnn[v].values        
+        v0 =  1/val[:,0] -1
+        v1 = 1/val[:,1] -1
+        nanmask = np.isnan(v0)  
+        rat = v0/v1      
+        rat = rat[~ nanmask]
+        rat = rat[1:]
+        mrat = np.mean(rat)
+        val[nanmask,0] = 1 /(1 + mrat*v1[nanmask])
+    return fcnn
 def main():
-    stats = xr.open_dataset(all_eval_path())
-    # print(stats)
+    all_eval_filename = '/scratch/cg3306/climate/outputs/evals/all20230615.nc' #all_eval_path()
+    stats = xr.open_dataset(all_eval_filename).sel(lossfun = 'MSE',filtering = 'gcm')
     lsrp_ = get_lsrp_values(stats).isel(sigma= range(4))
 
-    # print(stats)
-    # return
     stats_ = stats.isel(seed = 0,latitude = 1, domain = 1, temperature = 1, sigma = range(4),co2= 0,training_depth = 0,depth = 0)
-    
+    sigma_vals = [4,8,12,16]
 
     
     for r2corr in range(2):#itertools.product(range(3),range(2)):
@@ -205,51 +216,53 @@ def main():
         fcnn = fcnn.isel(lsrp = 0)
 
         fcnn,fcnn_lsrp,lsrp = drop_unused_coords(fcnn),drop_unused_coords(fcnn_lsrp),drop_unused_coords(lsrp)
+        fcnn = fillna(fcnn)
 
         ylim = [0,1]
         nrows = 3
-        ncols = 4
+        ncols = 1#4
         fig,axs = plt.subplots(nrows,ncols,figsize = (9*ncols,6*nrows))
 
         fcnn_by_sigma = [fcnn.isel(sigma = ss) for ss in range(4)]
         fcnn_lsrp_by_sigma = [fcnn_lsrp.isel(sigma = ss) for ss in range(4)]
         lsrp_by_sigma = [lsrp.isel(sigma = ss) for ss in range(4)]
-
+        variable_names = 'Su Sv Stemp'.split()
         for i,j in itertools.product(range(nrows),range(ncols)):
-            ax = axs[i,j]
-            yfcnn,rowsel = ax_sel_data(fcnn_by_sigma,i,j)
-            yfcnn_lsrp,_ = ax_sel_data(fcnn_lsrp_by_sigma,i,j)
-            ylsrp,_ = ax_sel_data(lsrp_by_sigma,i,j)
-            ixaxis = np.arange(len(yfcnn.kernel_size))
-            markers = 'o v ^ <'.split()
-            colors = [f'tab:{x}' for x in 'blue orange green red'.split()]
-            
-            ax.plot(ixaxis,yfcnn,\
-                color = colors[0], marker = markers[0],label = f'FCNN',linestyle = 'None')
-            ax.plot(ixaxis,yfcnn_lsrp,\
-                color = colors[1], marker = markers[1],label = f'FCNN+LSRP',linestyle = 'None')
-            ax.axhline(y = ylsrp.values.item(),color = colors[3], label = f'LSRP')
+            # ax = axs[i,j]
+            ax = axs[i]
+            for j in range(4):
+                yfcnn,rowsel = ax_sel_data(fcnn_by_sigma,i,j)
+                # yfcnn_lsrp,_ = ax_sel_data(fcnn_lsrp_by_sigma,i,j)
+                # ylsrp,_ = ax_sel_data(lsrp_by_sigma,i,j)
+                ixaxis = np.arange(len(yfcnn.kernel_size))
+                markers = 'o v ^ <'.split()
+                colors = [f'tab:{x}' for x in 'blue orange green red'.split()]
+                
+                ax.plot(ixaxis,yfcnn,\
+                    color = colors[j], marker = markers[j],label = f"\u03C3 = {sigma_vals[j]}",linestyle='--',)
+            # ax.plot(ixaxis,yfcnn_lsrp,\
+            #     color = colors[1], marker = markers[1],label = f'FCNN+LSRP',linestyle = 'None')
+            # ax.axhline(y = ylsrp.values.item(),color = colors[3], label = f'LSRP')
 
             ax.set_ylim(ylim)
             ax.set_xticks(ixaxis)
             xaxis = yfcnn.kernel_size.values
-            xaxis = [str(v) for v in xaxis]
+            xaxis = [f'{v}x{v}' for v in xaxis]
             ax.set_xticklabels(xaxis)
             ax.legend()
             ax.grid(which = 'major',color='k', linestyle='--',linewidth = 1,alpha = 0.8)
             ax.grid(which = 'minor',color='k', linestyle='--',linewidth = 1,alpha = 0.6)
             if j==0:
                 ax.set_ylabel(rowsel)
-            if i==0:
-                title =f'\u03C3 = {stats.sigma.values[j]}'
-                title = r2corr_str.upper() + ', ' + title
-                ax.set_title(title)
-            ax.set_xlabel('kernel_size')
-        if not os.path.exists('saves/plots/kernel_size_comparison/'):
-            os.makedirs('saves/plots/kernel_size_comparison/')
+            title = variable_names[i] + ' ' + r2corr_str.capitalize() + ' vs Field of View'
+            ax.set_title(title)
+            ax.set_xlabel('field of view size')
+        targetfolder = 'paper_images/field_of_view'
+        if not os.path.exists(targetfolder):
+            os.makedirs(targetfolder)
         
-        fig.savefig(f'saves/plots/kernel_size_comparison/{r2corr_str}.png')
-        print(f'saves/plots/kernel_size_comparison/{r2corr_str}.png')
+        fig.savefig(os.path.join(targetfolder,f'{r2corr_str}.png'))
+        print(os.path.join(targetfolder,f'{r2corr_str}.png'))
 
 
 

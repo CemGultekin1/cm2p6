@@ -10,7 +10,8 @@ from options.taskgen import python_args
 from utils.arguments import options,replace_param,replace_params
 from constants.paths import JOBS, JOBS_LOGS
 from utils.slurm import flushed_print
-TRAINJOB = 'trainjob'
+from data.coords import DEPTHS
+TRAINJOB = 'offline_sweep'
 root = JOBS
 
 NCPU = 8
@@ -30,18 +31,15 @@ class Task:
         spl = replace_params(spl,*args)
         self.line = " ".join(spl)
 
-class NeuralNetworkTask(Task):
-    @staticmethod
-    def get_arch_defaults():
-        return {nm : get_default(nm) for nm in ARCH_PARAMS.keys()}
+def get_arch_defaults():
+    return {nm : get_default(nm) for nm in ARCH_PARAMS.keys()}
 
-    @staticmethod
-    def constant_nparam_model(sigma,kernel_factor = None):
-        if kernel_factor is None:
-            kernel_factor = 4/sigma
-        kwargs = NeuralNetworkTask.get_arch_defaults()
-        widths,kernels = adjustcnn(**kwargs,kernel_factor = kernel_factor,constant_nparam = True)
-        return widths,kernels
+def constant_nparam_model(sigma,kernel_factor = None):
+    if kernel_factor is None:
+        kernel_factor = 4/sigma
+    kwargs = get_arch_defaults()
+    widths,kernels = adjustcnn(**kwargs,kernel_factor = kernel_factor,constant_nparam = True)
+    return widths,kernels
 def getarch(args,**kwargs):
     modelargs,_ = options(args,'model')
     widths,kernels = constant_nparam_model(modelargs.sigma,**kwargs)
@@ -69,18 +67,20 @@ def fix_minibatch(args):
     return args
 def check_training_task(args):
     runargs,_ = options(args,key = "run")
-    if runargs.lsrp==1:# or runargs.lossfun == 'heteroscedastic':
+    # if runargs.lsrp==1:# or runargs.lossfun == 'heteroscedastic':
+    #     return True
+    # if runargs.gz21:
+    #     return True
+    if runargs.seed > 0:
         return True
-    if runargs.gz21:
-        return True
-    if runargs.lossfun == 'MVARE':
-        mse_model_args = replace_params(args.copy(),'model','fcnn','lossfun','MSE')
-        _,modelid = options(mse_model_args,key = "model")        
-        if not is_trained(modelid):
-            return True
-        if '--seed' in args:
-            if runargs.seed > 0:
-                return True
+    # if runargs.lossfun == 'MVARE':
+    #     mse_model_args = replace_params(args.copy(),'model','fcnn','lossfun','MSE')
+    #     _,modelid = options(mse_model_args,key = "model")        
+    #     if not is_trained(modelid):
+    #         return True
+    #     if '--seed' in args:
+    #         if runargs.seed > 0:
+    #             return True
     _,modelid = options(args,key = "model")
     return is_trained(modelid)
 
@@ -103,78 +103,39 @@ def generate_training_tasks():
         num_workers = NCPU,
         disp = 50,
         batchnorm = tuple([1]*7 + [0]),
-        lossfun = ['heteroscedastic','MSE','MVARE'],
+        lossfun = ['MSE',],
     )
     kwargs = [
         dict(
-            filtering = 'gaussian',
-            interior = False,
-            num_workers = 8,
-            min_precision = 0.01,
-            clip = 1.,
-            scheduler = "MultiStepLR",
-            lr = 5e-4,
-            batchnorm = tuple([0]*8),
-            lossfun = 'heteroscedastic_v2',
-            final_activation = 'softplus_with_constant',
-            legacy_scalars = True,
-            maxepoch = 100,
-            domain = 'four_regions',
-            gz21 = [True,False],
+            lsrp = 0,     
+            depth = 0,
+            sigma = [4,8,12,16],
+            filtering = 'gcm',
+            temperature = False,
+            latitude = False,
+            domain = ['four_regions','global'],
+            seed = list(range(3))
         ),
-        # dict(
-        #     filtering = 'gaussian',
-        #     interior = False,
-        #     num_workers = 8,
-        #     min_precision = [0.024,0.025],
-        #     domain = 'four_regions',
-        #     lossfun = 'heteroscedastic',
-        # ),
-        # dict(
-        #     filtering = 'gaussian',
-        #     interior = False,
-        #     num_workers = 8,
-        #     domain = 'four_regions',
-        #     lossfun = 'heteroscedastic',
-        # ),
-        # dict(
-        #     filtering = 'gaussian',
-        #     interior = False,
-        #     wet_mask_threshold = 0.5,
-        #     domain = 'global',
-        #     lossfun = 'heteroscedastic',
-            
-        # ),
-        # dict(
-        #     lsrp = 0,     
-        #     depth = 0,
-        #     sigma = [4,8,12,16],
-        #     filtering = 'gcm',
-        #     temperature = False,
-        #     latitude = False,
-        #     domain = ['four_regions','global'],
-        #     seed = list(range(3))
-        # ),
-        # dict(
-        #     lsrp = [0,1],     
-        #     depth = 0,
-        #     sigma = [4,8,12,16],
-        #     filtering = 'gcm',
-        #     temperature = True,
-        #     latitude = [False,True],
-        #     domain = ['four_regions','global'],
-        #     seed = list(range(3))
-        # ),
-        # dict(
-        #     lsrp = [0,1],     
-        #     depth =[int(d) for d in DEPTHS],
-        #     sigma = [4,8,12,16],
-        #     filtering = 'gcm',
-        #     temperature = True,
-        #     latitude = [False,True],
-        #     domain = 'global',
-        #     seed = list(range(3))
-        # )
+        dict(
+            lsrp = [0,1],     
+            depth = 0,
+            sigma = [4,8,12,16],
+            filtering = 'gcm',
+            temperature = True,
+            latitude = [False,True],
+            domain = ['four_regions','global'],
+            seed = list(range(3))
+        ),
+        dict(
+            lsrp = [0,1],     
+            depth =[int(d) for d in DEPTHS],
+            sigma = [4,8,12,16],
+            filtering = 'gcm',
+            temperature = True,
+            latitude = [False,True],
+            domain = 'global',
+            seed = list(range(3))
+        )
     ]
     
     argslist = combine_all(kwargs,base_kwargs)
@@ -207,11 +168,11 @@ def generate_training_tasks():
             args = fix_model_type(args)
             argslist[i] = ' '.join(args)
         return argslist
-    # kernel_factors = [float(f)/21. for f in [21,15,11,9,7,5,4,3,2,1]]
-    # argslist_ = []
-    # for kf in kernel_factors:
-    #     argslist_.extend(kernel_size_switched(kf))
-    # argslist.extend(argslist_)
+    kernel_factors = [float(f)/21. for f in [21,15,11,9,7,5,4,3,2,1]]
+    argslist_ = []
+    for kf in kernel_factors:
+        argslist_.extend(kernel_size_switched(kf))
+    argslist.extend(argslist_)
 
     import numpy as np
     _,idx = np.unique(np.array(argslist),return_index=True)
