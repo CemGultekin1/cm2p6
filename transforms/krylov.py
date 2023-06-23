@@ -62,6 +62,7 @@ class growing_orthogonals_decomposition:
     def nres(self,v):
         return np.linalg.norm(self.res(v))
     def solve(self,v):
+        print(f'type(self.rmat),type(self.qmat),type(v) = {type(self.rmat),type(self.qmat),type(v)}')
         return np.linalg.solve(self.rmat,self.qmat.T@v)
     def orthogonality(self,):
         return np.linalg.norm(self.qmat.T @ self.qmat - np.eye(self.qmat.shape[1]))
@@ -78,6 +79,7 @@ class krylov_inversion(growing_orthogonals_decomposition):
         if super().add(y):
             self.iterates.append(x)
     def solve(self,y:np.ndarray):
+        assert isinstance(y,np.ndarray)
         self.add(y)
         nres = [self.nres(y)]
         i = 0
@@ -89,6 +91,7 @@ class krylov_inversion(growing_orthogonals_decomposition):
             print(f'\t\t{i}')
             if nres[-1]/nres[0] > 1:
                 break
+        assert isinstance(y,np.ndarray)
         coeffs = super().solve(y)
         return np.stack(self.iterates,axis=1)@coeffs
 
@@ -123,3 +126,7 @@ def test_krylov_inversion():
         return mat@x_
     gres = krylov_inversion(d,1e-2,matmultip)
     sltn = gres.solve(y)
+
+
+if __name__ == "__main__":
+    test_krylov_inversion()

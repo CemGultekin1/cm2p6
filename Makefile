@@ -49,7 +49,7 @@ setup-greene:
 interactive-singularity-writing-permitted:	
 	echo run \"source /ext3/env.sh\"
 	echo print \"exit\" to exit
-	singularity exec --nv --overlay $(EXTFILE):rw $(CUDA_SINGULARITY) /bin/bash
+	singularity exec --nv --overlay /scratch/cg3306/climate/subgrid/gz21/overlay-15GB-500K.ext3:rw $(CUDA_SINGULARITY) /bin/bash
 
 interactive-singularity-read-only:	
 	echo run \"source /ext3/env.sh\"

@@ -1,5 +1,5 @@
 import sys
-from data.paths import get_low_res_data_location, get_preliminary_low_res_data_location
+from data.paths import  get_preliminary_low_res_data_location
 from data.load import get_data
 from run.train import Timer
 from utils.arguments import options
@@ -26,8 +26,8 @@ def drop_timeless(ds:xr.Dataset):
     return ds
 
 def run():
-    # datargs = sys.argv[1:]
-    datargs = '--minibatch 1 --prefetch_factor 1 --depth 0 --sigma 4 --section 0 1 --mode data --num_workers 1 --co2 True --filtering gcm'.split()
+    datargs = sys.argv[1:]
+    # datargs = '--minibatch 1 --prefetch_factor 1 --depth 5 --sigma 4 --section 0 1 --mode data --num_workers 1 --co2 False --filtering gaussian'.split()
     generator,= get_data(datargs,half_spread = 0, torch_flag = False, data_loaders = True,groups = ('all',))
     filename = get_preliminary_low_res_data_location(datargs)
     # print(f'filename = {filename}')
@@ -42,13 +42,19 @@ def run():
         
         data_vars,coords = torch2numpy(data_vars,coords)
         ds = xr.Dataset(data_vars = data_vars,coords = coords)
-        ds = ds.drop('wet_density interior_wet_mask'.split())
+        # ds = ds.drop('wet_density interior_wet_mask'.split())
         chk = {k:len(ds[k]) for k in list(ds.coords)}
         ds = ds.chunk(chunks=chk)
-        ds.to_zarr(filename,mode='w')
-        depth = int(ds.depth.values[0])
-        plot_ds(ds.isel(time = 0,),f'ds_{depth}.png')
-        return
+        # ds.to_zarr(filename,mode='w')
+        # depth = int(ds.depth.values[0])
+        # ds = ds.isel(time = 0,)
+        # import numpy as np
+        # subds = {key:np.log10(np.abs(ds[key])) for key in 'Su Su_res Sv Sv_res Stemp Stemp_res'.split()}
+        # relerr = {key:np.log10(np.abs(ds[key] - ds[f'{key}_res'])/np.abs(ds[key])) for key in 'Su Sv Stemp'.split()}
+        # plot_ds(ds,f'ds_{depth}.png')
+        # plot_ds(subds,f'subds_{depth}.png')
+        # plot_ds(relerr,f'relerr_{depth}.png')
+        # return
 
         if dst is not None:
             if ds.time.values[0] != dst.time.values[0]:

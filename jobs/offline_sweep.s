@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH --time=28:00:00
-#SBATCH --array=34,457,469,470,477,485,486,489,493,494,497,501,502,509,510,517,518
+#SBATCH --time=32:00:00
+#SBATCH --array=1040
 #SBATCH --mem=80GB
 #SBATCH --job-name=offline_sweep
 #SBATCH --output=/scratch/cg3306/climate/outputs/slurm_logs/offline_sweep_%A_%a.out
@@ -14,7 +14,7 @@ ARGS=$(sed -n "$SLURM_ARRAY_TASK_ID"p /scratch/cg3306/climate/cm2p6/jobs/offline
 module purge
 singularity exec --nv --overlay /scratch/cg3306/climate/cm2p6/overlay-15GB-500K.ext3:ro /scratch/work/public/singularity/cuda11.2.2-cudnn8-devel-ubuntu20.04.sif /bin/bash -c "\
 	source /ext3/env.sh;\
-	python3 run/train.py $ARGS --reset True;\
+	python3 run/train.py $ARGS;\
 	python3 run/analysis/eval.py $ARGS --mode eval;\
 	"
 echo "$(date)"

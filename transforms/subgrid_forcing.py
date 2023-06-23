@@ -1,10 +1,11 @@
-from transforms.coarse_graining import BaseTransform, GcmFiltering,GreedyCoarseGrain, GreedyScipyFiltering, PlainCoarseGrain, ScipyFiltering,WetMask
-from transforms.coarse_graining_inverse import  MatMultFiltering
+from transforms.coarse_graining import BaseTransform, GcmFiltering,GreedyCoarseGrain, PlainCoarseGrain, ScipyFiltering,WetMask
+from transforms.coarse_graining_inverse import  MatMultFiltering,MatMultMaskedFiltering
 from transforms.grids import forward_difference
 from transforms.krylov import  krylov_inversion
 import numpy as np
 from utils.xarray import plot_ds
 import xarray as xr
+
 
 
 class BaseSubgridForcing(BaseTransform):
@@ -40,7 +41,6 @@ class BaseSubgridForcing(BaseTransform):
         forcings =  { rn : self._subgrid_forcing_formula(hres,lres,hres_flux,lres_flux,key) for key,rn in zip(keys,rename) }
         
         forcings = {key:self.coarse_grain(x) for key,x in forcings.items()}
-        
         return forcings,(clres,lres)
 
 
@@ -61,9 +61,11 @@ class BaseLSRPSubgridForcing(BaseSubgridForcing):
         self.inv_filtering : MatMultFiltering = self.inv_filtering_class(*args,**kwargs)
     def __call__(self, hres, keys,rename,lres = {},clres = {},\
                              hres0= {},lres0 = {},clres0 = {}):
+
         forcings,(clres, lres) = super().__call__(hres,keys,rename,lres =  lres,clres = clres)
-        hres0 = {key:self.inv_filtering(val) if key not in hres0 else hres0[key] for key,val in clres.items() if key in hres}
+        hres0 = {key:self.inv_filtering(val,inverse = True).fillna(0) if key not in hres0 else hres0[key] for key,val in clres.items() if key in hres}
         
+    
         forcings_lsrp,(clres0,lres0)= super().__call__(hres0,keys,rename,lres = lres0,clres = clres0)
         forcings_lsrp = {f"{key}_res":  forcings[key] - forcings_lsrp[key] for key in rename}
         forcings = dict(forcings,**forcings_lsrp)
@@ -103,7 +105,7 @@ class xr2np_utility:
         def __call(x:np.ndarray):
             ds.data = x.reshape(shp)
             ds1 = call(ds.fillna(0))
-            return ds1.data.reshape([-1])
+            return ds1.values.reshape([-1])
         return __call
     def merge(self,wetx:np.ndarray,dryx:np.ndarray):
         ds = self.ds.copy()
@@ -129,7 +131,7 @@ class KrylovSubgridForcing(BaseLSRPSubgridForcing):
                 self.filtering = subgrid_forcing.filtering
             def __call__(self,lres):
                 # return lres - self.inv_filtering(self.inv_filtering(lres,inverse = True),inverse = False)
-                hres = self.inv_filtering(lres.fillna(0),inverse= True)
+                hres = self.inv_filtering(lres,inverse= True).fillna(0)
                 cres =  self.coarse_grain(self.filtering(hres)).fillna(0)
                 # plot_ds({'hres':hres},f'krylov_hres_{self.counter}.png',ncols = 1)
                 # plot_ds({'lres':lres,'cres':cres},f'krylov_lres_{self.counter}.png',ncols = 2)
@@ -190,18 +192,18 @@ class KrylovSubgridForcing(BaseLSRPSubgridForcing):
 
 
 
-class ScipySubgridForcingWithLSRP(KrylovSubgridForcing):
+class ScipySubgridForcingWithLSRP(BaseLSRPSubgridForcing):
     filtering_class = ScipyFiltering
     coarse_grain_class =  PlainCoarseGrain
     inv_filtering_class = MatMultFiltering
 
 
-class GreedyScipySubgridForcingWithLSRP(KrylovSubgridForcing):
-    filtering_class = GreedyScipyFiltering
+class GreedyScipySubgridForcingWithLSRP(BaseLSRPSubgridForcing):
+    filtering_class = ScipyFiltering
     coarse_grain_class =  GreedyCoarseGrain
-    inv_filtering_class = MatMultFiltering
+    inv_filtering_class = MatMultMaskedFiltering
 
-class GcmSubgridForcingWithLSRP(KrylovSubgridForcing):
+class GcmSubgridForcingWithLSRP(BaseLSRPSubgridForcing):
     filtering_class = GcmFiltering
     coarse_grain_class = GreedyCoarseGrain
     inv_filtering_class = MatMultFiltering

@@ -2,7 +2,7 @@ import itertools
 from transforms.coarse_graining import BaseTransform
 import numpy as np
 import xarray as xr
-
+from scipy.ndimage import gaussian_filter
 
 
 def right_inverse_matrix(mat):
@@ -10,12 +10,17 @@ def right_inverse_matrix(mat):
     return q @ np.linalg.inv(r).T
 
 def side_multip(mat,x,ax):
+    ndim = len(x.shape)
+    if ndim >= 4:
+        raise Exception    
+    if ndim == 3:
+        xs = [side_multip(mat,x[i],ax) for i in range(x.shape[0])]
+        return np.stack(xs,axis = 0)
     if ax == 0:
-        return mat @ x
+        result =  mat @ x
     else:
-        return x @ mat.T
-    
-
+        result =  x @ mat.T
+    return result
 def filter_weights_1d(sigma):
     fw = filter_weights(sigma)
     fw = fw[:,(5*sigma + 1)//2]
@@ -41,7 +46,7 @@ def filter_weights(sigma):
 class matmult_1d(BaseTransform):
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
-        area = self.grid.area.values.flatten()
+        area = self.grid.area.isel(depth = 0).values.flatten()
         n = len(area)
         self.weights =filter_weights_1d(self.sigma)
 
@@ -61,14 +66,9 @@ class matmult_1d(BaseTransform):
         cfm = cfm[:n//self.sigma]
         cfm = cfm/np.sum(cfm,axis = 1,keepdims = True)
         
-        self._matrix = cfm
+        self._matrix = cfm        
         self._right_inv_matrix = right_inverse_matrix(self._matrix)
-        self._projection = None
-    def project(self,x,ax = 0):
-        if self._projection is None:
-            self._projection = self._matrix@self._right_inv_matrix
-        mat = self._projection
-        return side_multip(mat,x,ax)
+
     def __call__(self,x,ax = 0,inverse = False):
         if inverse:
             mat = self._right_inv_matrix
@@ -77,7 +77,7 @@ class matmult_1d(BaseTransform):
         return side_multip(mat,x,ax)
     
     
-from scipy.ndimage import gaussian_filter
+
 def wet_density(wet_mask,area,sigma:int,dims):
     weighting = xr.apply_ufunc(\
             lambda data: gaussian_filter(data, sigma/2, mode='wrap'),\
@@ -166,7 +166,8 @@ class MatMultFiltering(BaseTransform):
             )
     def __call__(self,x,inverse = False):
         xv = x.fillna(0).values
-        xvv = self._latfilt(self._lonfilt(xv,ax=1,inverse = inverse),ax = 0,inverse = inverse)
+        xv1 = self._lonfilt(xv,ax=1,inverse = inverse)
+        xvv = self._latfilt(xv1,ax = 0,inverse = inverse)
         xvv =  self.np2xr(xvv,finegrid=inverse)
         if inverse:
             xvv = xr.where(self.fine_wet_mask,xvv,np.nan)
@@ -177,14 +178,15 @@ class MatMultMaskedFiltering(MatMultFiltering):
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
         self.coarse_wet_density = super().__call__(self.grid.wet_mask)
+        self.non_zero_division_coarse_wet_density = xr.where(self.coarse_wet_density<1e-2,1,self.coarse_wet_density)
     def __call__(self,x,inverse = False,wet_density = None):
-        # if wet_density is None:
-        #     wet_density = self.coarse_wet_density
-        # if inverse:
-        #     x = x*wet_density
+        if wet_density is None:
+            wet_density = self.coarse_wet_density
+        if inverse:
+            x = x*wet_density
         cx = super().__call__(x,inverse = inverse)
-        # if not inverse:
-        #     cx = cx/wet_density
+        if not inverse:
+            cx = cx/self.non_zero_division_coarse_wet_density
         return cx
 
 

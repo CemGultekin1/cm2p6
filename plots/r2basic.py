@@ -120,13 +120,14 @@ def generate_plots():
     stats_ns = stats_ns.sel(name = keepnames)
 
     
-    
     plot(stats_ns,'G GT GLT R4 R4T htr-lsrp'.split(),'base')
     # print(stats_ns.name.values,'R4 R4T R4LT','r4')
     return
     
 def plot(stats_ns_,name_select,imgtag):
     stats_ns = stats_ns_.sel(name = name_select)
+    print(stats_ns.sel(name = ['R4','G'],seed = 0,sigma = 4))
+    return
     ranks = {}
     for name in stats_ns.name.values:
         ranks[name] = 0
@@ -138,7 +139,6 @@ def plot(stats_ns_,name_select,imgtag):
             ranks[name] -= 1e7
         ranks[name] +=  len(name.replace('R4','').replace('G',''))
     namesort = np.argsort(list(ranks.values()))
-
 
     varnames = list(stats_ns.data_vars.keys())
     vartypes = np.unique([vn.split('_')[1] for vn in varnames])

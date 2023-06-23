@@ -71,7 +71,7 @@ def check_training_task(args):
     #     return True
     # if runargs.gz21:
     #     return True
-    if runargs.seed > 0:
+    if runargs.seed > 0 or runargs.lossfun == 'MSE':
         return True
     # if runargs.lossfun == 'MVARE':
     #     mse_model_args = replace_params(args.copy(),'model','fcnn','lossfun','MSE')
@@ -103,7 +103,7 @@ def generate_training_tasks():
         num_workers = NCPU,
         disp = 50,
         batchnorm = tuple([1]*7 + [0]),
-        lossfun = ['MSE',],
+        lossfun = ['MSE','heteroscedastic'],
     )
     kwargs = [
         dict(

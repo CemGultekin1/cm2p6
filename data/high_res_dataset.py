@@ -1,5 +1,5 @@
 from typing import Callable
-from utils.xarray import concat, plot_ds, tonumpydict
+from utils.xarray import concat,  tonumpydict
 import xarray as xr
 from transforms.grids import get_grid_vars, ugrid2tgrid_interpolation
 from transforms.subgrid_forcing import BaseLSRPSubgridForcing, filtering_classes
@@ -122,10 +122,10 @@ class HighResCm2p6:
         return coarse_wet_density.compute(),coarse_interior_wet_mask.compute()
     def get_forcings(self,i):
         u,v,temp = self._base_get_hres(i)
-        print(u)
-        plot_ds(dict(u=u,v=v,),f'get_forcings_uv.png',ncols = 1)
-        plot_ds(dict(temp = temp),f'get_forcings_temp.png',ncols = 1)
-        raise Exception
+        # print(u)
+        # plot_ds(dict(u=u,v=v,),f'get_forcings_uv.png',ncols = 1)
+        # plot_ds(dict(temp = temp),f'get_forcings_temp.png',ncols = 1)
+        # raise Exception
         ff =  self.fields2forcings(i,u,v,temp)
         return ff
     def fields2forcings(self,i,u,v,temp,ScipyFiltering = False):
@@ -135,13 +135,14 @@ class HighResCm2p6:
         def switch_grid_on_dictionary(ulres):
             ulres['u'],ulres['v'] = self.grid_interpolation(ulres['u'],ulres['v'])
 
-        uforcings,(ucres,ulres) = self.ugrid_subgrid_forcing(uvars,'u v'.split(),'Su Sv'.split())
-        # switch_grid_on_dictionary(ulres)
-        # switch_grid_on_dictionary(ulres0)
-        # switch_grid_on_dictionary(uhres0)
-        tforcings,(tcres,_) = self.tgrid_subgrid_forcing(tvars,'temp '.split(),'Stemp '.split(),)#,hres0 = uhres0,lres0 = ulres0,)
+        uforcings,(ucres,ulres),(_,ulres0,uhres0) = self.ugrid_subgrid_forcing(uvars,'u v'.split(),'Su Sv'.split())
+        switch_grid_on_dictionary(ulres)
+        switch_grid_on_dictionary(ulres0)
+        switch_grid_on_dictionary(uhres0)
+        tforcings,(tcres,_),_ = self.tgrid_subgrid_forcing(tvars,'temp '.split(),'Stemp '.split(),hres0 = uhres0,lres0 = ulres0,)
         tcres.pop('u')
         tcres.pop('v')
+        
         
         uvars = dict(uforcings,**ucres)
         tvars = dict(tforcings,**tcres)
