@@ -440,6 +440,12 @@ def longitude_rolling(u:xr.DataArray,):
     return u
 
 def fix_grid(u,target_grid):
+    if isinstance(u,xr.Dataset):
+        values = []
+        for key in u.data_vars.keys():
+            uk = fix_grid(u[key],target_grid)
+            values.append(uk)
+        return xr.merge(values)
     lat,lon = target_grid
     u = fix_latitude(u,lat)
     return fix_longitude(u,lon)

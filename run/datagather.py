@@ -42,6 +42,8 @@ def run():
         path1 = get_preliminary_low_res_data_location(datargs)
         path0 = get_low_res_data_location(datargs).replace('.zarr','_.zarr')
         overwrite =  i == lower_limit
+        # print(f'append_zarr({path0},{path1},{overwrite})')
+        # break
         append_zarr(path0,path1,overwrite)
                 
 

@@ -206,7 +206,7 @@ class GreedyScipySubgridForcingWithLSRP(BaseLSRPSubgridForcing):
 class GcmSubgridForcingWithLSRP(BaseLSRPSubgridForcing):
     filtering_class = GcmFiltering
     coarse_grain_class = GreedyCoarseGrain
-    inv_filtering_class = MatMultFiltering
+    inv_filtering_class = MatMultMaskedFiltering
 
 
 

@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, List
 from utils.xarray import concat,  tonumpydict
 import xarray as xr
 from transforms.grids import get_grid_vars, ugrid2tgrid_interpolation
@@ -6,13 +6,52 @@ from transforms.subgrid_forcing import BaseLSRPSubgridForcing, filtering_classes
 import numpy as np
 
 class HighResCm2p6:
+    def __init__(self,ds:xr.Dataset,sigma,*args,section = [0,1],**kwargs):
+        self.ndepth = len(ds.depth)
+        self.ntime = len(ds.time)
+        self.per_depth :List[HighResCm2p6perDepth]= []
+        for i in range(self.ndepth):
+            self.per_depth.append(HighResCm2p6perDepth(ds.isel(depth = [i],),sigma,*args,section=section,**kwargs))
+        
+        self.ds = ds
+    def __len__(self,):
+        return self.ntime    
+    def __getitem__(self,itime:int):
+        data_vars_ = {}
+        coords_ = {}
+        def cat_datavars(d,new_d):
+            for key,(dims,val) in new_d.items():
+                if key not in d:
+                    d[key] = new_d[key]
+                    continue
+                i = dims.index('depth')
+                dims0,val0 = d[key]
+                val0 = np.concatenate([val0,val],axis= i)
+                d[key] = dims0,val0
+            return d
+        def cat_coords(d,new_d,sel:List[str] = ['depth']):
+            for key,val in new_d.items():
+                if key not in d:
+                    d[key] = val
+                    continue
+                if key not in sel:
+                    continue
+                d[key] = np.unique(np.concatenate([d[key],val]))
+            return d
+        for idepth in range(self.ndepth):
+            data_vars,coords = self.per_depth[idepth][itime]
+            data_vars_ = cat_datavars(data_vars_,data_vars)
+            coords_ = cat_coords(coords_,coords)
+        return  data_vars_,coords_
+    
+class HighResCm2p6perDepth:
     ds : xr.Dataset
     sigma : int
     half_spread : int
     coarse_grain : Callable
     initiated : bool
     def __init__(self,ds:xr.Dataset,sigma,*args,section = [0,1],**kwargs):
-        self.ds = ds.copy()#.isel({f"{prefix}{direction}":slice(1500,1800) for prefix in 'u t'.split() for direction in 'lat lon'.split()})
+        self.ds = ds.copy()#.isel({f"{prefix}{direction}":slice(1500,1800) for prefix in 'u t'.split() for direction in 'lat lon'.split()})#
         self.sigma = sigma
         self.initiated = False
         self.wet_mask = None
