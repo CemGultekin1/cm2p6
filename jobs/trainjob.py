@@ -71,12 +71,12 @@ def check_training_task(args):
     #     return True
     # if runargs.gz21:
     #     return True
-    if runargs.lossfun != 'heteroscedastic':
+    if runargs.lossfun != 'heteroscedastic' and runargs.filtering == 'gaussian':
         return True
     # if runargs.seed > 0 or runargs.lossfun == 'heteroscedastic':
     #     return True
     _,modelid = options(args,key = "model")
-    return not is_trained(modelid)
+    return is_trained(modelid)
 
 def fix_model_type(args):
     if 'MVARE' in args:
@@ -94,41 +94,27 @@ def combine_all(kwargs:List[dict],base_kwargs):
 
 def generate_training_tasks():
     base_kwargs = dict(
+        filtering = ['gcm','gaussian'],
         num_workers = NCPU,
         disp = 50,
         batchnorm = tuple([1]*7 + [0]),
         lossfun = ['MSE','heteroscedastic'],
+        latitude = False,
     )
     kwargs = [
         dict(
             lsrp = 0,     
             depth = 0,
             sigma = [4,8,12,16],
-            filtering = 'gcm',
-            temperature = False,
-            latitude = False,
+            temperature = [False,True],
             domain = ['four_regions','global'],
-            seed = list(range(3))
         ),
         dict(
-            lsrp = [0,1],     
-            depth = 0,
-            sigma = [4,8,12,16],
-            filtering = 'gcm',
-            temperature = True,
-            latitude = [False,True],
-            domain = ['four_regions','global'],
-            seed = list(range(3))
-        ),
-        dict(
-            lsrp = [0,1],     
+            lsrp = 0,
             depth =[int(d) for d in DEPTHS],
             sigma = [4,8,12,16],
-            filtering = 'gcm',
             temperature = True,
-            latitude = [False,True],
             domain = 'global',
-            seed = list(range(3))
         )
     ]
     
@@ -143,11 +129,9 @@ def generate_training_tasks():
 
     def kernel_size_switched(kernelscale):
         kwargs = dict(
-            lsrp = [0,1],
             depth =0,
             sigma = [4,8,12,16],
             temperature = True,
-            latitude = True,
             domain = 'global',
         )
         argslist = python_args(**kwargs,**base_kwargs)

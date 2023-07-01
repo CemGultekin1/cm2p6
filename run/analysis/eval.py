@@ -67,7 +67,7 @@ def main():
     
     kwargs = dict(contained = '' if not lsrp_flag else 'res')
     assert runargs.mode == "eval"
-    multidatargs = populate_data_options(args,non_static_params=['depth'],domain = 'global',interior = False)
+    multidatargs = populate_data_options(args,non_static_params=['depth','co2'],domain = 'global',interior = False)
     # multidatargs = [args]
     allstats = {}
     for datargs in multidatargs:
