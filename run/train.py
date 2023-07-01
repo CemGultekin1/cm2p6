@@ -4,30 +4,13 @@ from models.save import save_statedict
 from models.load import load_model,update_statedict
 from utils.parallel import get_device
 from data.load import get_data
-import time
 import torch
 import numpy as np
 import sys
 
 from utils.slurm import flushed_print
+from run.helpers import Timer
 
-
-class Timer:
-    def __init__(self,):
-        self.times = {}
-    def start(self,label):
-        if label not in self.times:
-            self.times[label] = []
-        self.times[label].append(time.time())
-    def end(self,label):
-        assert label in self.times
-        t1 = self.times[label][-1]
-        self.times[label][-1] = time.time() - t1
-    def __repr__(self) -> str:
-        keys = [f"\t{lbl} : {np.mean(vals[-30:-1])}" for lbl, vals in self.times.items()]
-        return "\n".join(keys)
-    def reset(self,):
-        self.times = {}
 def dummy_gpu_fill(infields:torch.Tensor,net:CNN):
     nchan = infields.shape[1]
     shp = (1,nchan,1000,1000)

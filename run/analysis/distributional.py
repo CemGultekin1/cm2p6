@@ -11,9 +11,9 @@ from utils.parallel import get_device
 from constants.paths import DISTS
 from utils.slurm import flushed_print
 import numpy as np
-from utils.xarray import fromtensor, fromtorchdict, fromtorchdict2tensor
+from utils.xarray import fromtensor, fromtorchdict, fromtorchdict2tensor,drop_unused_coords
 import xarray as xr
-from run.helpers import PrecisionToStandardDeviation,AdaptiveHistogram
+from run.helpers import PrecisionToStandardDeviation,AdaptiveHistogram,Timer
 def lsrp_pred(respred,tr):
     keys= list(respred.data_vars.keys())
     data_vars = {}
@@ -48,13 +48,13 @@ def get_lsrp_modelid(args):
     return True, lsrpid
 
 def main():
-    # args = sys.argv[1:]
+    args = sys.argv[1:]
     
-    from utils.slurm import read_args
-    from utils.arguments import replace_params
-    from utils.slurm import read_args
-    args = read_args(25,filename = 'dists.txt')
-    args = replace_params(args,'mode','eval')
+    # from utils.slurm import read_args
+    # from utils.arguments import replace_params
+    # from utils.slurm import read_args
+    # args = read_args(25,filename = 'dists.txt')
+    # args = replace_params(args,'mode','eval','disp','1')
     
     
     runargs,_ = options(args,key = "run")
@@ -62,6 +62,9 @@ def main():
     if not os.path.exists(DISTS):
         os.makedirs(DISTS)
     modelid,_,net,_,_,_,_,runargs=load_model(args)
+    filename = os.path.join(DISTS,modelid+'.nc')    
+    flushed_print(filename)
+    
     net.eval()
     device = get_device()
     net.to(device)
@@ -71,7 +74,7 @@ def main():
     assert runargs.mode == "eval"
     multidatargs = populate_data_options(args,non_static_params=['depth','co2'],domain = 'global',interior = False,wet_mask_threshold = 0.5)
 
-    
+    histograms = []
     for datargs in multidatargs:
         try:
             test_generator, = get_data(datargs,half_spread = net.spread, torch_flag = False, data_loaders = True,groups = ('test',))
@@ -81,9 +84,10 @@ def main():
         if test_generator is None:
             continue
         nt = 0
-        # timer = Timer()
+        timer = Timer()
         adaptive_histogram = None
         for fields,forcings,forcing_mask,_,forcing_coords in test_generator:
+            timer.start('distribution')
             fields_tensor = fromtorchdict2tensor(fields).type(torch.float32)
             depth = forcing_coords['depth'].item()
             co2 = forcing_coords['co2'].item()
@@ -111,20 +115,28 @@ def main():
             masked_normalized_err = masked_normalized_err.sel(lat = slice(-85,85))
             if adaptive_histogram is None:
                 adaptive_histogram = AdaptiveHistogram(masked_normalized_err,5000)
-            adaptive_histogram.update(masked_normalized_err)            
+            adaptive_histogram.update(masked_normalized_err)     
+            timer.end('distribution')       
             if runargs.disp > 0 and nt%runargs.disp==0:
-                density = adaptive_histogram.get_density_xarray()
-                filename = os.path.join(DISTS,modelid+'.nc')
-                density.to_netcdf(filename,mode = 'w')
-                density.Su_density.plot()
-                plt.savefig('density_su.png')
-                plt.close()
-                flushed_print(nt)
+                # density = adaptive_histogram.get_density_xarray()
+                # filename = os.path.join(DISTS,modelid+'.nc')
+                # density.to_netcdf(filename,mode = 'w')
+                # density.Su_density.plot()
+                # plt.savefig('density_su.png')
+                # plt.close()
+                flushed_print(nt,timer)
+                # break
+            
             nt += 1
-    density = adaptive_histogram.get_density_xarray()
-    filename = os.path.join(DISTS,modelid+'.nc')    
-    density.to_netcdf(filename,mode = 'w')
-    print(filename)
+        flushed_print(nt,timer)
+        flushed_print('-'*64)
+        density = adaptive_histogram.get_density_xarray()
+        density = drop_unused_coords(density, expand_dims = {'co2':[co2],'depth':[depth]})
+        histograms.append(density)
+    histograms = xr.merge(histograms)    
+    histograms.to_netcdf(filename,mode = 'w')
+    print(f'finished!')
+    
 
 
             
