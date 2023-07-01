@@ -114,8 +114,6 @@ def main():
             adaptive_histogram.update(masked_normalized_err)            
             if runargs.disp > 0 and nt%runargs.disp==0:
                 density = adaptive_histogram.get_density_xarray()
-                print(density)
-                return
                 filename = os.path.join(DISTS,modelid+'.nc')
                 density.to_netcdf(filename,mode = 'w')
                 density.Su_density.plot()
