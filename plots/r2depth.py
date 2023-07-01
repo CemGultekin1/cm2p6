@@ -2,6 +2,7 @@ import itertools
 import os
 import matplotlib.pyplot as plt
 from constants.paths import  all_eval_path
+from plots.for_paper.saliency import SubplotAxes
 from utils.xarray import drop_unused_coords, skipna_mean
 import xarray as xr
 import numpy as np
@@ -52,6 +53,7 @@ def separate_lsrp_values(stats):
     return drop_unused_coords(nonlsrp),drop_unused_coords(lsrpmodel)
 
 def depth_plot(stats):
+    # plt.rcParams.update({'font.size': 14})
     stats,lsrp_ = separate_lsrp_values(stats)#.isel(sigma= range(1,4))
     kernels_dict = {
         4:21,
@@ -82,20 +84,21 @@ def depth_plot(stats):
         fcnn,fcnn_lsrp,lsrp = drop_unused_coords(fcnn),drop_unused_coords(fcnn_lsrp),drop_unused_coords(lsrp)
 
         ylim = [0,1]
-        nrows = 2
-        ncols = 1#2
+        nrows = 1
+        ncols = 2
         figsizesc = 6
-        fig,axs = plt.subplots(ncols,nrows,figsize = (figsizesc*nrows,figsizesc/3*2*ncols))
-        # r2variable_names = '$R^2_u$ $R^2_v$ $R^2_T$'.split()
-        # corrvariable_names = '$C^2_u$ $C^2_v$ $C^2_T$'.split()
+        # fig,axs = plt.subplots(ncols,nrows,figsize = (figsizesc*nrows,figsizesc/3*2*ncols))
+        fig = plt.figure(figsize = (ncols*figsizesc,nrows*figsizesc/1.5))
+        spaxes = SubplotAxes(1,ncols,sizes = ((1,),(5,2,5)),ymargs=(0.12,0.01,0.1),xmargs = (0.05,0.01,0.1))
         r2variable_names = '$R^2_u$ $R^2_T$'.split()
-        corrvariable_names = '$C^2_u$ $C^2_T$'.split()
+        corrvariable_names = '$C_u$ $C_T$'.split()
         for i,j in itertools.product(range(nrows),range(ncols)):
             # ax = axs[i,j]
-            ax = axs[i]
+            # ax = axs[i]            
+            ax = fig.add_axes(spaxes.get_ax_dims(i,j*2))
             # y,rowsel = ax_sel_data([fcnn,fcnn_lsrp],i,j)
-            y,rowsel = ax_sel_data([fcnn,],i*2,j)
-            ylsrp,_ = ax_sel_data([lsrp,lsrp],i*2,j)
+            y,rowsel = ax_sel_data([fcnn,],j*2,i)
+            ylsrp,_ = ax_sel_data([lsrp,lsrp],j*2,i)
             ixaxis = np.arange(len(y.training_depth))
             # print(y.training_depth.values)
             # print(y.depth.values)
@@ -136,16 +139,18 @@ def depth_plot(stats):
             xaxis = [int(v) for v in xaxis]#["{:.2e}".format(v) for v in xaxis]
             
             ax.set_xticklabels(xaxis)
-            ax.legend()
+            # ax.legend()
+            if j == 0:
+                ax.legend(bbox_to_anchor=(1.1, 0.5), loc="center left")
             ax.grid(which = 'major',color='k', linestyle='--',linewidth = 1,alpha = 0.8)
             ax.grid(which = 'minor',color='k', linestyle='--',linewidth = 1,alpha = 0.6)
             
             
             
             if not r2corr:
-                vn = r2variable_names[i]
+                vn = r2variable_names[j]
             else:
-                vn = corrvariable_names[i]
+                vn = corrvariable_names[j]
             title = vn + f': \u03C3={sigma}'
             ax.set_title(title)
             ax.set_xlabel('test depths (m)')

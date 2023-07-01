@@ -220,19 +220,19 @@ def main():
 
         ylim = [0,1]
         nrows = 1
-        ncols = 3#4
+        ncols = 2#4
         fig,axs = plt.subplots(nrows,ncols,figsize = (5*ncols,5/3*2*nrows))
 
         fcnn_by_sigma = [fcnn.isel(sigma = ss) for ss in range(4)]
         fcnn_lsrp_by_sigma = [fcnn_lsrp.isel(sigma = ss) for ss in range(4)]
         lsrp_by_sigma = [lsrp.isel(sigma = ss) for ss in range(4)]
-        r2variable_names = '$R^2_u$ $R^2_v$ $R^2_T$'.split()
-        corrvariable_names = '$C^2_u$ $C^2_v$ $C^2_T$'.split()
-        for i,coli in itertools.product(range(nrows),range(ncols)):
+        r2variable_names = '$R^2_u$ $R^2_T$'.split()
+        corrvariable_names = '$C_u$ $C_T$'.split()
+        for _,coli in itertools.product(range(nrows),range(ncols)):
             # ax = axs[i,j]
             ax = axs[coli]
             for j in range(4):
-                yfcnn,rowsel = ax_sel_data(fcnn_by_sigma,i,j)
+                yfcnn,rowsel = ax_sel_data(fcnn_by_sigma,coli*2,j)
                 # yfcnn_lsrp,_ = ax_sel_data(fcnn_lsrp_by_sigma,i,j)
                 # ylsrp,_ = ax_sel_data(lsrp_by_sigma,i,j)
                 ixaxis = np.arange(len(yfcnn.kernel_size))

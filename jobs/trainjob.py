@@ -11,7 +11,7 @@ from utils.arguments import options,replace_param,replace_params
 from constants.paths import JOBS, JOBS_LOGS
 from utils.slurm import flushed_print
 from data.coords import DEPTHS
-TRAINJOB = 'offline_sweep'
+TRAINJOB = 'dists'
 root = JOBS
 
 NCPU = 8
@@ -71,18 +71,12 @@ def check_training_task(args):
     #     return True
     # if runargs.gz21:
     #     return True
-    if runargs.seed > 0 or runargs.lossfun == 'heteroscedastic':
+    if runargs.lossfun != 'heteroscedastic':
         return True
-    # if runargs.lossfun == 'MVARE':
-    #     mse_model_args = replace_params(args.copy(),'model','fcnn','lossfun','MSE')
-    #     _,modelid = options(mse_model_args,key = "model")        
-    #     if not is_trained(modelid):
-    #         return True
-    #     if '--seed' in args:
-    #         if runargs.seed > 0:
-    #             return True
+    # if runargs.seed > 0 or runargs.lossfun == 'heteroscedastic':
+    #     return True
     _,modelid = options(args,key = "model")
-    return is_trained(modelid)
+    return not is_trained(modelid)
 
 def fix_model_type(args):
     if 'MVARE' in args:

@@ -199,11 +199,19 @@ def plot(stats_ns_,name_select):
                 ax.set_xticks(x)
                 ax.set_xticklabels(xticklabels,rotation=45)
             if vtype in ['r2','corr']:
-                ax.set_ylim([-0.25,1.01])
-                yticks = [-0.25,-0.125,0,0.25,0.5,0.75,1]
-                yticklabels = ['-4','-2','0','0.25','0.5','0.75','1.']
-                ax.set_yticks(yticks)
-                ax.set_yticklabels(yticklabels)
+                
+                if vtype == 'r2':
+                    ax.set_ylim([-0.25,1.01])
+                    yticks = [-0.25,-0.125,0,0.25,0.5,0.75,1]
+                    yticklabels = ['-4','-2','0','0.25','0.5','0.75','1.']
+                    ax.set_yticks(yticks)
+                    ax.set_yticklabels(yticklabels)
+                else:
+                    ax.set_ylim([-0.01,1.01])
+                    yticks = [0,0.25,0.5,0.75,1]
+                    yticklabels = ['0','0.25','0.5','0.75','1.']
+                    ax.set_yticks(yticks)
+                    ax.set_yticklabels(yticklabels)
             ax.grid( which='major', color='k', linestyle='--',alpha = 0.5)
             ax.grid( which='minor', color='k', linestyle='--',alpha = 0.5)
             if vtype in ['r2','corr']:

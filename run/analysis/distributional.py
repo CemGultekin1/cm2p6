@@ -48,13 +48,13 @@ def get_lsrp_modelid(args):
     return True, lsrpid
 
 def main():
-    args = sys.argv[1:]
+    # args = sys.argv[1:]
     
-    # from utils.slurm import read_args
-    # from utils.arguments import replace_params
-    # from utils.slurm import read_args
-    # args = read_args(29,filename = 'gz21.txt')
-    # args = replace_params(args,'mode','eval')
+    from utils.slurm import read_args
+    from utils.arguments import replace_params
+    from utils.slurm import read_args
+    args = read_args(25,filename = 'dists.txt')
+    args = replace_params(args,'mode','eval')
     
     
     runargs,_ = options(args,key = "run")
@@ -69,9 +69,9 @@ def main():
     
     kwargs = dict(contained = '' if not lsrp_flag else 'res')
     assert runargs.mode == "eval"
-    multidatargs = populate_data_options(args,non_static_params=[],domain = 'global',interior = False,wet_mask_threshold = 0.5)
+    multidatargs = populate_data_options(args,non_static_params=['depth','co2'],domain = 'global',interior = False,wet_mask_threshold = 0.5)
 
-    adaptive_histogram = None
+    
     for datargs in multidatargs:
         try:
             test_generator, = get_data(datargs,half_spread = net.spread, torch_flag = False, data_loaders = True,groups = ('test',))
@@ -80,9 +80,9 @@ def main():
             test_generator = None
         if test_generator is None:
             continue
-        stats = {}
         nt = 0
         # timer = Timer()
+        adaptive_histogram = None
         for fields,forcings,forcing_mask,_,forcing_coords in test_generator:
             fields_tensor = fromtorchdict2tensor(fields).type(torch.float32)
             depth = forcing_coords['depth'].item()
@@ -111,16 +111,18 @@ def main():
             masked_normalized_err = masked_normalized_err.sel(lat = slice(-85,85))
             if adaptive_histogram is None:
                 adaptive_histogram = AdaptiveHistogram(masked_normalized_err,5000)
-            adaptive_histogram.update(masked_normalized_err)
-            nt += 1
+            adaptive_histogram.update(masked_normalized_err)            
             if runargs.disp > 0 and nt%runargs.disp==0:
                 density = adaptive_histogram.get_density_xarray()
+                print(density)
+                return
                 filename = os.path.join(DISTS,modelid+'.nc')
                 density.to_netcdf(filename,mode = 'w')
-                # density.Su_density.plot()
-                # plt.savefig('density_su.png')
-                # plt.close()
+                density.Su_density.plot()
+                plt.savefig('density_su.png')
+                plt.close()
                 flushed_print(nt)
+            nt += 1
     density = adaptive_histogram.get_density_xarray()
     filename = os.path.join(DISTS,modelid+'.nc')    
     density.to_netcdf(filename,mode = 'w')

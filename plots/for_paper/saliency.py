@@ -42,10 +42,7 @@ class EnergyDecayWithRadii:
         return quarters
     def plot_quarters(self,ax:plt.Axes,):
         quarters = self.compute_central_energy()
-        # quarters = quarters[:,::-1]
-        # quarters = 1 - np.power(10.,1.8*quarters)
-        # quarters =  - np.log10(1 - quarters )
-        quarters = -quarters[:,1:]*1.5        
+        quarters = -quarters[:,1:]
         xaxis = range(1,10)
         color = 'b'
         # ax.semilogy(xaxis,quarters[1],'o',color = color,)#label = tag)
