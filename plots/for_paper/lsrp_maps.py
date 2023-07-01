@@ -91,14 +91,32 @@ def main():
         
     lsrp = load_r2map()
     
-    target_folder = 'paper_images/r2maps'
+    target_folder = 'paper_images/corr_maps'
     if not os.path.exists(target_folder):
         os.makedirs(target_folder)
-    mp = MurrayPlotter(sigma=4)
-    for svar,rc in itertools.product('Su Sv Stemp'.split(),'r2 corr'.split()):
-        path = os.path.join(target_folder,f'lsrp_{svar}_{rc}.png')
-        mp.plot(lsrp[f'{svar}_{rc}'],path,vmin = 0,vmax = 1)
+    mp = MurrayPlotter(sigma=4,nrows= 2, ncols = 2,figsize = (10,5),leftxmarg=0.04,interxmarg=0.03,ymarg=0.02)
+    kwargs = dict(
+        vmin = 0,
+        vmax = 1,
+        cbar_label = None,
+        set_bad_alpha = 0.,
+        colorbar = (0,1),
+        grid_lines = {'alpha' : 0.5,'linewidth': 1.5},
+        cmap = matplotlib.cm.magma
+    )
     
+    titles = dict(
+        Su = '(a) LSRP: $C^2_u$',
+        Sv = '(b) LSRP: $C^2_v$',
+        Stemp = '(c) LSRP: $C^2_T$'
+    )
+    path = os.path.join(target_folder,'lsrp.png')
+    for i,(svar,rc) in enumerate(itertools.product('Su Sv'.split(),'corr'.split())):
+        mp.plot(0,i,lsrp[f'{svar}_{rc}'],title =  titles[svar],**kwargs)
+    # mp.ncols = 1
+    svar = 'Stemp'
+    mp.plot(1,0,lsrp[f'{svar}_{rc}'],title =  titles[svar],xloc = 0.27,**kwargs)
+    mp.save(path,transparent=True)
 
 if __name__ == '__main__':
     main()

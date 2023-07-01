@@ -71,7 +71,7 @@ def check_training_task(args):
     #     return True
     # if runargs.gz21:
     #     return True
-    if runargs.seed > 0 or runargs.lossfun == 'MSE':
+    if runargs.seed > 0 or runargs.lossfun == 'heteroscedastic':
         return True
     # if runargs.lossfun == 'MVARE':
     #     mse_model_args = replace_params(args.copy(),'model','fcnn','lossfun','MSE')

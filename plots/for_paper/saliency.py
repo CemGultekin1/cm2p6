@@ -42,30 +42,59 @@ class EnergyDecayWithRadii:
         return quarters
     def plot_quarters(self,ax:plt.Axes,):
         quarters = self.compute_central_energy()
-        quarters = np.power(10.,1.8*quarters)
-        xaxis = range(10)
+        # quarters = quarters[:,::-1]
+        # quarters = 1 - np.power(10.,1.8*quarters)
+        # quarters =  - np.log10(1 - quarters )
+        quarters = -quarters[:,1:]*1.5        
+        xaxis = range(1,10)
         color = 'b'
         # ax.semilogy(xaxis,quarters[1],'o',color = color,)#label = tag)
         ax.errorbar(xaxis,quarters[1],\
-            yerr = (quarters[1] - quarters[0],quarters[2]-quarters[1]),\
-            fmt='s',color=color,ecolor='black',capsize=5)
-        ax.set_yscale('log')
-        ax.grid(which = 'major',color='k', linestyle='--',linewidth = 1,alpha = 0.8)
-        ax.grid(which = 'minor',color='k', linestyle='--',linewidth = 1,alpha = 0.6)
+            yerr = (np.abs(np.abs(quarters[2]-quarters[1]),quarters[1] - quarters[0])),\
+            fmt='x',linestyle = 'dotted', color=color,ecolor='black',capsize=5,)#mew = 4)
+        # ax.set_yscale('log')
+        ax.grid(which = 'major',color='k', linestyle='--',linewidth = 1,alpha = 0.4)
+        ax.grid(which = 'minor',color='k', linestyle='--',linewidth = 1,alpha = 0.3)
         
         ax.set_xticks(xaxis)
-        # ax.set_xticklabels([str(xa -1 ) for xa in xaxis])
+        xticklabels = [f'{np.maximum(0,2*g -1)}x{np.maximum(0,2*g -1)}' for g in xaxis]
+        ax.set_xticklabels(xticklabels)#[str(xa -1 ) for xa in xaxis])
         # ax.legend()
-        ax.set_ylim([1e-5,2])
-        ax.set_xlim([-.5,6.5])
+        ax.set_ylim([0.5,3.5])
+        ax.set_xlim([1.5,5.5])
         
-        
+class SubplotAxes:
+    def __init__(self,nrows,ncols,xmargs = (0.05,0.03,0.),ymargs = (0.05,0.01,0.01),sizes = None):
+        self.nrows = nrows
+        self.ncols = ncols
+        self.xmargs = xmargs
+        self.ymargs = ymargs
+        if sizes is None:
+            sizes = (np.ones(nrows),np.ones(ncols))
+        self.sizes =sizes
+    def get_ax_dims(self,i,j):
+        dy = (1-self.ymargs[0] - self.ymargs[2] - 2*self.ymargs[1]*(self.nrows - 1))/np.sum(self.sizes[0])
+        dx = (1-self.xmargs[0] - self.xmargs[2] - 2*self.xmargs[1]*(self.ncols - 1))/np.sum(self.sizes[1])
+        i = self.nrows - i - 1
+        xloc = dx*np.sum(self.sizes[1][:j]) + self.xmargs[0] + self.xmargs[1]*2*j
+        xw = dx*self.sizes[1][j]
+        yloc = dy*np.sum(self.sizes[0][:i]) + self.ymargs[0] + self.ymargs[1]*2*i
+        yw = dy*self.sizes[0][i]
+        return [xloc,yloc,xw,yw]
 def main():
     from utils.slurm import read_args    
     
-    fig,axs = plt.subplots(3,4,figsize = (20,16))
-    sigmas = [4,8,12,16]
+    # fig,axs = plt.subplots(2,3,figsize = (14/1.5,8/1.8))
+    fig = plt.figure(figsize = (10,6))
+    subaxes = SubplotAxes(2,3,xmargs=(0.05,0.03,0.05),ymargs = (0.05,0.05,0.05))
+    sigmas = [4,8,12]
     colors = 'r g b y'.split()
+    
+    varrename = dict(
+        Su = '$S_u$',\
+        Sv = '$S_v$',\
+        Stemp = '$S_T$',\
+    )
     for i,sigma in enumerate(sigmas):
         args = read_args(i+1,filename = 'saliency.txt')
         modelid,_,_,_,_,_,_,_=load_model(args)
@@ -73,18 +102,29 @@ def main():
         mah = MultiAdaptiveHistograms()
         mah.load_from_file(os.path.join(SALIENCY,f'{modelid}.npz'))
         
-        for j,(mahi,varname) in enumerate(zip(mah.ahists,'Su Sv Stemp'.split())):
-            ax = axs[j,i]
+        ahists = [mah.ahists[i] for i in [0,2]]
+        for j,(mahi,varname) in enumerate(zip(ahists,'Su Stemp'.split())):
+            # ax = axs[j,i]
             ds = mahi.to_xarray(varname)
             edr = EnergyDecayWithRadii(ds)
+            dims = subaxes.get_ax_dims(j,i)
+            ax = fig.add_axes(dims)
             edr.plot_quarters(ax,)
-            ax.set_title(f'{varname} sigma = {sigma}')
-            ax.set_xlabel('radius in grid points')
-            ax.set_ylabel('Ratio to total energy')
+            ax.set_title(f'{varrename[varname]}: \u03C3={sigma}')
+            yticks = [1,2,3]
+            ax.set_yticks(yticks)
+            yticklabels = ['0.' + '9'*i for i in yticks]
+            ax.set_yticklabels(yticklabels)
+            if j == 2:
+                ax.set_xlabel('Stencil size')
+            if i == 0:
+                ax.set_ylabel('$L^2$ concentration')
     targetfolder = 'paper_images/saliency'
     if not os.path.exists(targetfolder):
         os.makedirs(targetfolder)
-    fig.savefig(os.path.join(targetfolder,'distribution.png'))
+    # plt.subplots_adjust(bottom=0.05, right=0.96, top=0.95, left= 0.09)
+    fig.savefig(os.path.join(targetfolder,'distribution_.png'),transparent=False)
+    fig.savefig(os.path.join(targetfolder,'distribution.png'),transparent=True)
     plt.close()
     return
     fig,axs = plt.subplots(1,3,figsize = (24,8))

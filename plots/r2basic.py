@@ -5,7 +5,7 @@ from constants.paths import  all_eval_path
 from utils.xarray import skipna_mean
 import xarray as xr
 import numpy as np
-
+from plots.for_paper.saliency import SubplotAxes
 def class_functions(Foo):
     return [func for func in dir(Foo) if callable(getattr(Foo, func)) and not func.startswith("__")]
 
@@ -120,14 +120,12 @@ def generate_plots():
     stats_ns = stats_ns.sel(name = keepnames)
 
     
-    plot(stats_ns,'G GT GLT R4 R4T htr-lsrp'.split(),'base')
+    plot(stats_ns,'G GT R4 R4T htr-lsrp'.split(),)
     # print(stats_ns.name.values,'R4 R4T R4LT','r4')
     return
     
-def plot(stats_ns_,name_select,imgtag):
+def plot(stats_ns_,name_select):
     stats_ns = stats_ns_.sel(name = name_select)
-    print(stats_ns.sel(name = ['R4','G'],seed = 0,sigma = 4))
-    return
     ranks = {}
     for name in stats_ns.name.values:
         ranks[name] = 0
@@ -142,19 +140,38 @@ def plot(stats_ns_,name_select,imgtag):
 
     varnames = list(stats_ns.data_vars.keys())
     vartypes = np.unique([vn.split('_')[1] for vn in varnames])
+    vartypes = 'r2 corr'.split()
     colors = 'r b g k'.split()
     markers = 'o ^ v < >'.split()
     renames = {'htr-lsrp':'LSRP'}
+    vnames_dict = dict(
+        Su_r2 = '$R^2_u$',
+        Sv_r2 = '$R^2_v$',
+        Stemp_r2 = '$R^2_T$',
+        Su_corr = '$C_u$',
+        Sv_corr = '$C_v$',
+        Stemp_corr = '$C_T$'           
+    )
+    model_renames_dict = dict(
+        LSRP = 'LSRP',
+        G = 'Glb',
+        GT = 'Glb-T',
+        R4 = 'GZ21',
+        R4T = 'GZ21-T'
+    )
     for vtype in vartypes:
         vnselect = [vn for vn in varnames if vn.split('_')[1] == vtype]
         ncols = len(vnselect)
         nrows = 1
-        fig,axs = plt.subplots(nrows,ncols, figsize = (ncols*5,nrows*5))
+        # fig,axs = plt.subplots(nrows,ncols, figsize = (ncols*3,nrows*3))
+        fig = plt.figure(figsize = (ncols*3,nrows*3))
+        spaxes = SubplotAxes(1,ncols,sizes = ((1,),(3,3,2)),ymargs=(0.18,0.01,0.1),xmargs = (0.05,0.03,0.01))
         for i in range(ncols):
             vname = vnselect[i]
-            ax = axs[i]
+            # ax = axs[i]
+            ax = fig.add_axes(spaxes.get_ax_dims(0,i))
             for j in range(len(stats_ns.sigma)):
-                vals = stats_ns.isel(sigma = j).mean(dim = 'seed')
+                vals = stats_ns.isel(sigma = j,).mean(dim = 'seed')
                 y = vals[vname].values[namesort]
                 if np.all(np.isnan(y)):
                     continue
@@ -168,12 +185,12 @@ def plot(stats_ns_,name_select,imgtag):
                 x = x[nonans]
                 y = y[nonans]
                 y = np.where(y < 0,y/16,y)
-                xticklabels = [xticklabels[i] for i in range(len(xticklabels)) if nonans[i]]
+                xticklabels = [model_renames_dict[xticklabels[i]] for i in range(len(xticklabels)) if nonans[i]]
                 if vtype in ['r2','corr']:
                     ax.plot(x,y,\
                         label = f"\u03C3 = {vals.sigma.values.item()}",\
                         color = colors[j],\
-                        marker = markers[j],linestyle = 'None')
+                        marker = markers[j],linestyle = 'None',markersize = 4)
                 else:
                     ax.semilogy(x,y,\
                         label = f"\u03C3 = {vals.sigma.values.item()}",\
@@ -190,17 +207,20 @@ def plot(stats_ns_,name_select,imgtag):
             ax.grid( which='major', color='k', linestyle='--',alpha = 0.5)
             ax.grid( which='minor', color='k', linestyle='--',alpha = 0.5)
             if vtype in ['r2','corr']:
-                ax.legend(loc = 'lower right')
+                if i==0:
+                    ax.legend(loc = 'lower right')
             else:
                 ax.legend(loc = 'upper right')
-            ax.set_title(vname.replace('_',' ').capitalize())
+            ax.set_title(vnames_dict[vname])
             # ax.set_ylabel(vtype)
         filename = f"{vtype}.png"
         
         target_folder = 'paper_images/hierarchy'
         if not os.path.exists(target_folder):
             os.makedirs(target_folder)
-        fig.savefig(os.path.join(target_folder,filename))
+        plt.subplots_adjust(bottom=0.18, right=0.98, top=0.91, left= 0.05)
+        fig.savefig(os.path.join(target_folder,filename).replace('.png','_.png'),transparent=False)
+        fig.savefig(os.path.join(target_folder,filename),transparent=True)
         print(os.path.join(target_folder,filename))
         plt.close()
 

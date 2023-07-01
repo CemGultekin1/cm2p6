@@ -82,16 +82,20 @@ def depth_plot(stats):
         fcnn,fcnn_lsrp,lsrp = drop_unused_coords(fcnn),drop_unused_coords(fcnn_lsrp),drop_unused_coords(lsrp)
 
         ylim = [0,1]
-        nrows = 3
+        nrows = 2
         ncols = 1#2
-        fig,axs = plt.subplots(nrows,ncols,figsize = (9*ncols,6*nrows))
-        varnames = 'Su Sv Stemp'.split()
+        figsizesc = 6
+        fig,axs = plt.subplots(ncols,nrows,figsize = (figsizesc*nrows,figsizesc/3*2*ncols))
+        # r2variable_names = '$R^2_u$ $R^2_v$ $R^2_T$'.split()
+        # corrvariable_names = '$C^2_u$ $C^2_v$ $C^2_T$'.split()
+        r2variable_names = '$R^2_u$ $R^2_T$'.split()
+        corrvariable_names = '$C^2_u$ $C^2_T$'.split()
         for i,j in itertools.product(range(nrows),range(ncols)):
             # ax = axs[i,j]
             ax = axs[i]
             # y,rowsel = ax_sel_data([fcnn,fcnn_lsrp],i,j)
-            y,rowsel = ax_sel_data([fcnn,],i,j)
-            ylsrp,_ = ax_sel_data([lsrp,lsrp],i,j)
+            y,rowsel = ax_sel_data([fcnn,],i*2,j)
+            ylsrp,_ = ax_sel_data([lsrp,lsrp],i*2,j)
             ixaxis = np.arange(len(y.training_depth))
             # print(y.training_depth.values)
             # print(y.depth.values)
@@ -115,17 +119,18 @@ def depth_plot(stats):
             markers = ['^','v','<','>','s','p','D']
             for l in range(len(DEPTHS)):
                 yl = y.isel(training_depth =l)
-                ax.plot(ixaxis,yl,f'{markers[l]}--',label = f'{str(int(DEPTHS[l]))} m',markersize = 4)
-            for l in range(len(DEPTHS)):
-                yl = y.isel(training_depth =l)
-                ax.plot(ixaxis[l],yl.values[l],'k.',markersize = 12)
-            ax.plot(ixaxis,ylsrp,f'{markers[-1]}--',label = 'LSRP',markersize = 4)
+                ax.plot(ixaxis,yl,f'{markers[l]}',linestyle = 'dotted', label = f'{str(int(DEPTHS[l]))} m',markersize = 6)
+            # for l in range(len(DEPTHS)):
+            #     yl = y.isel(training_depth =l)
+            #     ax.plot(ixaxis[l],yl.values[l],'k.',markersize = 12)
+            ax.plot(ixaxis,ylsrp,f'{markers[-1]}',linestyle = 'dotted', label = 'LSRP',markersize = 6)
             if negative_r2_management:
                 ax.set_ylim([-.25,1.05])
                 ax.set_yticks(yticks)
                 ax.set_yticklabels(yticklabels)
             else:
-                ax.set_ylim(ylim)
+                pass
+                # ax.set_ylim(ylim)
             ax.set_xticks(ixaxis)
             xaxis = DEPTHS#y.depth.values
             xaxis = [int(v) for v in xaxis]#["{:.2e}".format(v) for v in xaxis]
@@ -134,15 +139,22 @@ def depth_plot(stats):
             ax.legend()
             ax.grid(which = 'major',color='k', linestyle='--',linewidth = 1,alpha = 0.8)
             ax.grid(which = 'minor',color='k', linestyle='--',linewidth = 1,alpha = 0.6)
-            # if j==0:
-            #     ax.set_ylabel(rowsel)
-            title = varnames[i] + ' '+ r2corr_str.capitalize() + f' \u03C3={sigma}'
+            
+            
+            
+            if not r2corr:
+                vn = r2variable_names[i]
+            else:
+                vn = corrvariable_names[i]
+            title = vn + f': \u03C3={sigma}'
             ax.set_title(title)
-            ax.set_xlabel('depths (m)')
+            ax.set_xlabel('test depths (m)')
         target_folder = 'paper_images/depth'
         if not os.path.exists(target_folder):
             os.makedirs(target_folder)
-        fig.savefig(os.path.join(target_folder,f'{r2corr_str}_sigma_{sigma}.png'))
+        plt.subplots_adjust(bottom=0.12, right=0.98, top=0.91, left= 0.05)
+        fig.savefig(os.path.join(target_folder,f'{r2corr_str}_sigma_{sigma}.png'),transparent=True)
+        fig.savefig(os.path.join(target_folder,f'{r2corr_str}_sigma_{sigma}_.png'),transparent=False)
         print(os.path.join(target_folder,f'{r2corr_str}_sigma_{sigma}.png'))
 
 

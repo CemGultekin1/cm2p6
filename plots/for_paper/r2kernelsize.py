@@ -219,17 +219,18 @@ def main():
         fcnn = fillna(fcnn)
 
         ylim = [0,1]
-        nrows = 3
-        ncols = 1#4
-        fig,axs = plt.subplots(nrows,ncols,figsize = (9*ncols,6*nrows))
+        nrows = 1
+        ncols = 3#4
+        fig,axs = plt.subplots(nrows,ncols,figsize = (5*ncols,5/3*2*nrows))
 
         fcnn_by_sigma = [fcnn.isel(sigma = ss) for ss in range(4)]
         fcnn_lsrp_by_sigma = [fcnn_lsrp.isel(sigma = ss) for ss in range(4)]
         lsrp_by_sigma = [lsrp.isel(sigma = ss) for ss in range(4)]
-        variable_names = 'Su Sv Stemp'.split()
-        for i,j in itertools.product(range(nrows),range(ncols)):
+        r2variable_names = '$R^2_u$ $R^2_v$ $R^2_T$'.split()
+        corrvariable_names = '$C^2_u$ $C^2_v$ $C^2_T$'.split()
+        for i,coli in itertools.product(range(nrows),range(ncols)):
             # ax = axs[i,j]
-            ax = axs[i]
+            ax = axs[coli]
             for j in range(4):
                 yfcnn,rowsel = ax_sel_data(fcnn_by_sigma,i,j)
                 # yfcnn_lsrp,_ = ax_sel_data(fcnn_lsrp_by_sigma,i,j)
@@ -239,7 +240,9 @@ def main():
                 colors = [f'tab:{x}' for x in 'blue orange green red'.split()]
                 
                 ax.plot(ixaxis,yfcnn,\
-                    color = colors[j], marker = markers[j],label = f"\u03C3 = {sigma_vals[j]}",linestyle='--',)
+                    color = colors[j], marker = markers[j],\
+                        label = f"\u03C3 = {sigma_vals[j]}",\
+                            linestyle='--',markersize = 6)
             # ax.plot(ixaxis,yfcnn_lsrp,\
             #     color = colors[1], marker = markers[1],label = f'FCNN+LSRP',linestyle = 'None')
             # ax.axhline(y = ylsrp.values.item(),color = colors[3], label = f'LSRP')
@@ -250,18 +253,24 @@ def main():
             xaxis = [f'{v}x{v}' for v in xaxis]
             ax.set_xticklabels(xaxis)
             ax.legend()
-            ax.grid(which = 'major',color='k', linestyle='--',linewidth = 1,alpha = 0.8)
-            ax.grid(which = 'minor',color='k', linestyle='--',linewidth = 1,alpha = 0.6)
-            if j==0:
-                ax.set_ylabel(rowsel)
-            title = variable_names[i] + ' ' + r2corr_str.capitalize() + ' vs Field of View'
+            ax.grid(which = 'major',color='k', linestyle='--',linewidth = 1,alpha = 0.6)
+            ax.grid(which = 'minor',color='k', linestyle='--',linewidth = 1,alpha = 0.4)
+            ax.set_yticks([i*0.1 for i in range(11)])
+            # if coli==0:
+            #     ax.set_ylabel(rowsel)
+            if not r2corr:
+                vn = r2variable_names[coli]
+            else:
+                vn = corrvariable_names[coli]
+            title = vn
             ax.set_title(title)
-            ax.set_xlabel('field of view size')
+            ax.set_xlabel('Stencil size (in grid points)')
         targetfolder = 'paper_images/field_of_view'
         if not os.path.exists(targetfolder):
             os.makedirs(targetfolder)
-        
-        fig.savefig(os.path.join(targetfolder,f'{r2corr_str}.png'))
+        plt.subplots_adjust(bottom=0.09, right=0.99, top=0.91, left= 0.03)
+        fig.savefig(os.path.join(targetfolder,f'{r2corr_str}.png'),transparent=True)
+        plt.close()
         print(os.path.join(targetfolder,f'{r2corr_str}.png'))
 
 

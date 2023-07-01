@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH --time=32:00:00
-#SBATCH --array=1040
+#SBATCH --time=28:00:00
+#SBATCH --array=969,977,985,993,1001,1017,1033
 #SBATCH --mem=80GB
 #SBATCH --job-name=offline_sweep
 #SBATCH --output=/scratch/cg3306/climate/outputs/slurm_logs/offline_sweep_%A_%a.out
