@@ -1,6 +1,5 @@
 from typing import Dict, Generator, List, Tuple
 import xarray as xr
-# import matplotlib.pyplot as plt
 import itertools
 import os
 from dataclasses import dataclass
@@ -144,7 +143,7 @@ def main():
     production_dictionary = dict(
         co2 = [True,],
         coarse_graining_factor = [4,8,12,16],
-        beneath_surface = [False],
+        beneath_surface = [True],
         filtering = ['gaussian','gcm']
     )
     generator = dpd.run_production(**production_dictionary)

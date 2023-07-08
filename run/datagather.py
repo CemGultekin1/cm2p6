@@ -4,7 +4,7 @@ from data.paths import get_low_res_data_location, get_preliminary_low_res_data_l
 from utils.slurm import flushed_print
 import xarray as xr
 import numpy as np
-NSEC= 15
+NSEC= 20
 def append_zarr(path0,path1,overwrite):
     if not os.path.exists(path1):
         print(path1.split('/')[-1])
@@ -29,7 +29,7 @@ def get_interior_wet_mask(datargs):
 def run():
     arg = int(sys.argv[1]) - 1
     from constants.paths import JOBS
-    path = os.path.join(JOBS,'datagen.txt')
+    path = os.path.join(JOBS,'datagen3.txt')
     with open(path) as f:
         ls = f.readlines()
 

@@ -101,8 +101,9 @@ class MurrayPlotter:
         # self.fig,self.axs =  fig,axs
         self.fig =  fig
         self.plotted = 0
-    def get_ax(self,i,j,colorbar = None,**kwargs):
-        
+    def get_ax(self,i,j,colorbar = None,ax_dims = None,**kwargs):
+        if ax_dims is not None:
+            return self.fig.add_axes(ax_dims,projection = ccrs.PlateCarree())
         # southwestern edge, width,height
         colorbarxmarg = self.colorbarxmarg
         leftxmarg = self.leftxmarg
@@ -141,7 +142,8 @@ class MurrayPlotter:
         sigma :int = 0,projection_flag:bool = True,colorbar = None,\
         cmap = matplotlib.cm.viridis,grid_lines = {},\
         cbar_label:str = None,\
-        set_bad_alpha:float = 1.,**kwargs):
+        set_bad_alpha:float = 1.,\
+        no_colorbar:bool = False,**kwargs):
         grid = self.get_grid(sigma)
         # ax = plt.subplot(**kwargs)
         # plt.margins(0.1)
@@ -189,7 +191,8 @@ class MurrayPlotter:
         cs = ax.pcolormesh(grid.geolon_t.values,grid.geolat_t.values,xrvar.values,cmap = cmap,**kwargs)
         if title is not None:
             ax.set_title(title)
-            
+        if no_colorbar:
+            return ax,cs
         if colorbar is None:
             if irow == self.nrows -1 and icol == self.ncols -1:
                 cbar_ax = self.get_ax(0,0,colorbar = colorbar)
