@@ -49,11 +49,12 @@ class MultiDomain(SingleDomain):
 
 
 class MultiDomainDataset(MultiDomain):
-    def __init__(self,*args,scalars = None,latitude = False,temperature = False,torch_flag = False,**kwargs):
+    def __init__(self,*args,scalars = None,latitude = False,temperature = False,torch_flag = False, **kwargs):
         self.scalars = scalars
         self.latitude = latitude
         self.temperature = temperature
         self.torch_flag = torch_flag
+        self.input_kwargs = kwargs
         super().__init__(*args,**kwargs)
 
 
@@ -245,7 +246,12 @@ class MultiDomainDataset(MultiDomain):
         
     def single_domain(self,outs):
         data_vars,coords = tonumpydict(outs)
-
+        for ik,iv in self.input_kwargs.items():
+            if ik not in coords:
+                coords[ik] = np.array([iv])
+        # print('\n'.join([f'{key} : {type(coords[key])}' for key in coords]))
+        # print('\n'.join([f'{key} : {data_vars[key][1].shape}' for key in data_vars]))
+        # raise Exception
         if self.latitude:
             data_vars = self.add_lat_features(data_vars,coords)
 

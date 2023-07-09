@@ -19,13 +19,13 @@ def load_r2map(linenum:int):
     ds = xr.open_dataset(path).isel(depth = 0,co2 = 0)
     return metrics_dataset(ds,dim = [])
 def main():
-    ds0 = load_r2map(49)
-    ds1 = load_r2map(52)
+    ds0 = load_r2map(23)
+    ds1 = load_r2map(24)
     
     target_folder = 'paper_images/r2maps'
     if not os.path.exists(target_folder):
         os.makedirs(target_folder)
-    mp = MurrayPlotter(sigma=4,nrows = 2,ncols = 2,figsize = (10,5),leftxmarg=0.035)
+    mp = MurrayPlotter(sigma=8,nrows = 2,ncols = 2,figsize = (10,5),leftxmarg=0.035)
 
     path = os.path.join(target_folder,f'Sutemp_r2.png')
     import matplotlib
@@ -53,7 +53,7 @@ def main():
     mp.plot(0,1,ds1['Su_r2'],title = '(b) Global: R$^2_u$',**ukwargs)
     mp.plot(1,0,ds0['Stemp_r2'],title = '(c) GZ21: R$^2_T$',**tkwargs)
     mp.plot(1,1,ds1['Stemp_r2'],title = '(d) Global: R$^2_T$',**tkwargs)
-    mp.save(path,transparent=True)
+    mp.save(path,transparent=False)
     # for svar,rc in itertools.product('Su Sv Stemp'.split(),'r2 corr'.split()):
     #     keyname = f'{svar}_{rc}'
     #     if keyname not in ds0.data_vars:

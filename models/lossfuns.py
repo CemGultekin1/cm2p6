@@ -65,7 +65,7 @@ def MVARE(output,target,):
 
 
 @mask_decorator
-def heteroscedasticGaussianLoss(output, target,eps=1e-5):
+def heteroscedasticGaussianLoss(output, target,eps=1e-3):
     mean, precision = output
     precision = precision + eps
     err2 = ( target - mean )**2

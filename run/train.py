@@ -82,7 +82,7 @@ def main():
                 # flushed_print(timer)
 
             timer.start('data')
-            if runargs.domain == 'four_regions':
+            if runargs.domain == 'four_regions' or runargs.sigma > 8:
                 net.eval()
                 dummy_gpu_fill(infields,net)
                 net.train()

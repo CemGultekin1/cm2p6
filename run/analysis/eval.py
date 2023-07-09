@@ -56,8 +56,8 @@ def main():
     args = sys.argv[1:]
     
     # from utils.slurm import read_args
-    # args = read_args(289,filename = 'offline_sweep.txt')
-    # args = replace_params(args,'mode','eval')
+    # args = read_args(19,filename = 'offline_sweep.txt')
+    # args = replace_params(args,'mode','eval','num_workers','1')
     
     
     modelid,_,net,_,_,_,_,runargs=load_model(args)
@@ -67,7 +67,8 @@ def main():
     
     kwargs = dict(contained = '' if not lsrp_flag else 'res')
     assert runargs.mode == "eval"
-    multidatargs = populate_data_options(args,non_static_params=['depth','co2'],domain = 'global',interior = False)
+    non_static_params=['depth','co2','filtering']
+    multidatargs = populate_data_options(args,non_static_params=non_static_params,domain = 'global',interior = False)
     # multidatargs = [args]
     allstats = {}
     for datargs in multidatargs:
@@ -83,16 +84,16 @@ def main():
         # timer = Timer()
         for fields,forcings,forcing_mask,_,forcing_coords in test_generator:
             fields_tensor = fromtorchdict2tensor(fields).type(torch.float32)
-            depth = forcing_coords['depth'].item()
-            co2 = forcing_coords['co2'].item()
+            non_static_vals = {key:forcing_coords[key].item() for key in non_static_params}
+            # depth = forcing_coords['depth'].item()
+            # co2 = forcing_coords['co2'].item()
             kwargs = dict(contained = '' if not lsrp_flag else 'res', \
-                expand_dims = {'co2':[co2],'depth':[depth]},\
+                expand_dims = non_static_vals,#{'co2':[co2],'depth':[depth]},\
                 drop_normalization = True,
                 )
             if nt ==  0:
-                flushed_print(depth,co2)
+                flushed_print(non_static_vals)#depth,co2)
                 # break
-
             with torch.set_grad_enabled(False):
                 mean,_ =  net.forward(fields_tensor.to(device))
                 mean = mean.to("cpu")

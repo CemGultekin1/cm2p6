@@ -17,7 +17,7 @@ def job(argsfile,python_file,add_eval:bool = False,**kwargs):
     if add_eval:
         os.listdir()
         # eval_py_files = 'eval distributional legacy_comparison legacy_snapshots'.split()
-        eval_py_files = 'eval'.split()
+        eval_py_files = 'eval distributional'.split()
         for py_file in eval_py_files:
             codebody.append(f"python3 run/analysis/{py_file}.py $ARGS --mode eval;")
     codebody = ['\t' + cb + '\\' for cb in codebody]

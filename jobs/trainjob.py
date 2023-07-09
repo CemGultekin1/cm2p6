@@ -71,7 +71,11 @@ def check_training_task(args):
     #     return True
     # if runargs.gz21:
     #     return True
-    if runargs.lossfun != 'heteroscedastic' and runargs.filtering == 'gaussian':
+    # if runargs.lossfun != 'heteroscedastic' and runargs.filtering == 'gaussian':
+    #     return True
+    if runargs.lossfun == 'heteroscedastic' and runargs.filtering == 'gcm':
+        return False
+    else:
         return True
     # if runargs.seed > 0 or runargs.lossfun == 'heteroscedastic':
     #     return True
@@ -97,6 +101,7 @@ def generate_training_tasks():
         filtering = ['gcm','gaussian'],
         num_workers = NCPU,
         disp = 50,
+        lr = 1e-4,
         batchnorm = tuple([1]*7 + [0]),
         lossfun = ['MSE','heteroscedastic'],
         latitude = False,
@@ -177,7 +182,7 @@ def generate_training_tasks():
     out = os.path.join(JOBS_LOGS,TRAINJOB+ '_%A_%a.out')
     err = os.path.join(JOBS_LOGS,TRAINJOB+ '_%A_%a.err')
     create_slurm_job(slurmfile,\
-        time = "28:00:00",array = jobarray,\
+        time = "36:00:00",array = jobarray,\
         mem = str(NCPU*10) + "GB",job_name = TRAINJOB,\
         output = out,error = err,\
         cpus_per_task = str(NCPU),

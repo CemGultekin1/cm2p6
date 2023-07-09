@@ -241,17 +241,29 @@ def drop_unused_coords(ds,expand_dims = {},**kwargs):
     keys = list(expand_dims.keys())
     for i in range(len(keys)):
         key = keys[-i-1]
-        ds = ds.expand_dims(dim = {key:expand_dims[key]},axis=0)
+        
+        val = expand_dims[key]
+        if isinstance(val,str):
+            val = hash(val)
+        if not (isinstance(val,list) or isinstance(val,np.ndarray)):
+            val = [val]
+        ds = ds.expand_dims(dim = {key:val},axis=0)
     return ds
 def fromtorchdict2dataset(data_vars,coords):
+    dims_ = []
     for key,(dims,vals) in data_vars.items():
         if isinstance(vals,torch.Tensor):
             vals = vals.numpy().astype(np.float64)
         data_vars[key] = (dims,vals)
+        dims_.extend(list(dims))
+    
     for key,val in coords.items():
+        val = coords[key]
         if isinstance(val,torch.Tensor):
             coords[key] = val.numpy()
-    ds = xr.Dataset(data_vars = data_vars,coords = coords)
+    dims_ = np.unique(dims_)
+    coords_ = {key:coords[key] for key in dims_}
+    ds = xr.Dataset(data_vars = data_vars,coords = coords_)
     return ds
 
 def normalize_dataset(ds,denormalize = False,drop_normalization = False,**kwargs):
