@@ -1,8 +1,9 @@
 import itertools
+from typing import Callable
 from models.nets.cnn import adjustcnn
 from utils.arguments import options
 from constants.paths import JOBS
-
+import numpy as np
 def get_arch_defaults():
     args = "--sigma 4".split()
     archargs,_ = options(args,key = "arch")
@@ -13,17 +14,34 @@ def constant_nparam_model(sigma):
     return widths,kernels
 
 def python_args(**kwargs):
-    def givearg(inds):
+    def givearg(inds,ninds):
         args = []
-        for i,(key,vals) in zip(inds,kwargs.items()):
+        subdict = {}
+        funss = {}
+        
+        for i,(key,vals),r in zip(inds,kwargs.items(),ninds):
             if isinstance(vals,list):
                 val = vals[i]
             elif isinstance(vals,tuple):
-                val = ' '.join([str(v) for v in vals])
+                val = vals
+            elif isinstance(vals,Callable):
+                funss[key] = vals
+                val = None
             else:
                 val = vals
-            args.append(f'--{key}')
-            args.append(str(val))
+            subdict[key] = val
+        for key,fun in funss.items():
+            val = fun(**subdict)
+            subdict[key] = val
+        # sortedkeys = np.sort(list(subdict.keys()))
+        sortedkeys = list(subdict.keys())
+        for key in sortedkeys:
+            val = subdict[key]
+            if isinstance(val,tuple):
+                stval = ' '.join([str(v) for v in val])
+            else:
+                stval = str(val)
+            args.append(f'--{key} {stval}')
         return ' '.join(args)
     indices = []
     for val in kwargs.values():
@@ -31,9 +49,9 @@ def python_args(**kwargs):
             indices.append(len(val))
         else:
             indices.append(1)
-    indices = [range(k) for k in indices] 
+    rindices = [range(k) for k in indices] 
     args = []
-    for prodind in itertools.product(*indices):
-        args.append(givearg(prodind))
+    for prodind in itertools.product(*rindices):
+        args.append(givearg(prodind,indices))
     return args
         

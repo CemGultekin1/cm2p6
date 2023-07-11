@@ -11,7 +11,7 @@ from utils.arguments import options,replace_param,replace_params
 from constants.paths import JOBS, JOBS_LOGS
 from utils.slurm import flushed_print
 from data.coords import DEPTHS
-TRAINJOB = 'offline_sweep'
+TRAINJOB = 'offline_sweep2'
 root = JOBS
 
 NCPU = 8
@@ -73,7 +73,7 @@ def check_training_task(args):
     #     return True
     # if runargs.lossfun != 'heteroscedastic' and runargs.filtering == 'gaussian':
     #     return True
-    if runargs.lossfun == 'heteroscedastic' and runargs.filtering == 'gcm':
+    if runargs.lossfun == 'heteroscedastic' and runargs.filtering == 'gaussian':
         return False
     else:
         return True
@@ -95,13 +95,18 @@ def combine_all(kwargs:List[dict],base_kwargs):
     return argslist
 
 
+def lr_select(lossfun:str = 'heteroscedastic',**kwargs):
+    if lossfun == 'heteroscedastic':
+        return 1e-4
+    elif lossfun == 'MSE':
+        return 1e-2
 
 def generate_training_tasks():
     base_kwargs = dict(
         filtering = ['gcm','gaussian'],
         num_workers = NCPU,
         disp = 50,
-        lr = 1e-4,
+        lr = lr_select,#1e-4#1e-2
         batchnorm = tuple([1]*7 + [0]),
         lossfun = ['MSE','heteroscedastic'],
         latitude = False,

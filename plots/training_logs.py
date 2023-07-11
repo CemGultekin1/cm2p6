@@ -6,8 +6,8 @@ from utils.arguments import options
 import json
 def main():
     linenum = 62
-    title_keys = 'sigma domain temperature'.split()
-    for linenum in range(1,300):
+    title_keys = 'sigma domain temperature filtering'.split()
+    for linenum in range(1,305):
         args = read_args(linenum,filename = 'offline_sweep.txt')
         args,modelid = options(args,key = "model")
         if not (args.filtering == 'gcm' and args.lossfun == 'heteroscedastic'):
@@ -33,7 +33,8 @@ def main():
                 loss_values[k] = [sum(lki)/len(lki) for lki in loss_values[k]]
         for k in loss_values:
             plt.plot(loss_values[k],label = k)
-        title = ' '.join([str(args.__dict__[k]) for k in title_keys])
+        fin_lr = logs[lr_key][-1]
+        title = ', '.join([str(args.__dict__[k]) for k in title_keys] + [f'lr:{fin_lr}'])
         plt.title(title)
         plt.legend()
         plt.savefig(f'training-{linenum}.png')
