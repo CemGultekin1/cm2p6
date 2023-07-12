@@ -1,5 +1,6 @@
 import copy
 from typing import Tuple
+from data.vars import FIELD_MASK, FORCING_MASK
 from utils.xarray import no_nan_input_mask, plot_ds
 import xarray as xr
 import numpy as np
@@ -111,14 +112,12 @@ class SingleDomain(CM2p6Dataset):
         else:
             return u
     @property
-    def fieldwetmask(self,):
+    def field_wet_mask(self,):
         if self._wetmask is None:
             ds = self.ds.isel(time =0).load()
             ds = self.get_grid_fixed_lres(ds)
             if self.interior:
-                # print('self.interior!!!')
                 landmask = 1 - ds.interior_wet_mask
-                # plot_ds({'wetmask':wetmask},'wetmask0.png',ncols = 1)
             else:
                 if 'wet_density' in ds.data_vars:
                     landmask = 1 - xr.where(ds.wet_density >= self.wet_mask_threshold,1,0)
@@ -155,32 +154,32 @@ class SingleDomain(CM2p6Dataset):
             self._wetmask = wetmask
         return self._wetmask
     @property
-    def forcingwetmask(self,):
+    def forcing_wet_mask(self,):
         if self._forcingmask is None:
-            forcing_mask = no_nan_input_mask(self.fieldwetmask,self.half_spread,lambda x: x==0,same_size = True)
+            forcing_mask = no_nan_input_mask(self.field_wet_mask,self.half_spread,lambda x: x==0,same_size = True)
             self._forcingmask =  xr.where(forcing_mask==0,1,0)
-            # plot_ds({'wetmask':self._forcingmask},'wetmask1.png',ncols = 1)
-            # raise Exception
         return self._forcingmask
             
-    def get_dataset(self,t):
+    def __getitem__(self,t):
         ds = self.ds.isel(time =t).load()
         ds = self.get_grid_fixed_lres(ds)
-        def apply_mask(ds,wetmaskv,keys):
-            for name in keys:
-                v = ds[name].values
-                vshp = list(v.shape)
-                v = v.reshape([-1] + vshp[-2:])
-                v[:,wetmaskv<1] = np.nan
-                v = v.reshape(vshp)
-                ds[name] = (ds[name].dims,v)
-            return ds
+        # def apply_mask(ds,wetmaskv,keys):
+        #     for name in keys:
+        #         v = ds[name].values
+        #         vshp = list(v.shape)
+        #         v = v.reshape([-1] + vshp[-2:])
+        #         v[:,wetmaskv<1] = np.nan
+        #         v = v.reshape(vshp)
+        #         ds[name] = (ds[name].dims,v)
+        #     return ds
         for key in 'interior_wet_mask wet_mask'.split():
             if key in ds.data_vars.keys():
                 ds = ds.drop(key)
-        if self.apply_mask:
-            # ds = apply_mask(ds,self.fieldwetmask.values,list(ds.data_vars))
-            ds = apply_mask(ds,self.forcingwetmask.values,[field for field in list(ds.data_vars) if 'S' in field])
+        ds[FIELD_MASK] = (['lat','lon'],self.field_wet_mask.data.copy())
+        ds[FORCING_MASK] = (['lat','lon'],self.forcing_wet_mask.data.copy())
+        # if self.apply_mask:
+            # ds = apply_mask(ds,self.field_wet_mask.values,list(ds.data_vars))
+            # ds = apply_mask(ds,self.forcing_wet_mask.values,[field for field in list(ds.data_vars) if 'S' in field])
         return ds
 
     def get_grid_fixed_lres(self,ds):
@@ -193,6 +192,3 @@ class SingleDomain(CM2p6Dataset):
         U = xr.merge(var)
         return  U
 
-    def __getitem__(self,i):
-        ds = self.get_dataset(i)
-        return ds

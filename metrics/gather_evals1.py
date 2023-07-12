@@ -3,9 +3,8 @@ import os
 from models.nets.cnn import kernels2spread
 from plots.metrics import metrics_dataset
 from constants.paths import JOBS, EVALS, all_eval_path
-from summary.mcoords import ModelMetrics, ModelResultsCollection
-from utils.slurm import flushed_print
-from utils.xarray import plot_ds, skipna_mean
+from metrics.mmcoords import ModelMetricCoords, ModelResultsCollection
+from utils.xarray import skipna_mean
 import xarray as xr
 from utils.arguments import args2dict, options
 import numpy as np
@@ -81,7 +80,7 @@ def main():
         print(f'{i}/{len(lines)}')
         # print(sn.isel(co2 = 0,depth = 0,lat = slice(100,103),lon = slice(100,103)))
         metrics = append_statistics(sn,)
-        mm = ModelMetrics(line.split(),metrics)
+        mm = ModelMetricCoords(line.split(),metrics)
         mm.past_coords_to_metric(('filtering',))
         mrc.add_metrics(mm)
     ds = mrc.merged_dataset()

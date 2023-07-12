@@ -1,3 +1,4 @@
+import itertools
 from models.nets.cnn import CNN
 from utils.parallel import get_device
 from models.save import save_statedict
@@ -21,8 +22,8 @@ def main():
     args = sys.argv[1:]
     # from utils.slurm import read_args
     # from utils.arguments import replace_params
-    # args = read_args(35,filename = 'offline_sweep.txt')
-    # args = replace_params(args,'num_workers','1','disp','1','reset','True','minibatch','1')
+    # args = read_args(17,filename = 'offline_sweep.txt')
+    # args = replace_params(args,'num_workers','1','disp','1','reset','True','minibatch','4',)
 
     modelid,state_dict,net,criterion,optimizer,scheduler,logs,runargs = load_model(args)
     print(net)
@@ -50,11 +51,25 @@ def main():
             timer.start('model')
             outputs = net.forward(infields)
             loss = criterion(outputs, outfields, mask)
+            
+            # import matplotlib.pyplot as plt
+            # def plot_samples(vec,name:str):
+            #     vec = vec.cpu().numpy()
+            #     for i,j in itertools.product(*[range(k) for k in vec.shape[:2]]):
+            #         vecij = vec[i,j]
+            #         plt.imshow(vecij[::-1,:])
+            #         plt.savefig(f'{name}-{i}-{j}.png')
+            #         plt.close()
+            # plot_samples(infields,'infields')
+            # plot_samples(outfields,'outfields')
+            # plot_samples(mask,'mask')
+            # return
+                    
             # mean,prec = mean*mask,prec*mask
             # train_interrupt = dict(
             #     input = infields,
-            #     mean = outputs[0],
-            #     prec = outputs[1],
+            #     # mean = outputs[0],
+            #     # prec = outputs[1],
             #     true_result = outfields,
             #     mask = mask,
             #     loss = loss.detach().item(),

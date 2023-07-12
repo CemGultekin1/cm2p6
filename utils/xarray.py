@@ -243,8 +243,8 @@ def drop_unused_coords(ds,expand_dims = {},**kwargs):
         key = keys[-i-1]
         
         val = expand_dims[key]
-        if isinstance(val,str):
-            val = sum([ord(x) for x in val])
+        # if isinstance(val,str):
+        #     val = sum([ord(x) for x in val])
         if not (isinstance(val,list) or isinstance(val,np.ndarray)):
             val = [val]
         ds = ds.expand_dims(dim = {key:val},axis=0)

@@ -88,8 +88,9 @@ def main():
             # depth = forcing_coords['depth'].item()
             # co2 = forcing_coords['co2'].item()
             kwargs = dict(contained = '' if not lsrp_flag else 'res', \
-                expand_dims = non_static_vals,#{'co2':[co2],'depth':[depth]},\
+                expand_dims = non_static_vals,
                 drop_normalization = True,
+                masking = False
                 )
             if nt ==  0:
                 flushed_print(non_static_vals)#depth,co2)
@@ -129,13 +130,31 @@ def main():
                 predicted_forcings,lsrp_forcings = predicted_forcings
                 stats = update_stats(stats,lsrp_forcings,true_forcings,lsrpid)
             stats = update_stats(stats,predicted_forcings,true_forcings,modelid)
-            # print(list(stats.keys()))
-            # return
-            # err = np.log10(np.abs(true_forcings - predicted_forcings))
-            # plot_ds(predicted_forcings,'predicted_forcings_2',ncols = 1)
-            # plot_ds(true_forcings,'true_forcings_2',ncols = 1)           
-            # plot_ds(err,'err_2',ncols = 1,cmap = 'magma')
+            # plot_ds(stats[modelid],'stats.png')
+            # raise Exception
             
+            # print(
+            #     '\n'.join([
+            #         f'{key}:{dims},{tuple(val.shape)}' for key,(dims,val) in forcing_mask.items()
+            #     ])
+            # )
+            
+            # print(
+            #     '\n'.join([
+            #         f'{key}:{dims},{tuple(val.shape)}' for key,(dims,val) in forcings.items()
+            #     ])
+            # )
+            
+            
+            # masks = fromtorchdict(forcing_mask,forcing_coords, forcing_mask,denormalize = False,**kwargs)
+            # # print(list(stats.keys()))
+            # # return
+            # err = np.log10(np.abs(true_forcings - predicted_forcings))
+            # plot_ds(predicted_forcings,'predicted_forcings',ncols = 1)
+            # plot_ds(masks,'masks',ncols = 1)
+            # plot_ds(true_forcings,'true_forcings',ncols = 1)           
+            # plot_ds(err,'err_2',ncols = 1,cmap = 'magma')
+            # return
             
 
             # return

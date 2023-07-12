@@ -16,7 +16,7 @@ class ModelCoordinates(ScalarArguments):
     def get_coords_dict(self,tag:str = ''):
         return {tag + key:val for key,val in self.coord_dict.items() if val is not None}
 
-class ModelMetrics(ModelCoordinates):
+class ModelMetricCoords(ModelCoordinates):
     raw_features :xr.Dataset
     def __init__(self, args: List[str],features:xr.Dataset) -> None:
         super().__init__(args)
@@ -41,8 +41,8 @@ class ModelMetrics(ModelCoordinates):
 class ModelResultsCollection:
     collision_tag:str = 'training_'
     def __init__(self) -> None:
-        self.models : List[ModelMetrics] = []
-    def add_metrics(self,mm:ModelMetrics):
+        self.models : List[ModelMetricCoords] = []
+    def add_metrics(self,mm:ModelMetricCoords):
         self.models.append(mm)
     def merged_dataset(self,):
         model = self.models[0]

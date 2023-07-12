@@ -6,6 +6,9 @@ FORCING_NAMES = 'Su Sv Stemp'.split()
 LSRP_RES_NAMES = [f+'_res'for f in FORCING_NAMES]
 LATITUDE_NAMES = ['abs_lat','sign_lat']
 
+FIELD_MASK = 'field_mask'
+FORCING_MASK = 'forcing_mask'
+
 def rename(ds):
     varnames = list(ds.data_vars)
     for var in varnames:

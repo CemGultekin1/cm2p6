@@ -73,14 +73,14 @@ def check_training_task(args):
     #     return True
     # if runargs.lossfun != 'heteroscedastic' and runargs.filtering == 'gaussian':
     #     return True
-    if runargs.lossfun == 'MSE' and runargs.filtering == 'gcm':
-        return False
-    else:
-        return True
+    # if runargs.lossfun == 'MSE' and runargs.filtering == 'gcm':
+    #     return False
+    # else:
+    #     return True
     # if runargs.seed > 0 or runargs.lossfun == 'heteroscedastic':
     #     return True
     _,modelid = options(args,key = "model")
-    return is_trained(modelid)
+    return not is_trained(modelid)
 
 def fix_model_type(args):
     if 'MVARE' in args:

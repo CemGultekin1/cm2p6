@@ -110,7 +110,6 @@ def main():
             true_forcings = fromtorchdict(forcings,forcing_coords,forcing_mask,denormalize = True,**kwargs)
 
             normalized_err = (true_forcings - predicted_forcings)/predicted_std
-            
             masked_normalized_err = xr.where(np.isnan(predicted_forcings) ,np.nan,normalized_err)
             masked_normalized_err = masked_normalized_err.sel(lat = slice(-85,85))
             if adaptive_histogram is None:

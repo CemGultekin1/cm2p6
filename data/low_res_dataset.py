@@ -4,7 +4,7 @@ import torch
 from data.low_res import SingleDomain
 from data.geography import frequency_encoded_latitude
 import numpy as np
-from data.vars import get_var_mask_name
+from data.vars import FIELD_MASK, FIELD_NAMES, FORCING_MASK, FORCING_NAMES, get_var_mask_name
 import xarray as xr
 from utils.xarray import tonumpydict
 def determine_ndoms(*args,**kwargs):
@@ -68,7 +68,7 @@ class MultiDomainDataset(MultiDomain):
             if 'lat' not in dims or 'lon' not in dims:
                 continue
             pad = (0,0)
-            if name in self.forcing_names and self.half_spread>0:
+            if name in self.forcing_names + [FORCING_MASK] and self.half_spread>0:
                 vrshp = list(vals.shape)
                 vals = vals.reshape([-1]+ vrshp[-2:])
                 vals =  vals[:,self.sslice,self.sslice]
@@ -186,10 +186,18 @@ class MultiDomainDataset(MultiDomain):
                 continue
             mask = f==f
             f[~mask] = 0
-            varmask = get_var_mask_name(key)
-            data_vars[varmask] = (dims,mask)
-            if not self.torch_flag:
-                data_vars[f"{varmask}_normalization"] = (['normalization'],np.array([0,1]))
+            mask_found = False
+            
+            for group,group_mask in zip([self.field_names,self.forcing_names],[FIELD_MASK,FORCING_MASK]):
+                if key in group:
+                    mask = data_vars[group_mask][1]
+                    mask_found =True
+                    break
+            if mask_found:
+                varmask = get_var_mask_name(key)
+                data_vars[varmask] = (dims,mask)
+                if not self.torch_flag:
+                    data_vars[f"{varmask}_normalization"] = (['normalization'],np.array([0,1]))
         return data_vars
     def __getitem__(self, i):
         ds = super().__getitem__(i)
