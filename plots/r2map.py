@@ -11,22 +11,19 @@ from models.load import get_statedict, load_model
 import numpy as np
 def main():
     root = EVALS
-    models = os.path.join(JOBS,'gz21.txt')
+    models = os.path.join(JOBS,'offline_sweep2.txt')
     target = R2_PLOTS
     file1 = open(models, 'r')
     
     lines = file1.readlines()
-    lines = lines[51:56]
-    suptitles = 'cheng_20230601_1 cheng_20230601_2 cheng_20230601_3 cheng_20230601_4 cheng_20230601_5'.split()
+    # lines = lines[17:18]
     
     
     file1.close()
     title_inc = ['sigma','domain','depth','latitude','lsrp','lossfun']
     title_name = ['sigma','train-domain','train-depth','latitude','lsrp','lossfun']
-    for suptitle,line in zip(suptitles,lines):
-        # line = '--lsrp 1 --depth 0 --sigma 4 --temperature True --lossfun MSE --latitude True --domain global --num_workers 16 --disp 50 --widths 5 128 64 32 32 32 32 32 6 --kernels 5 5 3 3 3 3 3 3 --minibatch 2'
+    for line in lines:
         modelargs,modelid = options(line.split(),key = "model")
-        _,_,_,modelid = get_statedict(line.split())
 
         # modelid = 'G-0'
         vals = [modelargs.__getattribute__(key) for key in title_inc]
@@ -36,26 +33,30 @@ def main():
         # print(f'looking for {snfile}')
         if not os.path.exists(snfile):
             continue
-        # print(line)
-        sn = xr.open_dataset(snfile).sel(lat = slice(-85,85))#.isel(depth = [0],co2 = 0).drop(['co2'])
+        if modelargs.lossfun == 'MSE':
+            continue
+        print(line)
+        
+        sn = xr.open_dataset(snfile).sel(lat = slice(-85,85),)#.isel(depth = [0],co2 = 0).drop(['co2'])
+
+        # sn = sn.isel(filtering = 1).drop('filtering')
         msn = metrics_dataset(sn,dim = [])
         tmsn = metrics_dataset(sn,dim = ['lat','lon'])
-
-        depthvals = msn.depth.values
-        targetfolder = os.path.join(target,'20230602')#modelid)
+        phy_keys = {key:range(len(msn[key])) for key in tmsn.coords.keys()}
+        targetfolder = os.path.join(target,'20230711')#modelid)
         if not os.path.exists(targetfolder):
             os.makedirs(targetfolder)
-        for i in range(len(depthvals)):
-            s = msn.isel(depth = i)
-            ts = tmsn.isel(depth = i)
+        for indices in itertools.product(*phy_keys.values()):
+            select_keys = dict((key,i) for key,i in zip(phy_keys.keys(),indices))
+            s = msn.isel(**select_keys)
+            ts = tmsn.isel(**select_keys)
 
-            depthval = depthvals[i]
-
+            suptitle = ' '.join([f'{key} = {ts.coords[key].values.item()}' for key in select_keys.keys()])
             # suptitle = f"{title}\ntest-depth: {depthval}"
             names = "Su Sv Stemp".split()
             unames = np.unique([n.split('_')[0] for n in list(s.data_vars)])
             names = [n for n in names if n in unames]
-            ftypes = ['r2','mse','sc2','corr']
+            ftypes = ['r2','corr','mse','sc2']
             
             nrows = len(names)
             ncols = len(ftypes)
@@ -63,8 +64,8 @@ def main():
             for ii,jj in itertools.product(range(nrows),range(ncols)):
                 n = f"{names[ii]}_{ftypes[jj]}"
                 _names[ii,jj] = n
-
-            targetfile = os.path.join(targetfolder,suptitle.replace(' ','_') + '.png')#f'depth_{i}.png')
+            filename = '_'.join([str(i) for i in indices])
+            targetfile = os.path.join(targetfolder,modelid+ '_'+filename + '.png')#f'depth_{i}.png')
 
             fig,axs = plt.subplots(nrows,ncols,figsize = (ncols*6,nrows*5))
             for ir,ic in itertools.product(range(nrows),range(ncols)):
@@ -76,9 +77,9 @@ def main():
                 else:
                     var = np.log10(var)
                 var.plot(ax = axs[ir,ic],**pkwargs)
-                subtitle = f"{name}:{'{:.2e}'.format(ts[name].values[0])}"
+                subtitle = f"{name}:{'{:.2e}'.format(ts[name].values.item())}"
                 axs[ir,ic].set_title(subtitle,fontsize=24)
-            fig.suptitle(suptitle,fontsize=24)
+            fig.suptitle(line + '\n' + suptitle,fontsize=12)
             fig.savefig(targetfile)
             flushed_print(targetfile)
             plt.close()

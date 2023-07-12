@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --time=24:00:00
+#SBATCH --time=2:00:00
 #SBATCH --array=1-8
 #SBATCH --mem=80GB
 #SBATCH --job-name=lsrpev

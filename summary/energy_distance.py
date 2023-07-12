@@ -126,7 +126,8 @@ def main():
             fun = kernel_size_fun
         )
     )
-    coords = ['sigma','temperature','domain','latitude','depth','seed','kernel_size','filtering']
+    coords = ['sigma','temperature','domain','latitude','depth',\
+        'seed','kernel_size','filtering']
     rename = dict(depth = 'training_depth')
     data = {}
     coord = {}

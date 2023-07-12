@@ -55,12 +55,13 @@ def main():
     args = replace_params(args,'mode','eval','lsrp',1,'temperature','True',)
     
     
-    # modelid,_,net,_,_,_,_,runargs=load_model(args)
+    # _,_,net,_,_,_,_,_=load_model(args)
     # device = get_device()
     # net.to(device)
     lsrp_flag, lsrpid = get_lsrp_modelid(args)
     
-    multidatargs = populate_data_options(args,non_static_params=['depth'],domain = 'global',interior = False)
+    non_static_params=['depth','co2',]
+    multidatargs = populate_data_options(args,non_static_params=non_static_params,domain = 'global',interior = False)
     # multidatargs = [args]
     allstats = {}
     for datargs in multidatargs:
@@ -76,6 +77,14 @@ def main():
         # timer = Timer()
         for fields,forcings,forcing_mask,_,forcing_coords in test_generator:
             fields_tensor = fromtorchdict2tensor(fields).type(torch.float32)
+            # for key,val in forcing_coords.items():
+            #     if np.isscalar(val) or isinstance(val,str):
+            #         print(f'{key} : {val}')
+            #     else:
+            #         if len(val.shape)>=1:
+            #             print(f'{key} : {val.shape}')
+            #         else:
+            #             print(f'{key} : {val}')
             depth = forcing_coords['depth'].item()
             co2 = forcing_coords['co2'].item()
             kwargs = dict(contained = '' if not lsrp_flag else 'res', \
@@ -93,7 +102,6 @@ def main():
             predicted_forcings,true_forcings = lsrp_pred(predicted_forcings,true_forcings)
             predicted_forcings,lsrp_forcings = predicted_forcings
             stats = update_stats(stats,lsrp_forcings,true_forcings,lsrpid)
-        
             nt += 1
             flushed_print(nt)
 
@@ -103,11 +111,14 @@ def main():
             if key not in allstats:
                 allstats[key] = []
             allstats[key].append(stats[key].copy())
-
+    
     for key in allstats:
         filename = os.path.join(EVALS,key+'.nc')
         print(filename)
-        xr.merge(allstats[key]).to_netcdf(filename,mode = 'w')
+        # xr.merge(allstats[key]).to_netcdf(filename,mode = 'w')
+        ds = xr.merge(allstats[key])
+        print(ds)
+        ds.to_netcdf(filename,mode = 'w')
 
 
             

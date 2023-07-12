@@ -73,7 +73,7 @@ def check_training_task(args):
     #     return True
     # if runargs.lossfun != 'heteroscedastic' and runargs.filtering == 'gaussian':
     #     return True
-    if runargs.lossfun == 'heteroscedastic' and runargs.filtering == 'gaussian':
+    if runargs.lossfun == 'MSE' and runargs.filtering == 'gcm':
         return False
     else:
         return True

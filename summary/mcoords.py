@@ -25,6 +25,17 @@ class ModelMetrics(ModelCoordinates):
         return super().get_coords_dict(),{key : self.raw_features[key].values.tolist() for key in self.raw_features.coords.keys()}
     def transform_feature_coord_names(self,rename:Dict[str,str]):
         return self.raw_features.rename(rename)
+    def past_coords_to_metric(self,coords:Tuple[str]):
+        for coord in coords:
+            if coord not in self.coord_dict:
+                raise Exception
+            val = self.coord_dict[coord]
+            ckeys = list(self.raw_features.coords.keys())
+            if coord in ckeys:
+                continue
+            if isinstance(val,str):
+                val = hash(val)
+            self.raw_features = self.raw_features.expand_dims({coord:[val]},axis = 0)
 
             
 class ModelResultsCollection:
@@ -39,13 +50,19 @@ class ModelResultsCollection:
         
         
         model_coord = {key:[val] for key,val in model_coord.items()}
+        feat_coord :Dict[str,list]= {key:np.array(val).tolist() for key,val in feat_coord.items()}
         
         for model in self.models:
-            mdict,_ = model.get_coords_dict()
+            mdict,fdict = model.get_coords_dict()
             for key,val in mdict.items():
                 assert np.isscalar(val)
                 model_coord[key].append(val)
+            for key,val in fdict.items():
+                if np.isscalar(val):
+                    val = np.array([val])
+                feat_coord[key].extend(val)
         model_coord = {key:np.unique(val).tolist() for key,val in model_coord.items()}
+        feat_coord = {key:np.unique(val).tolist() for key,val in feat_coord.items()}
         
         
         model_keys = list(model_coord.keys())
@@ -54,6 +71,13 @@ class ModelResultsCollection:
             if len(val) > 1:
                 continue
             model_coord.pop(key)
+            
+        feat_keys = list(feat_coord.keys())
+        for key in feat_keys:
+            val = feat_coord[key]
+            if len(val) > 1:
+                continue
+            feat_coord.pop(key)
         
         
         
@@ -71,12 +95,15 @@ class ModelResultsCollection:
         merged_coord = dict(model_coord,**feat_coord)
         
         shape = [len(v) for v in merged_coord.values()]
-        
+        print(
+            ' '.join([f'{key}:{n}' for key,n in zip(merged_coord,shape)])
+        )
         def empty_arr():
             return np.ones(np.prod(shape))*np.nan
         
         data_vars = {}
         flushed_print(f'total number of models = {len(self.models)}')
+        merged_coord_keys = list(merged_coord.keys())
         for model in self.models:
             mdict,_ = model.get_coords_dict()
             mdict = rename_dict_fun(mdict)
@@ -90,7 +117,10 @@ class ModelResultsCollection:
             for key in model.raw_features.data_vars.keys():
                 if key not in data_vars:
                     data_vars[key] = empty_arr()
-                data_vars[key][alpha0:alpha1] = model.raw_features[key].values.flatten()
+                datarr = model.raw_features[key]
+                datarr = datarr.reindex(indexers = feat_coord, fill_value = np.nan)
+                values = datarr.values
+                data_vars[key][alpha0:alpha1] = values.flatten()
 
         for key,val in data_vars.items():
             data_vars[key] = (list(merged_coord.keys()),val.reshape(shape))

@@ -57,7 +57,7 @@ class EnergyDecayWithRadii:
         xticklabels = [f'{np.maximum(0,2*g -1)}x{np.maximum(0,2*g -1)}' for g in xaxis]
         ax.set_xticklabels(xticklabels)#[str(xa -1 ) for xa in xaxis])
         # ax.legend()
-        ax.set_ylim([0.5,3.5])
+        ax.set_ylim([-.5,3.5])
         ax.set_xlim([1.5,5.5])
         
 class SubplotAxes:
@@ -82,8 +82,8 @@ def main():
     from utils.slurm import read_args    
     
     # fig,axs = plt.subplots(2,3,figsize = (14/1.5,8/1.8))
-    fig = plt.figure(figsize = (10,6))
-    subaxes = SubplotAxes(2,3,xmargs=(0.05,0.03,0.05),ymargs = (0.05,0.05,0.05))
+    # fig = plt.figure(figsize = (10,6))
+    # subaxes = SubplotAxes(2,3,xmargs=(0.05,0.03,0.05),ymargs = (0.05,0.05,0.05))
     sigmas = [4,8,12]
     colors = 'r g b y'.split()
     
@@ -92,6 +92,9 @@ def main():
         Sv = '$S_v$',\
         Stemp = '$S_T$',\
     )
+    targetfolder = 'paper_images/saliency'
+    if not os.path.exists(targetfolder):
+        os.makedirs(targetfolder)
     for i,sigma in enumerate(sigmas):
         args = read_args(i+1,filename = 'saliency.txt')
         modelid,_,_,_,_,_,_,_=load_model(args)
@@ -104,25 +107,32 @@ def main():
             # ax = axs[j,i]
             ds = mahi.to_xarray(varname)
             edr = EnergyDecayWithRadii(ds)
-            dims = subaxes.get_ax_dims(j,i)
-            ax = fig.add_axes(dims)
+            # dims = subaxes.get_ax_dims(j,i)
+            # ax = fig.add_axes(dims)
+            import matplotlib
+            matplotlib.rcParams.update({'font.size': 14})
+            fig = plt.figure(figsize = (5,4))
+            ax = fig.add_axes([0.15,0.13,0.8,0.85])
+            # fig,ax = plt.subplots(1,1,figsize = (4,4))
             edr.plot_quarters(ax,)
-            ax.set_title(f'{varrename[varname]}: \u03C3={sigma}')
+            title = f'{varrename[varname]}: $\kappa$={sigma}'
+            # ax.set_title(title)
             yticks = [1,2,3]
             ax.set_yticks(yticks)
             yticklabels = ['0.' + '9'*i for i in yticks]
-            ax.set_yticklabels(yticklabels)
-            if j == 2:
-                ax.set_xlabel('Stencil size')
+            ax.set_yticklabels(yticklabels,rotation='vertical')
+            if j == 1:
+                ax.set_xlabel('Input stencils')
             if i == 0:
                 ax.set_ylabel('$L^2$ concentration')
-    targetfolder = 'paper_images/saliency'
-    if not os.path.exists(targetfolder):
-        os.makedirs(targetfolder)
+            
+            title = title.replace('$','').replace('\kappa','kappa')
+            fig.savefig(os.path.join(targetfolder,f'distribution-{title}.png'),transparent=False)
+            plt.close()
     # plt.subplots_adjust(bottom=0.05, right=0.96, top=0.95, left= 0.09)
-    fig.savefig(os.path.join(targetfolder,'distribution_.png'),transparent=False)
-    fig.savefig(os.path.join(targetfolder,'distribution.png'),transparent=True)
-    plt.close()
+    # fig.savefig(os.path.join(targetfolder,'distribution_.png'),transparent=False)
+    
+    
     return
     fig,axs = plt.subplots(1,3,figsize = (24,8))
     radii = [4,5,6]

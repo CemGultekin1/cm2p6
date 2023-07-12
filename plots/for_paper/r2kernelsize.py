@@ -133,12 +133,12 @@ def basiplot(stats):
                 xticklabels =  [str(x) for x in stats_ns.name.values[namesort].tolist()]
                 if vtype in ['r2','corr']:
                     ax.plot(x,y,\
-                        label = f"\u03C3 = {vals.sigma.values.item()}",\
+                        label = f"$\kappa$ = {vals.sigma.values.item()}",\
                         color = colors[j],\
                         marker = markers[j],linestyle = 'None')
                 else:
                     ax.semilogy(x,y,\
-                        label = f"\u03C3 = {vals.sigma.values.item()}",\
+                        label = f"$\kappa$ = {vals.sigma.values.item()}",\
                         color = colors[j],\
                         marker = markers[j],linestyle = 'None')
                 ax.set_xticks(x)
@@ -241,7 +241,7 @@ def main():
                 
                 ax.plot(ixaxis,yfcnn,\
                     color = colors[j], marker = markers[j],\
-                        label = f"\u03C3 = {sigma_vals[j]}",\
+                        label = f"$\kappa$ = {sigma_vals[j]}",\
                             linestyle='--',markersize = 6)
             # ax.plot(ixaxis,yfcnn_lsrp,\
             #     color = colors[1], marker = markers[1],label = f'FCNN+LSRP',linestyle = 'None')
@@ -264,12 +264,12 @@ def main():
                 vn = corrvariable_names[coli]
             title = vn
             ax.set_title(title)
-            ax.set_xlabel('Stencil size (in grid points)')
+            ax.set_xlabel('Input stencils')
         targetfolder = 'paper_images/field_of_view'
         if not os.path.exists(targetfolder):
             os.makedirs(targetfolder)
-        plt.subplots_adjust(bottom=0.09, right=0.99, top=0.91, left= 0.03)
-        fig.savefig(os.path.join(targetfolder,f'{r2corr_str}.png'),transparent=True)
+        plt.subplots_adjust(bottom=0.15, right=0.99, top=0.91, left= 0.03)
+        fig.savefig(os.path.join(targetfolder,f'{r2corr_str}.png'),transparent=False)
         plt.close()
         print(os.path.join(targetfolder,f'{r2corr_str}.png'))
 

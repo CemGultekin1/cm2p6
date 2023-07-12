@@ -1,6 +1,7 @@
 import itertools
 import os
 import matplotlib.pyplot as plt
+import matplotlib
 from constants.paths import  all_eval_path
 from utils.xarray import skipna_mean
 import xarray as xr
@@ -153,19 +154,20 @@ def plot(stats_ns_,name_select):
         Stemp_corr = '$C_T$'           
     )
     model_renames_dict = dict(
-        LSRP = 'LSRP',
-        G = 'Glb',
-        GT = 'Glb-T',
-        R4 = 'GZ21',
-        R4T = 'GZ21-T'
+        LSRP = 'Linear',
+        G = 'CNN(Global)',
+        GT = 'CNN(Global)',
+        R4 = 'CNN(4Regs)',
+        R4T = 'CNN(4Regs)'
     )
+    matplotlib.rcParams.update({'font.size': 14})
     for vtype in vartypes:
         vnselect = [vn for vn in varnames if vn.split('_')[1] == vtype]
         ncols = len(vnselect)
         nrows = 1
         # fig,axs = plt.subplots(nrows,ncols, figsize = (ncols*3,nrows*3))
-        fig = plt.figure(figsize = (ncols*3,nrows*3))
-        spaxes = SubplotAxes(1,ncols,sizes = ((1,),(3,3,2)),ymargs=(0.18,0.01,0.1),xmargs = (0.05,0.03,0.01))
+        fig = plt.figure(figsize = (ncols*5,nrows*5))
+        spaxes = SubplotAxes(1,ncols,sizes = ((1,),(3,3,3)),ymargs=(0.18,0.01,0.1),xmargs = (0.05,0.03,0.01))
         for i in range(ncols):
             vname = vnselect[i]
             # ax = axs[i]
@@ -175,29 +177,39 @@ def plot(stats_ns_,name_select):
                 y = vals[vname].values[namesort]
                 if np.all(np.isnan(y)):
                     continue
-                x = np.arange(len(y))
-                nonans = [not np.all(np.isnan(stats_ns[vname].sel(name = x,).values)) for x in stats_ns.name.values[namesort].tolist()]
+                sorted_names_list = stats_ns.name.values[namesort].tolist()
+                nonans = [not np.all(np.isnan(stats_ns[vname].sel(name = x,).values)) for x in sorted_names_list]
                 nonans = np.array(nonans)
+                for ii in range(len(nonans)):
+                    if 'temp' in vname:
+                        if sorted_names_list[ii] in 'G R4'.split():
+                            nonans[ii] = False
+                    else:
+                        if sorted_names_list[ii] in 'GT R4T'.split():
+                            nonans[ii] = False
                 xticklabels =  [str(x) for x in stats_ns.name.values[namesort].tolist()]
                 for rnk,rnv in renames.items():
                     xtickind = xticklabels.index(rnk)
                     xticklabels[xtickind] = rnv
-                x = x[nonans]
+                # x = x[nonans]
                 y = y[nonans]
                 y = np.where(y < 0,y/16,y)
                 xticklabels = [model_renames_dict[xticklabels[i]] for i in range(len(xticklabels)) if nonans[i]]
+
+                
+                x = np.arange(len(y))
                 if vtype in ['r2','corr']:
                     ax.plot(x,y,\
-                        label = f"\u03C3 = {vals.sigma.values.item()}",\
+                        label = f"$\kappa$ = {vals.sigma.values.item()}",\
                         color = colors[j],\
-                        marker = markers[j],linestyle = 'None',markersize = 4)
+                        marker = markers[j],linestyle = 'None',markersize = 7)
                 else:
                     ax.semilogy(x,y,\
-                        label = f"\u03C3 = {vals.sigma.values.item()}",\
+                        label = f"$\kappa$ = {vals.sigma.values.item()}",\
                         color = colors[j],\
                         marker = markers[j],linestyle = 'None')
                 ax.set_xticks(x)
-                ax.set_xticklabels(xticklabels,rotation=45)
+                ax.set_xticklabels(xticklabels,rotation=25)
             if vtype in ['r2','corr']:
                 
                 if vtype == 'r2':
@@ -207,11 +219,12 @@ def plot(stats_ns_,name_select):
                     ax.set_yticks(yticks)
                     ax.set_yticklabels(yticklabels)
                 else:
-                    ax.set_ylim([-0.01,1.01])
+                    ax.set_ylim([0.25,1.01])
                     yticks = [0,0.25,0.5,0.75,1]
                     yticklabels = ['0','0.25','0.5','0.75','1.']
                     ax.set_yticks(yticks)
                     ax.set_yticklabels(yticklabels)
+            ax.set_xlim([-0.5,2.5])
             ax.grid( which='major', color='k', linestyle='--',alpha = 0.5)
             ax.grid( which='minor', color='k', linestyle='--',alpha = 0.5)
             if vtype in ['r2','corr']:

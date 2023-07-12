@@ -248,7 +248,8 @@ class MultiDomainDataset(MultiDomain):
         data_vars,coords = tonumpydict(outs)
         for ik,iv in self.input_kwargs.items():
             if ik not in coords:
-                coords[ik] = np.array([iv])
+                if np.isscalar(iv) or isinstance(iv,str):
+                    coords[ik] = np.array([iv])
         # print('\n'.join([f'{key} : {type(coords[key])}' for key in coords]))
         # print('\n'.join([f'{key} : {data_vars[key][1].shape}' for key in data_vars]))
         # raise Exception

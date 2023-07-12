@@ -21,7 +21,25 @@ def moments_dataset(prd,tr):
     for ev,val in evals.items():
         evals[ev] = val.rename({key:f'{key}_{ev}' for key in val.data_vars})
     return xr.merge(list(evals.values()))
+def co2_nan_expansion(sn:xr.Dataset):
+    if 'co2' not in sn.coords:
+        return sn
+    snco2slcs = []
+    for i in range(len(sn.co2)):
+        snco2slcs.append(sn.isel(co2 = i).drop('co2'))
+    mask = np.isnan(snco2slcs[0])*0
+    for snco2 in snco2slcs:
+        mask = mask + np.isnan(snco2)
+    mask = mask>0
+    for i,snco2 in enumerate(snco2slcs):
+        snco2 = xr.where(mask,np.nan,snco2)
+        snco2 = snco2.expand_dims({'co2':[sn.co2.values[i]]})
+        snco2slcs[i] = snco2
+    snco2slcs = xr.merge(snco2slcs)
+    return snco2slcs
+    
 def metrics_dataset(sn, dim = ['lat','lon']):
+    sn = co2_nan_expansion(sn)
     reduckwargs = dict(dim = dim)
     dvn = list(sn.data_vars)
     dvn = np.unique([dn.split('_')[0] for dn in dvn])

@@ -117,16 +117,22 @@ def depth_plot(stats):
                 yticklabels = [
                     str(int(ymin)),str(ymin/2),'0','0.2','0.4','0.6','0.8','1.'
                 ]
-                
-                
+            import matplotlib as mpl
+            color_offset = 10
+            norm = mpl.colors.Normalize(vmin=0, vmax=len(DEPTHS) + color_offset)
+            cmap = mpl.cm.ScalarMappable(norm=norm, cmap=mpl.cm.brg)
+            cmap.set_array([])
+
+            colors = [cmap.to_rgba(i )for i in range(len(DEPTHS)+color_offset,color_offset-1,-1)]
             markers = ['^','v','<','>','s','p','D']
             for l in range(len(DEPTHS)):
                 yl = y.isel(training_depth =l)
-                ax.plot(ixaxis,yl,f'{markers[l]}',linestyle = 'dotted', label = f'{str(int(DEPTHS[l]))} m',markersize = 6)
+                # ax.plot(ixaxis,yl,f'{markers[l]}',linestyle = 'dotted', label = f'{str(int(DEPTHS[l]))} m',markersize = 6)
+                ax.plot(ixaxis,yl,c = colors[l],marker = markers[l],linestyle = 'dotted', label = f'{str(int(DEPTHS[l]))} m',markersize = 6)
             # for l in range(len(DEPTHS)):
             #     yl = y.isel(training_depth =l)
             #     ax.plot(ixaxis[l],yl.values[l],'k.',markersize = 12)
-            ax.plot(ixaxis,ylsrp,f'{markers[-1]}',linestyle = 'dotted', label = 'LSRP',markersize = 6)
+            ax.plot(ixaxis,ylsrp,f'{markers[-1]}',c = 'r',linestyle = 'dotted', label = 'Linear',markersize = 6)
             if negative_r2_management:
                 ax.set_ylim([-.25,1.05])
                 ax.set_yticks(yticks)
@@ -151,15 +157,15 @@ def depth_plot(stats):
                 vn = r2variable_names[j]
             else:
                 vn = corrvariable_names[j]
-            title = vn + f': \u03C3={sigma}'
+            title = vn + f': $\kappa$={sigma}'
             ax.set_title(title)
-            ax.set_xlabel('test depths (m)')
+            ax.set_xlabel('Test depth (m)')
         target_folder = 'paper_images/depth'
         if not os.path.exists(target_folder):
             os.makedirs(target_folder)
         plt.subplots_adjust(bottom=0.12, right=0.98, top=0.91, left= 0.05)
-        fig.savefig(os.path.join(target_folder,f'{r2corr_str}_sigma_{sigma}.png'),transparent=True)
-        fig.savefig(os.path.join(target_folder,f'{r2corr_str}_sigma_{sigma}_.png'),transparent=False)
+        # fig.savefig(os.path.join(target_folder,f'{r2corr_str}_sigma_{sigma}.png'),transparent=True)
+        fig.savefig(os.path.join(target_folder,f'{r2corr_str}_sigma_{sigma}.png'),transparent=False)
         print(os.path.join(target_folder,f'{r2corr_str}_sigma_{sigma}.png'))
 
 
