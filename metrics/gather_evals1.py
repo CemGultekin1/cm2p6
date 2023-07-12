@@ -1,9 +1,10 @@
 import itertools
 import os
+from metrics.geomean import WetMaskCollector, WetMaskedMetrics
 from models.nets.cnn import kernels2spread
 from plots.metrics import metrics_dataset
 from constants.paths import JOBS, EVALS, all_eval_path
-from metrics.mmcoords import ModelMetricCoords, ModelResultsCollection
+from metrics.modmet import ModelMetric, ModelResultsCollection
 from utils.xarray import skipna_mean
 import xarray as xr
 from utils.arguments import args2dict, options
@@ -68,7 +69,14 @@ def main():
     # lines = turn_to_lsrp_models(lines) + lines  
     
     mrc = ModelResultsCollection()
+    wc   = WetMaskCollector()
     for i,line in enumerate(lines):
+        wmm = WetMaskedMetrics(line.split(),wc)
+        wmm.load()
+        wmr = wmm.latlon_reduct()
+        from utils.xarray import plot_ds
+        plot_ds({"wetmask":wmr},'wetmasks.png')
+        return
         _,modelid = options(line.split(),key = 'model')
         snfile = os.path.join(root,modelid + '.nc')
         if not os.path.exists(snfile):
@@ -78,9 +86,11 @@ def main():
         except:
             continue
         print(f'{i}/{len(lines)}')
+        print(sn)
+
         # print(sn.isel(co2 = 0,depth = 0,lat = slice(100,103),lon = slice(100,103)))
         metrics = append_statistics(sn,)
-        mm = ModelMetricCoords(line.split(),metrics)
+        mm = WetMaskedMetrics(line.split(),metrics)
         mm.past_coords_to_metric(('filtering',))
         mrc.add_metrics(mm)
     ds = mrc.merged_dataset()

@@ -1,5 +1,7 @@
 import itertools
+import os
 from typing import Dict, List, Tuple
+from constants.paths import EVALS
 from options.reduce import ScalarArguments
 from utils.arguments import options
 from utils.slurm import flushed_print
@@ -7,42 +9,64 @@ import xarray as xr
 import numpy as np
 
 class ModelCoordinates(ScalarArguments):
-    def __init__(self,args:List[str]) -> None:
+    def __init__(self,modelargs:List[str]) -> None:
         super().__init__()
-        self.args = args
-        self.coord_dict = self.transform_arguments(*args)
-        _,modelid = options(args,key = 'model')
+        self.modelargs = modelargs
+        self.coord_dict = self.transform_arguments(*modelargs)
+        _,modelid = options(modelargs,key = 'model')
         self.modelid = modelid
     def get_coords_dict(self,tag:str = ''):
         return {tag + key:val for key,val in self.coord_dict.items() if val is not None}
 
-class ModelMetricCoords(ModelCoordinates):
-    raw_features :xr.Dataset
-    def __init__(self, args: List[str],features:xr.Dataset) -> None:
-        super().__init__(args)
-        self.raw_features :xr.Dataset= features
+class ModelMetric(ModelCoordinates):
+    metrics :xr.Dataset
+    def __init__(self, modelargs: List[str],metrics:xr.Dataset) -> None:
+        super().__init__(modelargs)
+        self.metrics :xr.Dataset= metrics
     def get_coords_dict(self,):#model_tag:str,metric_tag:str):
-        return super().get_coords_dict(),{key : self.raw_features[key].values.tolist() for key in self.raw_features.coords.keys()}
+        return super().get_coords_dict(),{key : self.metrics[key].values.tolist() for key in self.metrics.coords.keys()}
     def transform_feature_coord_names(self,rename:Dict[str,str]):
-        return self.raw_features.rename(rename)
+        return self.metrics.rename(rename)
     def past_coords_to_metric(self,coords:Tuple[str]):
         for coord in coords:
             if coord not in self.coord_dict:
                 raise Exception
             val = self.coord_dict[coord]
-            ckeys = list(self.raw_features.coords.keys())
+            ckeys = list(self.metrics.coords.keys())
             if coord in ckeys:
                 continue
             if isinstance(val,str):
                 val = hash(val)
-            self.raw_features = self.raw_features.expand_dims({coord:[val]},axis = 0)
+            self.metrics = self.metrics.expand_dims({coord:[val]},axis = 0)
 
-            
+class MergeMetrics(ModelMetric):
+    metrics :xr.Dataset
+    def __init__(self, modelargs: List[str],) -> None:
+        super().__init__(modelargs,xr.Dataset())
+    def merge(self,metrics:xr.Dataset):
+        self.metrics = xr.merge([self.metrics,metrics])
+    @property
+    def filename(self,):
+        return os.path.join(EVALS,self.modelid+'.nc')
+    def save(self,):
+        print(self.filename)
+        self.metrics.to_netcdf(self.filename,mode = 'w')
+    def load(self,):
+        self.metrics = xr.open_dataset(self.filename,)
+        return self
+    
+# class FaultyFilteringNamingResolution(MergeMetrics):
+#     def __init__(self,x:MergeMetrics) -> None:
+#         self.__dict__.update(x.__dict__)
+#         self.merged_metrics = x
+#     def find_best_fitting_filter(self,):
+#         self.merged_metrics.filtering
+    
 class ModelResultsCollection:
     collision_tag:str = 'training_'
     def __init__(self) -> None:
-        self.models : List[ModelMetricCoords] = []
-    def add_metrics(self,mm:ModelMetricCoords):
+        self.models : List[MergeMetrics] = []
+    def add_metrics(self,mm:MergeMetrics):
         self.models.append(mm)
     def merged_dataset(self,):
         model = self.models[0]
@@ -103,7 +127,6 @@ class ModelResultsCollection:
         
         data_vars = {}
         flushed_print(f'total number of models = {len(self.models)}')
-        merged_coord_keys = list(merged_coord.keys())
         for model in self.models:
             mdict,_ = model.get_coords_dict()
             mdict = rename_dict_fun(mdict)
@@ -114,10 +137,10 @@ class ModelResultsCollection:
             inds = inds + [0]*(len(shape) - len(inds))            
             alpha0 = np.ravel_multi_index(inds,shape)
             alpha1 = alpha0 + lent
-            for key in model.raw_features.data_vars.keys():
+            for key in model.metrics.data_vars.keys():
                 if key not in data_vars:
                     data_vars[key] = empty_arr()
-                datarr = model.raw_features[key]
+                datarr = model.metrics[key]
                 datarr = datarr.reindex(indexers = feat_coord, fill_value = np.nan)
                 values = datarr.values
                 data_vars[key][alpha0:alpha1] = values.flatten()

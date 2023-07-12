@@ -1,10 +1,22 @@
-from typing import Callable
+from typing import Callable, Union
 from data.vars import get_var_mask_name
 import xarray as xr
 import torch
 import numpy as np
 import torch.nn as nn
 from scipy.ndimage import gaussian_filter
+
+def is_xarray_empty(x:Union[xr.Dataset,xr.DataArray]):
+    return not list(x.coords.keys())
+    # if isinstance(x,xr.Dataset):
+    #     dlist = list(x.data_vars.keys())
+    #     if not dlist:
+    #         return True
+    #     key = dlist[0]
+    #     return x[key]
+    # return len(x) == 0
+
+
 
 def skipna_mean(ds,dim):
     _nonancount= xr.where(np.isnan(ds) + (np.abs(ds) == np.inf  ),0,1)

@@ -5,7 +5,7 @@ from models.nets.cnn import kernels2spread
 from plots.metrics import metrics_dataset
 from constants.paths import JOBS, EVALS, all_eval_path
 from constants.paths import DISTS
-from metrics.mmcoords import ModelMetricCoords, ModelResultsCollection
+from metrics.modmet import ModelMetric, ModelResultsCollection
 from utils.slurm import flushed_print
 from utils.xarray import plot_ds, skipna_mean
 import xarray as xr
@@ -157,7 +157,7 @@ def main():
         # kst.plot(str(i))
         # continue
         metrics = kst.compute()
-        mm = ModelMetricCoords(line.split(),metrics)
+        mm = ModelMetric(line.split(),metrics)
         mrc.add_metrics(mm)
         # if i == 2:
         #     break

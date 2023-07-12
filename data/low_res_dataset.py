@@ -154,16 +154,9 @@ class MultiDomainDataset(MultiDomain):
                 newdims.pop('lat')
             shp0 = [shp[key] for key in newdims]
             shp1 = list(shp.values())
-            newdims = list(newdims.keys())
-            
-            # a,b = np.zeros(shp0),np.ones(shp0)
+            newdims = list(newdims.keys())        
             a = np.ones(shp0)
             if self.scalars is not None:
-                # if f"{key}_mean" in self.scalars:
-                #     a = self.scalars[f"{key}_mean"].values
-                #     b = self.scalars[f"{key}_std"].values
-                #     a = a.reshape(shp0)
-                #     b = b.reshape(shp0)
                 if f"{key}_scale" in self.scalars:
                     a = self.scalars[f"{key}_scale"].values
                     a = a.reshape(shp0)
