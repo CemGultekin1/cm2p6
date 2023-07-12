@@ -4,7 +4,6 @@ import xarray as xr
 from transforms.grids import get_grid_vars, ugrid2tgrid_interpolation
 from transforms.subgrid_forcing import BaseLSRPSubgridForcing, filtering_classes
 import numpy as np
-
 class HighResCm2p6:
     def __init__(self,ds:xr.Dataset,sigma,*args,section = [0,1],**kwargs):
         self.ndepth = len(ds.depth)
@@ -14,6 +13,16 @@ class HighResCm2p6:
             self.per_depth.append(HighResCm2p6perDepth(ds.isel(depth = [i],),sigma,*args,section=section,**kwargs))
         
         self.ds = ds
+    def iterate_wet_masks_through_depths(self,):
+        for di,depth in zip(self.per_depth,self.ds.depth.values):
+            masks = xr.merge(di.get_mask())
+            if 'depth' not in masks.coords:
+                masks = masks.expand_dims({'depth':[depth]},axis = 0)                
+            keepdims = 'lat lon depth'.split()
+            dropdims = [key for key in masks.coords.keys() if key not in keepdims]
+            masks = masks.drop(dropdims)
+            yield masks
+
     def __len__(self,):
         return self.ntime    
     def __getitem__(self,itime:int):
@@ -145,17 +154,18 @@ class HighResCm2p6perDepth:
             for key_ in 'lat lon'.split():
                 tgridval[key_] = ugridval[key_]
             return tgridval
-        
+
         ucoarse_wet_density = self.ugrid_subgrid_forcing.wet_mask_generator.coarse_wet_density
         tcoarse_wet_density = self.tgrid_subgrid_forcing.wet_mask_generator.coarse_wet_density
         tcoarse_wet_density = pass_gridvals(tcoarse_wet_density,ucoarse_wet_density)
         coarse_wet_density = (ucoarse_wet_density + tcoarse_wet_density)/2
-         
+        
+
         ucoarse_interior_wet_mask = self.ugrid_subgrid_forcing.wet_mask_generator.coarse_interior_wet_mask
         tcoarse_interior_wet_mask = self.tgrid_subgrid_forcing.wet_mask_generator.coarse_interior_wet_mask
         tcoarse_wet_density = pass_gridvals(tcoarse_interior_wet_mask,ucoarse_interior_wet_mask)
         coarse_interior_wet_mask = ucoarse_interior_wet_mask*tcoarse_interior_wet_mask
-        
+
         coarse_wet_density.name = 'wet_density'
         coarse_interior_wet_mask.name = 'interior_wet_mask'
         return coarse_wet_density.compute(),coarse_interior_wet_mask.compute()

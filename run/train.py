@@ -20,10 +20,11 @@ def dummy_gpu_fill(infields:torch.Tensor,net:CNN):
     
 def main():
     args = sys.argv[1:]
-    from utils.slurm import read_args
-    from utils.arguments import replace_params
-    args = read_args(17,filename = 'offline_sweep.txt')
-    args = replace_params(args,'num_workers','1','disp','1','reset','True','minibatch','4','depth','728','domain','global')
+    # from utils.slurm import read_args
+    # from utils.arguments import replace_params
+    # args = read_args(17,filename = 'offline_sweep.txt')
+    # args = replace_params(args,'num_workers','3','disp','1','reset',\
+    #             'True','minibatch','2','depth','110','domain','global')
 
     modelid,state_dict,net,criterion,optimizer,scheduler,logs,runargs = load_model(args)
     print(net)
@@ -52,18 +53,18 @@ def main():
             outputs = net.forward(infields)
             loss = criterion(outputs, outfields, mask)
             
-            import matplotlib.pyplot as plt
-            def plot_samples(vec,name:str):
-                vec = vec.cpu().numpy()
-                for i,j in itertools.product(*[range(k) for k in vec.shape[:2]]):
-                    vecij = vec[i,j]
-                    plt.imshow(vecij[::-1,:])
-                    plt.savefig(f'{name}-{i}-{j}.png')
-                    plt.close()
-            plot_samples(infields,'infields')
-            plot_samples(outfields,'outfields')
-            plot_samples(mask,'mask')
-            return
+            # import matplotlib.pyplot as plt
+            # def plot_samples(vec,name:str):
+            #     vec = vec.cpu().numpy()
+            #     for i,j in itertools.product(*[range(k) for k in vec.shape[:2]]):
+            #         vecij = vec[i,j]
+            #         plt.imshow(vecij[::-1,:])
+            #         plt.savefig(f'{name}-{i}-{j}.png')
+            #         plt.close()
+            # plot_samples(infields,'infields')
+            # plot_samples(outfields,'outfields')
+            # plot_samples(mask,'mask')
+            # return
                     
             # mean,prec = mean*mask,prec*mask
             # train_interrupt = dict(

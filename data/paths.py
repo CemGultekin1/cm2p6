@@ -54,7 +54,7 @@ def get_high_res_data_location(args):
     prms,_ = options(args,key = "data")
     return get_filename(1,prms.depth,prms.co2,prms.filtering)
 
-def get_low_res_data_location(args):
+def get_low_res_data_location(args,silent :bool = False):
     prms,_ = options(args,key = "run")
     
     filename = get_filename(prms.sigma,prms.depth,prms.co2,prms.filtering)
@@ -67,7 +67,8 @@ def get_low_res_data_location(args):
     #     filename = filename.replace('.zarr','_.zarr')
     if prms.spacing == 'long_flat':
         filename = filename.replace('.zarr','_flat.zarr')
-    print(filename)
+    if not silent:
+        print(filename)
     return filename
 
 def get_preliminary_low_res_data_location(args):

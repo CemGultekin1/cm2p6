@@ -12,7 +12,7 @@ from transforms.learned_deconv import SectionedDeconvolutionFeatures
 from transforms.grids import get_grid_vars
 import xarray as xr
 from data.coords import  DEPTHS, REGIONS, TIMES
-from utils.arguments import options
+from utils.arguments import options, replace_params
 import numpy as np
 import torch
 
@@ -341,6 +341,16 @@ def get_deconvolution_generator(args,data_loaders = True,):
     else:
         return dsets
 
+def get_wet_mask_location(datargs):
+    datargs = replace_params(datargs,'filtering','gaussian','co2','False')
+    data_address = get_low_res_data_location(datargs,silent=True)    
+    return data_address.replace('gaussian','wet_mask')
+    
+def load_wet_mask(datargs):
+    wet_mask_location = get_wet_mask_location(datargs)
+    print(wet_mask_location)
+    return xr.open_zarr(wet_mask_location)
+
 def populate_dataset(dataset:MultiDomainDataset,groups = ("train","validation"),**kwargs):
     datasets = []
     for group in groups:
@@ -367,6 +377,7 @@ def preprocess_dataset(args,ds:xr.Dataset,high_res_flag:bool ):
         return ds
     ds = add_co2(ds,prms)
     scs = load_scalars(args)
+    
     if prms.depth > 1e-3:
         if 'depth' not in coord_names:
             raise RequestDoesntExist
@@ -389,7 +400,8 @@ def preprocess_dataset(args,ds:xr.Dataset,high_res_flag:bool ):
             ds = ds.isel(depth = 0)
             if prms.mode != 'scalars':
                 scs = scs.isel(depth = 0)
-            
+    
+    
 
     if prms.mode in ['train','eval','view'] and 'tr_depth' in ds.coords:
         depthval = ds.depth.values
@@ -407,4 +419,14 @@ def preprocess_dataset(args,ds:xr.Dataset,high_res_flag:bool ):
             if np.abs(trd[tr_ind] - depthval)>1:
                 raise RequestDoesntExist
             scs = scs.isel(tr_depth = tr_ind)
+    if not high_res_flag:
+        wet_mask = load_wet_mask(args)        
+        depth = ds.depth.values.item()
+        wet_mask = wet_mask.sel(depth = depth)
+        existing_masks = 'interior_wet_mask wet_density'.split()
+        for emask in existing_masks:
+            if emask not in ds.data_vars:
+                continue
+            ds = ds.drop(emask)                
+        ds = xr.merge([ds,wet_mask])
     return ds,scs

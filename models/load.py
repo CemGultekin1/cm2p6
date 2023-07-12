@@ -158,7 +158,7 @@ def load_model(args):
         if state_dict is not None:
             print(f"Model was not found")
         elif rerun_flag:
-            print(f"Model is re-initiated for rerun")
+            print(f"Model exists but it is re-initiated for rerun")
     if runargs.reset:
         logs = {"epoch":[],"train-loss":[],"test-loss":[],"val-loss":[],"lr":[],"batchsize":[]}
     if len(logs["epoch"])>0:
