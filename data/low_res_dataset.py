@@ -73,6 +73,7 @@ class MultiDomainDataset(MultiDomain):
                 vals = vals.reshape([-1]+ vrshp[-2:])
                 vals =  vals[:,self.sslice,self.sslice]
                 vals = vals.reshape(vrshp[:-2] + list(vals.shape[-2:]))
+                # print(f'{vrshp}->{vals.shape}' )
             padtuple = (len(vals.shape)-2)*[(0,0)] + [(0,pad[0]),(0,pad[1])]
             vals = np.pad(vals,pad_width = tuple(padtuple),constant_values = np.nan)
             data_vars[name] = (dims,vals)
@@ -194,8 +195,10 @@ class MultiDomainDataset(MultiDomain):
         return data_vars
     def __getitem__(self, i):
         ds = super().__getitem__(i)
+        # print(f'MultiDomainDataset - {[f"{key}-{val.shape}" for key,val in ds.coords.items()]}')
         per_region = []
         requested_boundaries = ([None]*4,) if self.requested_boundaries is None else self.requested_boundaries
+        # print(f'requested_boundaries = {requested_boundaries}')
         for lat0,lat1,lon0,lon1 in requested_boundaries:            
             if lat0 is not None:
                 subds = ds.sel(lat = slice(lat0,lat1),lon= slice(lon0,lon1))
@@ -247,6 +250,8 @@ class MultiDomainDataset(MultiDomain):
         
     def single_domain(self,outs):
         data_vars,coords = tonumpydict(outs)
+        # for key,(dim,val) in data_vars.items():
+        #     print(f'{key}-{dim}: {val.shape}')
         for ik,iv in self.input_kwargs.items():
             if ik not in coords:
                 if np.isscalar(iv) or isinstance(iv,str):
@@ -258,8 +263,9 @@ class MultiDomainDataset(MultiDomain):
             data_vars = self.add_lat_features(data_vars,coords)
 
         data_vars,coords = self.normalize(data_vars,coords)
-        data_vars,coords,forcing_coords = self.pad(data_vars,coords)
         data_vars = self.mask(data_vars)
+        data_vars,coords,forcing_coords = self.pad(data_vars,coords)
+        
         grouped_vars = self.group_variables(data_vars)
         
         if self.torch_flag:

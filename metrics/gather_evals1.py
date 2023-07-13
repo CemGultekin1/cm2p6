@@ -64,8 +64,6 @@ def main():
     mrc = ModelResultsCollection()
     wc   = WetMaskCollector()
     lines = np.array(lines)
-    # lines = lines[:1]
-    # lines = lines[[0,1,2,48,49,50,147,148,149]]
     for i,line in enumerate(lines):
         wmm = WetMaskedMetrics(line.split(),wc)
         if not wmm.file_exists():

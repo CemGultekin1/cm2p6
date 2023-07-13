@@ -222,6 +222,8 @@ class SingleDomain(CM2p6Dataset):
         # if self.apply_mask:
             # ds = apply_mask(ds,self.field_wet_mask.values,list(ds.data_vars))
             # ds = apply_mask(ds,self.forcing_wet_mask.values,[field for field in list(ds.data_vars) if 'S' in field])
+        # print(ds)
+        # print(f'SingleDomain - {[f"{key}-{val.shape}" for key,val in ds.coords.items()]}')
         return ds
 
     def get_grid_fixed_lres(self,ds):
