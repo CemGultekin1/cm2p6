@@ -54,10 +54,6 @@ def main():
     # args = read_args(289,filename = 'offline_sweep.txt')
     args = replace_params(args,'mode','eval','lsrp',1,'temperature','True',)
     
-    
-    # _,_,net,_,_,_,_,_=load_model(args)
-    # device = get_device()
-    # net.to(device)
     lsrp_flag, lsrpid = get_lsrp_modelid(args)
     
     non_static_params=['depth','co2',]
@@ -88,8 +84,9 @@ def main():
             depth = forcing_coords['depth'].item()
             co2 = forcing_coords['co2'].item()
             kwargs = dict(contained = '' if not lsrp_flag else 'res', \
-                expand_dims = {'co2':[co2],'depth':[depth]},\
+                expand_dims = {key:forcing_coords[key].item() for key in non_static_params},\
                 drop_normalization = True,
+                masking = False
                 )
             if nt ==  0:
                 flushed_print(depth,co2)

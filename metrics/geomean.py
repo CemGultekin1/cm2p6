@@ -68,6 +68,8 @@ class WetMaskCollector:
         self.masks.append(wetmask)
         return wetmask.wet_mask
 
+
+    
 class WetMaskedMetrics(MergeMetrics):
     def __init__(self, modelargs: List[str],wc:WetMaskCollector) -> None:
         super().__init__(modelargs)
@@ -78,27 +80,14 @@ class WetMaskedMetrics(MergeMetrics):
         stencil = model_coords['stencil'] if stencil == 0 else stencil
         sigma = model_coords['sigma']
         return self.wet_mask_collector.get_wet_mask(sigma,stencil)
-    def latlon_reduct(self,):
-        wetmask = self.get_mask()
+    def reduce_moments_metrics(self,stencil :int= 0):
+        wetmask = self.get_mask(stencil = stencil)
         wetmask = select_coords_by_extremum(wetmask,self.metrics.coords,'lat lon'.split())
         wetmask = select_coords_by_value(wetmask,self.metrics.coords,'depth')
-        
-        # shp = shape_dict(wetmask)
-        # print(f'wetmask.shape = {shp}')
-        # shp = shape_dict(self.metrics)
-        # print(f'metrics.shape = {shp}')
-        
-        # from utils.xarray import plot_ds
-        # plot_ds(metrics,'metrics.png',ncols = 1)
-        # plot_ds({'wetmask':wetmask},'wet_mask.png',ncols = 1)
-        
-        metrics = xr.where(wetmask,self.metrics,np.nan)
-        
-        
-        # raise Exception
-        self.metrics = moments_metrics_reduction(metrics,dim = 'lat lon'.split())
-        # shp = shape_dict(self.metrics)
-        # print(f'metrics.shape = {shp}')
+        metrics = xr.where(wetmask,self.metrics,np.nan)        
+        return metrics
+    def latlon_reduct(self,stencil :int= 0):
+        self.metrics = self.reduce_moments_metrics(stencil=stencil)
     def filtering_name_fix(self,):
         if 'filtering' not in self.metrics.coords:
             return 
@@ -124,6 +113,15 @@ class WetMaskedMetrics(MergeMetrics):
             legal_terms = np.array([legal_terms[legal_terms_in_num.index(fl)] for fl in fls])
             self.metrics = self.metrics.assign_coords(filtering = legal_terms)
             print(f'\t\t{fls}->{legal_terms}')
+            
+class VariableWetMaskedMetrics(WetMaskedMetrics):
+    def __init__(self, modelargs: List[str], wc: WetMaskCollector,stencils:List[int]) -> None:
+        super().__init__(modelargs, wc)
+        self.stencils = stencils
+    def latlon_reduct(self,):
+        for stencil in self.stencils:
+            metric = self.reduce_moments_metrics(stencil=stencil)
+            
 # def co2_nan_expansion(sn:xr.Dataset):
 #     if 'co2' not in sn.coords:
 #         return sn

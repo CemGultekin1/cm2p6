@@ -39,7 +39,8 @@ def co2_nan_expansion(sn:xr.Dataset):
     return snco2slcs
     
 def metrics_dataset(sn, dim = ['lat','lon']):
-    sn = co2_nan_expansion(sn)
+    if 'lat' in dim or 'lon' in dim:
+        sn = co2_nan_expansion(sn)
     reduckwargs = dict(dim = dim)
     dvn = list(sn.data_vars)
     dvn = np.unique([dn.split('_')[0] for dn in dvn])

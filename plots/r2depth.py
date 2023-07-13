@@ -6,6 +6,7 @@ from plots.for_paper.saliency import SubplotAxes
 from utils.xarray import drop_unused_coords, skipna_mean
 import xarray as xr
 import numpy as np
+import matplotlib
 
 def class_functions(Foo):
     return [func for func in dir(Foo) if callable(getattr(Foo, func)) and not func.startswith("__")]
@@ -88,8 +89,9 @@ def depth_plot(stats):
         ncols = 2
         figsizesc = 6
         # fig,axs = plt.subplots(ncols,nrows,figsize = (figsizesc*nrows,figsizesc/3*2*ncols))
+        matplotlib.rcParams.update({'font.size': 14})
         fig = plt.figure(figsize = (ncols*figsizesc,nrows*figsizesc/1.5))
-        spaxes = SubplotAxes(1,ncols,sizes = ((1,),(5,2,5)),ymargs=(0.12,0.01,0.1),xmargs = (0.05,0.01,0.1))
+        spaxes = SubplotAxes(1,ncols,sizes = ((1,),(5,2,5)),ymargs=(0.15,0.005,0.09),xmargs = (0.04,0.005,0.03))
         r2variable_names = '$R^2_u$ $R^2_T$'.split()
         corrvariable_names = '$C_u$ $C_T$'.split()
         for i,j in itertools.product(range(nrows),range(ncols)):
@@ -119,11 +121,11 @@ def depth_plot(stats):
                 ]
             import matplotlib as mpl
             color_offset = 10
-            norm = mpl.colors.Normalize(vmin=0, vmax=len(DEPTHS) + color_offset)
-            cmap = mpl.cm.ScalarMappable(norm=norm, cmap=mpl.cm.brg)
+            norm = mpl.colors.Normalize(vmin=0, vmax=len(DEPTHS) + color_offset-1)
+            cmap = mpl.cm.ScalarMappable(norm=norm, cmap=mpl.cm.Blues)
             cmap.set_array([])
 
-            colors = [cmap.to_rgba(i )for i in range(len(DEPTHS)+color_offset,color_offset-1,-1)]
+            colors = [cmap.to_rgba(i )for i in range(color_offset,len(DEPTHS)+color_offset)]
             markers = ['^','v','<','>','s','p','D']
             for l in range(len(DEPTHS)):
                 yl = y.isel(training_depth =l)
@@ -132,7 +134,7 @@ def depth_plot(stats):
             # for l in range(len(DEPTHS)):
             #     yl = y.isel(training_depth =l)
             #     ax.plot(ixaxis[l],yl.values[l],'k.',markersize = 12)
-            ax.plot(ixaxis,ylsrp,f'{markers[-1]}',c = 'r',linestyle = 'dotted', label = 'Linear',markersize = 6)
+            ax.plot(ixaxis,ylsrp,f'{markers[-1]}',fillstyle = 'none',c = 'red',linestyle = 'dotted', label = 'Linear',markersize = 6)
             if negative_r2_management:
                 ax.set_ylim([-.25,1.05])
                 ax.set_yticks(yticks)
@@ -147,7 +149,7 @@ def depth_plot(stats):
             ax.set_xticklabels(xaxis)
             # ax.legend()
             if j == 0:
-                ax.legend(bbox_to_anchor=(1.1, 0.5), loc="center left")
+                ax.legend(bbox_to_anchor=(1.025, 0.6), loc="center left")
             ax.grid(which = 'major',color='k', linestyle='--',linewidth = 1,alpha = 0.8)
             ax.grid(which = 'minor',color='k', linestyle='--',linewidth = 1,alpha = 0.6)
             
@@ -157,13 +159,13 @@ def depth_plot(stats):
                 vn = r2variable_names[j]
             else:
                 vn = corrvariable_names[j]
-            title = vn + f': $\kappa$={sigma}'
+            title = vn# + f': $\kappa$={sigma}'
             ax.set_title(title)
             ax.set_xlabel('Test depth (m)')
         target_folder = 'paper_images/depth'
         if not os.path.exists(target_folder):
             os.makedirs(target_folder)
-        plt.subplots_adjust(bottom=0.12, right=0.98, top=0.91, left= 0.05)
+        # plt.subplots_adjust(bottom=0.12, right=0.98, top=0.91, left= 0.05)
         # fig.savefig(os.path.join(target_folder,f'{r2corr_str}_sigma_{sigma}.png'),transparent=True)
         fig.savefig(os.path.join(target_folder,f'{r2corr_str}_sigma_{sigma}.png'),transparent=False)
         print(os.path.join(target_folder,f'{r2corr_str}_sigma_{sigma}.png'))
