@@ -2,7 +2,7 @@ from dataclasses import dataclass
 import itertools
 import os
 from models.nets.cnn import kernels2spread
-from plots.metrics import metrics_dataset
+from plots.metrics_ import metrics_dataset
 from constants.paths import JOBS, EVALS, all_eval_path
 from constants.paths import DISTS
 from metrics.modmet import ModelMetric, ModelResultsCollection
@@ -139,11 +139,6 @@ def main():
     )
     mrc = ModelResultsCollection()
     for i,line in enumerate(lines):
-        # if i+1 not in [17,18,19,20]:
-        #     continue
-        # coordvals,(_,modelid) = args2dict(line.split(),key = 'model',coords = coords,transform_funs=transform_funs)
-        # for rn,val in rename.items():
-        #     coordvals[val] = coordvals.pop(rn)
         _,modelid = options(line.split(),key = 'model')
         snfile = os.path.join(root,modelid + '.nc')
         if not os.path.exists(snfile):

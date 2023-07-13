@@ -151,8 +151,11 @@ class ModelResultsCollection:
     
     
 class ModelResults:
-    def __init__(self,tag:str) -> None:
-        self.path = all_eval_path().replace('.nc',f'{tag}.nc')
+    def __init__(self,tag:str,path:str  = '') -> None:
+        if len(path) == 0:
+            self.path = all_eval_path().replace('.nc',f'{tag}.nc')
+        else:
+            self.path = path
         self.metrics = xr.open_dataset(self.path)
     def reduce_coord(self,*coords:str):
         for coord in coords:

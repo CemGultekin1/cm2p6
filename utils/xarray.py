@@ -6,7 +6,24 @@ import numpy as np
 import torch.nn as nn
 from scipy.ndimage import gaussian_filter
 
-def select_coords_by_extremum(x:xr.Dataset,coords,names:List[str]):
+def existing_sel(ds:xr.Dataset,**select_dict):
+    keys = []
+    for key in select_dict.keys():
+        if key in ds.coords.keys():
+            keys.append(key)
+    subselect_dict = dict([(key,select_dict[key]) for key in keys])
+    try:
+        ds =  ds.sel(**subselect_dict,)
+    except:
+        print(ds)
+        print(subselect_dict)
+        raise Exception        
+    return ds
+    
+
+def select_coords_by_extremum(x:xr.Dataset,coords,names:Union[List[str],str]):
+    if isinstance(names,str):
+        names = [names]
     for key in names:
         vals = coords[key].values
         minv,maxv = vals[0],vals[-1]
@@ -14,10 +31,20 @@ def select_coords_by_extremum(x:xr.Dataset,coords,names:List[str]):
         maxi = np.argmin(np.abs(x[key].values - maxv))
         x = x.isel({key:slice(mini,maxi+1)})
     return x
-def select_coords_by_value(x:xr.Dataset,coords,names:List[str]):
+def select_coords_by_value(x:xr.Dataset,coords,names:List[str],override:bool = True):
+    if isinstance(names,str):
+        names = [names]
+    
     for key in names:
-        vals = coords[key].values
-        x = x.sel({key:vals})
+        try:
+            vals = coords[key].values
+            x = x.sel({key:vals},method = 'nearest')
+            if override:
+                x[key] = vals
+        except:
+            print(f'exiting values, {key} : {x[key].values}')
+            print(f'requested values, {key} : {vals}')
+            raise Exception
     return x
 
 

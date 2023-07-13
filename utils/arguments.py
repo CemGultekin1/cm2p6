@@ -5,7 +5,21 @@ from typing import List
 from options.params import DATA_PARAMS,MODEL_PARAMS,ARCH_PARAMS,RUN_PARAMS, SCALAR_PARAMS, TRAIN_PARAMS,USUAL_PARAMS,PARAMS
 import numpy as np
 
-
+def is_consistent(args:List[str],key = 'model',**kwargs):
+    runargs,_ = options(args,key = key)
+    for key,item in kwargs.items():
+        val = runargs.__dict__[key]
+        if np.isscalar(item):            
+            if val != item:
+                return False
+        else:
+            if len(item) != len(val):
+                return False
+            else:
+                if np.any([i!=j for i,j in zip(item,val)]):
+                    return False
+    return True
+                
 def tuple2string(tpl):
     if tpl is None:
         return ""

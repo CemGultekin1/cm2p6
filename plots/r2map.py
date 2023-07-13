@@ -1,7 +1,7 @@
 import itertools
 import os
 import matplotlib.pyplot as plt
-from plots.metrics import metrics_dataset
+from plots.metrics_ import metrics_dataset
 from constants.paths import JOBS, R2_PLOTS, EVALS
 from utils.xarray import skipna_mean
 import xarray as xr

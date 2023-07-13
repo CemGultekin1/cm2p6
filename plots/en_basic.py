@@ -2,6 +2,7 @@ import itertools
 import os
 import matplotlib.pyplot as plt
 from constants.paths import DISTS
+from metrics.modmet import ModelResults
 from plots.for_paper.saliency import SubplotAxes
 import xarray as xr
 from utils.slurm import flushed_print
@@ -43,7 +44,10 @@ class ModelMetric(ModelSelection):
 def main():
     root = DISTS
     filename = os.path.join(root,'all.nc')
-    ds = xr.open_dataset(filename,mode = 'r')
+    # ds = xr.open_dataset(filename,mode = 'r')
+    mr = ModelResults('',path = filename)
+    print(mr.metrics)
+    return
     ds = ds.isel(depth = 0,training_depth = 0,co2 = 0).drop('depth training_depth co2'.split())
     # print(ds)
     ms = ModelSelection(ds)

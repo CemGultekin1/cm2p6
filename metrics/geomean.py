@@ -51,8 +51,8 @@ class WetMaskCollector:
         for depth in DEPTHS: 
             ds = self.get_dataset(sigma,depth)
             wm= ds.get_mask(wetmask.stencil)
-            from utils.xarray import plot_ds
-            plot_ds(dict(wetmask = wm),f'wm-{int(depth)}.png')
+            # from utils.xarray import plot_ds
+            # plot_ds(dict(wetmask = wm),f'wm-{int(depth)}.png')
             wm = wm.expand_dims({'depth':[depth]},axis = 0).reindex(indexers = {'depth':DEPTHS},fill_value = 0)
             if is_empty_xr(wms):
                 wms = wm
@@ -74,14 +74,16 @@ class WetMaskedMetrics(MergeMetrics):
         return self.wet_mask_collector.get_wet_mask(sigma,stencil)
     def latlon_reduct(self,):
         wetmask = self.get_mask()
-        shp = shape_dict(wetmask)
-        print(f'wetmask.shape = {shp}')
-        shp = shape_dict(self.metrics)
-        print(f'metrics.shape = {shp}')
-        from utils.xarray import plot_ds
-        plot_ds({'wetmask':wetmask},'wet_mask.png',ncols = 1)
         wetmask = select_coords_by_extremum(wetmask,self.metrics.coords,'lat lon'.split())
         wetmask = select_coords_by_value(wetmask,self.metrics.coords,'depth')
+        
+        # shp = shape_dict(wetmask)
+        # print(f'wetmask.shape = {shp}')
+        # shp = shape_dict(self.metrics)
+        # print(f'metrics.shape = {shp}')
+        from utils.xarray import plot_ds
+        # plot_ds({'wetmask':wetmask},'wet_mask.png',ncols = 1)
+        
         metrics = xr.where(wetmask,self.metrics,np.nan)
         plot_ds(metrics,'metrics.png',ncols = 1)
         raise Exception

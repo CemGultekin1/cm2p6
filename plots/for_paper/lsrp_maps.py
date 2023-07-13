@@ -2,7 +2,7 @@ import itertools
 import os
 from data.paths import get_high_res_grid_location
 from models.load import get_statedict
-from plots.metrics import metrics_dataset
+from plots.metrics_ import metrics_dataset
 from constants.paths import EVALS
 from plots.murray import MurrayPlotter
 from transforms.grids import fix_grid
@@ -15,7 +15,7 @@ from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 import os
 import matplotlib
 import matplotlib.pyplot as plt
-from plots.metrics import metrics_dataset
+from plots.metrics_ import metrics_dataset
 from constants.paths import EVALS
 import xarray as xr
 from models.load import get_statedict

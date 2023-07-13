@@ -11,3 +11,14 @@ def read_args(line_num,filename :str = 'trainjob.txt'):
     lines = file1.readlines()
     file1.close()
     return lines[line_num - 1].strip().split()
+
+class ArgsReader:
+    def __init__(self,filename:str):
+        self.path = os.path.join(JOBS,filename)
+        file1 = open(self.path, 'r')
+        lines = file1.readlines()
+        file1.close()
+        self.lines = lines
+    def itertate_args(self,):
+        for i,line in enumerate(self.lines):
+            yield i,line.split()

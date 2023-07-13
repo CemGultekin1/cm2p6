@@ -2,7 +2,7 @@ import itertools
 import os
 from metrics.geomean import WetMaskCollector, WetMaskedMetrics
 from models.nets.cnn import kernels2spread
-from plots.metrics import metrics_dataset
+from plots.metrics_ import metrics_dataset
 from constants.paths import JOBS, EVALS, all_eval_path
 from metrics.modmet import ModelMetric, ModelResultsCollection
 from utils.xarray import skipna_mean
