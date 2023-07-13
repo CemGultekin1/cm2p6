@@ -17,6 +17,7 @@ def main():
     
     lines = file1.readlines()
     # lines = lines[17:18]
+    lines = lines[:1]
     
     
     file1.close()
@@ -33,8 +34,8 @@ def main():
         # print(f'looking for {snfile}')
         if not os.path.exists(snfile):
             continue
-        if modelargs.lossfun == 'MSE':
-            continue
+        # if modelargs.lossfun == 'MSE':
+        #     continue
         print(line)
         
         sn = xr.open_dataset(snfile).sel(lat = slice(-85,85),)#.isel(depth = [0],co2 = 0).drop(['co2'])

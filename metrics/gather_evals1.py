@@ -57,44 +57,27 @@ def kernel_size_fun(kernels):
     ks = kernels2spread(kernels)*2 + 1
     return ks
 def main():
-    root = EVALS
     models = os.path.join(JOBS,'offline_sweep2.txt')
     file1 = open(models, 'r')
     lines = file1.readlines()
     file1.close()
-    
-    # lines = [lines[0],lines[16],lines[32],lines[48]]
-
-
-    # lines = turn_to_lsrp_models(lines) + lines  
-    
     mrc = ModelResultsCollection()
     wc   = WetMaskCollector()
+    lines = np.array(lines)
+    lines = lines[:1]
+    # lines = lines[[0,1,2,48,49,50,147,148,149]]
     for i,line in enumerate(lines):
         wmm = WetMaskedMetrics(line.split(),wc)
-        wmm.load()
-        wmr = wmm.latlon_reduct()
-        from utils.xarray import plot_ds
-        plot_ds({"wetmask":wmr},'wetmasks.png')
-        return
-        _,modelid = options(line.split(),key = 'model')
-        snfile = os.path.join(root,modelid + '.nc')
-        if not os.path.exists(snfile):
+        if not wmm.file_exists():
             continue
-        try:
-            sn = xr.open_dataset(snfile)
-        except:
-            continue
+        wmm.load()        
+        wmm.latlon_reduct()
+        wmm.filtering_name_fix()
         print(f'{i}/{len(lines)}')
-        print(sn)
-
-        # print(sn.isel(co2 = 0,depth = 0,lat = slice(100,103),lon = slice(100,103)))
-        metrics = append_statistics(sn,)
-        mm = WetMaskedMetrics(line.split(),metrics)
-        mm.past_coords_to_metric(('filtering',))
-        mrc.add_metrics(mm)
+        wmm.past_coords_to_metric(('filtering',))
+        mrc.add_metrics(wmm)
     ds = mrc.merged_dataset()
-    filename = all_eval_path().replace('.nc','20230710.nc')
+    filename = all_eval_path().replace('.nc','20230712_.nc')
     ds.to_netcdf(filename,mode = 'w')
     
 def filtering_correction():

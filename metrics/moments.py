@@ -1,7 +1,7 @@
 from typing import List
 from metrics.modmet import MergeMetrics, ModelMetric
 import numpy as np
-from utils.xarray import is_xarray_empty
+from utils.xarray import is_empty_xr
 import xarray as xr
 
 
@@ -19,7 +19,7 @@ class MomentMetrics(ModelMetric):
         super().__init__(modelargs, None)
         self.ntime = 0
     def add2metrics(self,mm:xr.Dataset):
-        if is_xarray_empty(self.metrics):
+        if is_empty_xr(self.metrics):
             self.metrics = mm
         else:
             self.metrics += mm
@@ -51,7 +51,7 @@ def moments_metrics_reduction(sn, dim = ['lat','lon']):
         if len(reduckwargs) > 0:
             nonan = xr.where(np.isnan(mms[(1,0)]),0,1)
             def skipna_average(st):
-                return xr.where(np.isnan(st),0,st).inplace_sum(**reduckwargs)/nonan.inplace_sum(**reduckwargs)
+                return xr.where(np.isnan(st),0,st).sum(**reduckwargs)/nonan.sum(**reduckwargs)
             mms = {key:skipna_average(val) for key,val in mms.items()}
 
 

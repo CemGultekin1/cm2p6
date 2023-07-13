@@ -118,7 +118,7 @@ class SingleDomain(CM2p6Dataset):
             landmask = 1 - ds.interior_wet_mask
         else:
             if 'wet_density' in ds.data_vars:
-                landmask =  xr.where(ds.wet_density >= 0.5,0,1)#self.wet_mask_threshold,1,0)
+                landmask =  xr.where(ds.wet_density > self.wet_mask_threshold,0,1)
             else:
                 landmask = None
         for key in ds.data_vars.keys():
@@ -162,7 +162,7 @@ class SingleDomain(CM2p6Dataset):
                 landmask = 1 - ds.interior_wet_mask
             else:
                 if 'wet_density' in ds.data_vars:
-                    landmask = 1 - xr.where(ds.wet_density > self.wet_mask_threshold,1,0)
+                    landmask = xr.where(ds.wet_density > self.wet_mask_threshold,0,1)
                 else:
                     landmask = None
             for key in ds.data_vars.keys():

@@ -1,4 +1,4 @@
-from typing import Callable, Union
+from typing import Callable, List, Tuple, Union
 from data.vars import get_var_mask_name
 import xarray as xr
 import torch
@@ -6,7 +6,28 @@ import numpy as np
 import torch.nn as nn
 from scipy.ndimage import gaussian_filter
 
-def is_xarray_empty(x:Union[xr.Dataset,xr.DataArray]):
+def select_coords_by_extremum(x:xr.Dataset,coords,names:List[str]):
+    for key in names:
+        vals = coords[key].values
+        minv,maxv = vals[0],vals[-1]
+        mini = np.argmin(np.abs(x[key].values - minv))
+        maxi = np.argmin(np.abs(x[key].values - maxv))
+        x = x.isel({key:slice(mini,maxi+1)})
+    return x
+def select_coords_by_value(x:xr.Dataset,coords,names:List[str]):
+    for key in names:
+        vals = coords[key].values
+        x = x.sel({key:vals})
+    return x
+
+
+def shape_dict(x:Union[xr.DataArray,xr.Dataset]):
+    if isinstance(x,xr.Dataset):
+        x = x[list(x.data_vars.keys())[0]]
+    y = drop_unused_coords(x,)
+    return {c:len(y[c]) for c in y.coords}
+
+def is_empty_xr(x:Union[xr.Dataset,xr.DataArray]):
     return not list(x.coords.keys())
     # if isinstance(x,xr.Dataset):
     #     dlist = list(x.data_vars.keys())
@@ -18,11 +39,15 @@ def is_xarray_empty(x:Union[xr.Dataset,xr.DataArray]):
 
 
 
-def skipna_mean(ds,dim):
+def skipna_mean(ds,dim:Union[str,List[str],Tuple[str]]):
+    if isinstance(dim,list) or isinstance(dim,tuple):
+        for dim_ in dim:
+            ds = skipna_mean(ds,dim_)
+        return ds
     _nonancount= xr.where(np.isnan(ds) + (np.abs(ds) == np.inf  ),0,1)
     _values = xr.where(np.isnan(ds) + (np.abs(ds) == np.inf ),0,ds)
     mean_val =  _values.sum(dim = dim)/_nonancount.sum(dim = dim)
-    assert np.all(1 - np.isnan(mean_val))
+    # assert np.all(1 - np.isnan(mean_val))
     return mean_val
 
 def land_fill(u_:xr.DataArray,factor,ntimes,zero_tendency = False):
@@ -244,8 +269,11 @@ def fromtorchdict(data_vars,coords,masks,normalize = False,denormalize = False,f
 def drop_unused_coords(ds,expand_dims = {},**kwargs):
     cns = list(ds.coords.keys())
     dims = []
-    for key in ds.data_vars.keys():
-        dims.extend(list(ds[key].dims))
+    if isinstance(ds,xr.Dataset):
+        for key in ds.data_vars.keys():
+            dims.extend(list(ds[key].dims))
+    else:
+        dims = ds.dims
     dims = np.unique(dims)
     dropcns = [c for c in cns if c not in dims and c not in expand_dims]
     for dcn in dropcns:

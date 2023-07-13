@@ -6,7 +6,7 @@ from metrics.modmet import MergeMetrics
 from data.coords import DEPTHS,SIGMAS
 from metrics.moments import moments_metrics_reduction
 import xarray as xr
-from utils.xarray import is_xarray_empty
+from utils.xarray import is_empty_xr, select_coords_by_extremum, select_coords_by_value, shape_dict
 import numpy as np
 
 class CoarseGridInteriorOceanWetMask(SingleDomain):
@@ -27,14 +27,14 @@ class WetMask:
         self.stencil = stencil
         self.wet_mask = xr.DataArray()
     def is_empty(self,):
-        return  is_xarray_empty(self.wet_mask)
+        return  is_empty_xr(self.wet_mask)
     def __eq__(self, __o: 'WetMask') -> bool:
         return __o.sigma == self.sigma and  self.stencil == __o.stencil
 
 class WetMaskCollector:
     def __init__(self,) -> None:
         self.datasets = dict()
-        self.masks = []
+        self.masks :List[WetMask]= []
     def get_datargs(self,sigma,depth):
         return f'--sigma {sigma} --depth {depth} --domain global'
     def get_dataset(self,sigma,depth):
@@ -46,7 +46,7 @@ class WetMaskCollector:
     def get_wet_mask(self,sigma,stencil):
         wetmask = WetMask(sigma,stencil)
         if wetmask in self.masks:
-            return self.masks[self.masks.index(wetmask)]       
+            return self.masks[self.masks.index(wetmask)].wet_mask      
         wms = xr.DataArray()
         for depth in DEPTHS: 
             ds = self.get_dataset(sigma,depth)
@@ -54,13 +54,13 @@ class WetMaskCollector:
             from utils.xarray import plot_ds
             plot_ds(dict(wetmask = wm),f'wm-{int(depth)}.png')
             wm = wm.expand_dims({'depth':[depth]},axis = 0).reindex(indexers = {'depth':DEPTHS},fill_value = 0)
-            if is_xarray_empty(wms):
+            if is_empty_xr(wms):
                 wms = wm
             else:
                 wms += wm
         wetmask.wet_mask = wms
         self.masks.append(wetmask)
-        return wetmask
+        return wetmask.wet_mask
 
 class WetMaskedMetrics(MergeMetrics):
     def __init__(self, modelargs: List[str],wc:WetMaskCollector) -> None:
@@ -73,13 +73,44 @@ class WetMaskedMetrics(MergeMetrics):
         sigma = model_coords['sigma']
         return self.wet_mask_collector.get_wet_mask(sigma,stencil)
     def latlon_reduct(self,):
-        wetmask = self.get_mask(stencil=1)
-        return wetmask.wet_mask
-        metrics = xr.where(wetmask,np.nan,self.metrics)
-        mmr = moments_metrics_reduction(metrics,dim = 'lat lon'.split())
-        return mmr
-    
+        wetmask = self.get_mask()
+        shp = shape_dict(wetmask)
+        print(f'wetmask.shape = {shp}')
+        shp = shape_dict(self.metrics)
+        print(f'metrics.shape = {shp}')
+        from utils.xarray import plot_ds
+        plot_ds({'wetmask':wetmask},'wet_mask.png',ncols = 1)
+        wetmask = select_coords_by_extremum(wetmask,self.metrics.coords,'lat lon'.split())
+        wetmask = select_coords_by_value(wetmask,self.metrics.coords,'depth')
+        metrics = xr.where(wetmask,self.metrics,np.nan)
+        plot_ds(metrics,'metrics.png',ncols = 1)
+        raise Exception
+        self.metrics = moments_metrics_reduction(metrics,dim = 'lat lon'.split())
+    def filtering_name_fix(self,):
+        if 'filtering' not in self.metrics.coords:
+            return 
+        fls = self.metrics['filtering'].values
+        legal_terms = 'gaussian gcm'.split()
+        legal_terms_in_num = [sum([ord(s) for s in filtering]) for filtering in legal_terms]
+        nonlegal_terms = [fl for fl in fls if fl not in legal_terms]
+        if not bool(nonlegal_terms):
+            return
         
+        nonlegal_terms = [fl for fl in fls if fl not in legal_terms_in_num]
+        if bool(nonlegal_terms):
+            model_coords,_ = self.get_coords_dict()
+            depth = model_coords['depth']
+            sur2 = self.metrics.sel(co2 = 0,depth = depth,method='nearest').Su_r2.values
+            true_filtering = model_coords['filtering']                
+            legal_terms = np.array([true_filtering,legal_terms[1 - legal_terms.index(true_filtering)]])
+            suri = np.argsort(sur2)[::-1]
+            legal_terms = legal_terms[suri]
+            self.metrics = self.metrics.assign_coords(filtering = legal_terms)
+            print(f'\t\t{fls}->{legal_terms}')
+        else:
+            legal_terms = np.array([legal_terms[legal_terms_in_num.index(fl)] for fl in fls])
+            self.metrics = self.metrics.assign_coords(filtering = legal_terms)
+            print(f'\t\t{fls}->{legal_terms}')
 # def co2_nan_expansion(sn:xr.Dataset):
 #     if 'co2' not in sn.coords:
 #         return sn
