@@ -1,8 +1,0 @@
---sigma 4 --filtering gcm --num_workers 1
---sigma 8 --filtering gcm --num_workers 1
---sigma 12 --filtering gcm --num_workers 1
---sigma 16 --filtering gcm --num_workers 1
---sigma 4 --filtering gaussian --num_workers 1
---sigma 8 --filtering gaussian --num_workers 1
---sigma 12 --filtering gaussian --num_workers 1
---sigma 16 --filtering gaussian --num_workers 1
