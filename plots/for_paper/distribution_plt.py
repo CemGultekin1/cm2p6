@@ -171,9 +171,13 @@ class ColorFinder:
 def main():
     CO2S = [False,True]
     cf = ColorFinder()
-    plt_kwargs = dict(linewidth = 2)
+    plt_kwargs = dict(linewidth = 3)
     matplotlib.rcParams.update({'font.size': 14})
     root_folder = 'paper_images/distributions'
+    label_conversion = {
+        'global': 'CNN(Global)',
+        'four_regions': 'CNN(4Regs)'
+    }
     if not os.path.exists(root_folder):
         os.makedirs(root_folder)
     filename_params = ['filtering','sigma','co2']
@@ -208,25 +212,27 @@ def main():
         
         for forcing in forcings:        
             coords = None
-            fig,ax = plt.subplots(1,1,figsize = (6,6))
+            fig,ax = plt.subplots(1,1,figsize = (5,5))
             for (coords,vals),feat in distcol.get_variable(forcing,'domain'):
                 if coords is None:
                     continue
                 vals = vals/np.sum(vals)
-                ax.semilogy(coords,vals,color = cf.give_color(feat),label = feat,**plt_kwargs)
+                ax.semilogy(coords,vals,color = cf.give_color(feat),label = label_conversion[feat],**plt_kwargs)
             if coords is None:
                 coords = np.linspace(-5.5,5,100)
             gauss = np.exp(-coords**2/2)
             gauss = gauss/np.sum(gauss)        
             feat = '$\mathcal{N}(0,1)$'
-            ax.plot(coords,gauss,color = cf.give_color(feat),label = feat,**plt_kwargs)
+            ax.plot(coords,gauss,linestyle = '--',color = cf.give_color(feat),label = feat,alpha=0.5,**plt_kwargs)
             ax.legend()
+            ax.set_ylim([1e-6,5e-2])
             ax.grid( which='major', color='k', linestyle='--',alpha = 0.5)
             ax.grid( which='minor', color='k', linestyle='--',alpha = 0.5)
             filename = [to_file_look[key](root_kwargs[key]) for key in filename_params] 
             filename += [to_file_look['forcing'](forcing)]
             filename = '_'.join(filename) + '.png'
             path = os.path.join(root_folder,filename)
+            fig.tight_layout()
             fig.savefig(path)
             print(path)
             plt.close()

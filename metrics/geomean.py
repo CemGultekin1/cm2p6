@@ -48,9 +48,15 @@ class WetMaskCollector:
         if wetmask in self.masks:
             return self.masks[self.masks.index(wetmask)].wet_mask      
         wms = xr.DataArray()
+        
+        # wm_ = None
         for depth in DEPTHS: 
             ds = self.get_dataset(sigma,depth)
+            # if wm_ is None:
             wm= ds.get_mask(wetmask.stencil)
+            #     wm_ = wm.copy()
+            # else:
+            #     wm = wm_.copy()
             # from utils.xarray import plot_ds
             # plot_ds(dict(wetmask = wm),f'wm-{int(depth)}.png')
             wm = wm.expand_dims({'depth':[depth]},axis = 0).reindex(indexers = {'depth':DEPTHS},fill_value = 0)
@@ -81,13 +87,18 @@ class WetMaskedMetrics(MergeMetrics):
         # print(f'wetmask.shape = {shp}')
         # shp = shape_dict(self.metrics)
         # print(f'metrics.shape = {shp}')
-        from utils.xarray import plot_ds
+        
+        # from utils.xarray import plot_ds
+        # plot_ds(metrics,'metrics.png',ncols = 1)
         # plot_ds({'wetmask':wetmask},'wet_mask.png',ncols = 1)
         
         metrics = xr.where(wetmask,self.metrics,np.nan)
-        plot_ds(metrics,'metrics.png',ncols = 1)
-        raise Exception
+        
+        
+        # raise Exception
         self.metrics = moments_metrics_reduction(metrics,dim = 'lat lon'.split())
+        # shp = shape_dict(self.metrics)
+        # print(f'metrics.shape = {shp}')
     def filtering_name_fix(self,):
         if 'filtering' not in self.metrics.coords:
             return 

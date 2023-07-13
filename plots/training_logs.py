@@ -7,11 +7,11 @@ import json
 def main():
     linenum = 62
     title_keys = 'sigma domain temperature filtering'.split()
-    for linenum in range(1,305):
-        args = read_args(linenum,filename = 'offline_sweep.txt')
+    for linenum in [18,20,50,52,56,64,178,180,184,192,194,196,200,204,208,210,212,216,220,224,226,228,232,236,240,242,244,248,256,258,260,264,268,272,274,276,280,284,288,292,296,300,304]:
+        args = read_args(linenum,filename = 'offline_sweep2.txt')
         args,modelid = options(args,key = "model")
-        if not (args.filtering == 'gcm' and args.lossfun == 'heteroscedastic'):
-            continue
+        # if not (args.filtering == 'gcm' and args.lossfun == 'heteroscedastic'):
+        #     continue
             
         print(linenum)
         logfile = os.path.join(TRAINING_LOGS,modelid + '.json')

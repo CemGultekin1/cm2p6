@@ -227,17 +227,17 @@ class ModelResults:
 
             
 def main():
-    mr = ModelResults('20230712')
-    metrics = mr.metrics
-    metrics = metrics.isel(co2 = 0,lr = 1,lossfun= 0,domain = 0,temperature = 0,training_filtering=1,training_depth=0,depth=0,minibatch = 0,filtering = 1 ,)
-    metrics = metrics.sel(stencil = 21)
-    metrics = metrics.sel(sigma = 4)
-    for key in metrics.data_vars:
-        print(
-            f'{key}:\t\t\t{metrics[key].values.item()}'
-        )
+    mr = ModelResults('20230712_')
+    # metrics = mr.metrics
+    # metrics = metrics.isel(co2 = 0,lr = 1,lossfun= 0,temperature = 0,training_filtering=1,training_depth=0,depth=0,minibatch = 0,filtering = 1 ,)
+    # metrics = metrics.sel(stencil = 21)
+    # metrics = metrics.sel(sigma = 4)
+    # for key in metrics.data_vars:
+    #     print(
+    #         f'{key}:\t\t\t{metrics[key].values}'
+    #     )
     
-    return
+    # return
     mr.reduce_coord('lr','temperature','stencil','minibatch')
     mr.pick_training_value('filtering',)
     mr.sel(depth = 0,training_depth = 0,co2 = 0)
