@@ -1,4 +1,4 @@
-from utils.xarray import plot_ds
+from utils.xarray_oper import plot_ds
 import xarray as xr
 import numpy as np
 from transforms.coarse_graining import BaseTransform, GcmFiltering, GreedyCoarseGrain

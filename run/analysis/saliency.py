@@ -10,7 +10,7 @@ from utils.arguments import options, populate_data_options
 from utils.parallel import get_device
 import numpy as np
 from constants.paths import SALIENCY
-from utils.xarray import fromtorchdict2tensor
+from utils.xarray_oper import fromtorchdict2tensor
 import xarray as xr
 import itertools
 class MovingWindowFeeder:

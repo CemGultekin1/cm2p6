@@ -6,16 +6,93 @@ import numpy as np
 import torch.nn as nn
 from scipy.ndimage import gaussian_filter
 
-# def start_nan_dataset(varnames:List[str],coords:Dict[str,np.ndarray]):
-#     shape = [len(v) for v in coords.values()]
-#     dims = list(coords.keys())
-#     data_vars = {
-#         varname: (dims,np.ones(shape,dtype = float)*np.nan) for varname in varnames
-#     }
-#     return xr.Dataset(data_vars,coords)
-# def put_data_in_place(ds:xr.Dataset,ds1:xr.Dataset,coords:Dict[str,Any]):
-#     coords = {key:coords[key] for key in ds.coords.keys()}
+
+
+# def turn_to_writable_attrs(x:xr.Dataset):
+#     list_attrs = dictionary2listuple(x.attrs)
+#     x.attrs = {'list_attrs':list_attrs}
+# def from_writable_converted_attrs(x:xr.Dataset):
+#     attrslist = x.attrs['list_attrs']
+#     attrs = listuple2dictionary(attrslist)
+#     x.attrs = attrs
+            
+
+# def dictionary2listuple(x:dict,):
+#     def internal_dictionary2attributes(x:dict,key = 'attrs'):
+#         l = [key]
+#         for key,val in x.items():
+#             if isinstance(val,dict):
+#                 l.append(internal_dictionary2attributes(val,key = key))
+#             else:
+#                 l.append((key,val))
+#         return l
+#     y = internal_dictionary2attributes(x)
+#     y =  y[1:]
+#     return y
     
+# def listuple2dictionary(x:list):
+#     attrs_str = 'attrs'
+#     def internal_attrs(x:list):
+#         attrs = {}
+#         if not bool(x):
+#             return attrs
+#         assert isinstance(x[0],str)
+#         key = x[0]
+#         attrs = {}
+#         for x_ in x[1:]:
+#             if isinstance(x_,list):
+#                 key_,vals = internal_attrs(x_)
+#                 attrs[key_] = vals
+#             elif isinstance(x_,tuple):
+#                 assert len(x_) == 2
+#                 key_,vals = x_
+#                 attrs[key_] = vals
+#         return key,attrs
+#     _,attrs = internal_attrs([attrs_str] + x)
+#     return attrs
+def main():
+    attrs =  {'dict1': {'x1':3,'y1':4},'dict2':{'dict_dict2':{},'x2':5}}
+    # attrs_list = dictionary2listuple(attrs)
+    # attrs_ = listuple2dictionary(attrs_list)
+    data_vars = {'x' : (['y','t'],np.zeros((5,3)))}
+    coords = dict(y = np.arange(5),t = np.arange(3))
+    ds = xr.Dataset(data_vars,coords,attrs)
+    ds.attrs = {}
+    print(ds)
+    # print(ds)
+    # turn_to_writable_attrs(ds)
+    # print(ds)
+    # from_writable_converted_attrs(ds)
+    # print(ds)
+if __name__ == '__main__':
+    main()
+
+def merge_by_attrs(datasets:List[xr.Dataset],**kwargs):
+    coord_collection = {}
+    for i,ds in enumerate(datasets):
+        new_coords = ds.attrs
+        for nc in new_coords:
+            if nc in ds.coords:
+                continue
+            val = new_coords[nc]
+            if nc not in coord_collection:
+                coord_collection[nc] = []
+            coord_collection[nc].append(val)
+    keys = list(coord_collection.keys())
+    for key in keys:
+        val = coord_collection[key]
+        coord_collection[key] = np.unique(val)
+        if len(coord_collection[key]) <= 1:
+            coord_collection.pop(key)
+    for i,ds in enumerate(datasets):        
+        new_coords = ds.attrs
+        new_coords = {nc:[val] for nc,val in new_coords.items() if nc in coord_collection}
+        ds = ds.expand_dims(new_coords)
+        ds.attrs = {}        
+        datasets[i] = ds
+        
+    return xr.merge(datasets,**kwargs)
+
     
 def cat(ds_dict:Dict[Union[str,int,float],Union[xr.DataArray,xr.Dataset]],dim_name:str):
     values = list(ds_dict.keys())

@@ -3,7 +3,7 @@ from data.load import load_learned_deconv
 from data.paths import get_learned_deconvolution_location
 from transforms.learned_deconv import DeconvolutionTransform
 import numpy as np
-from utils.xarray import plot_ds
+from utils.xarray_oper import plot_ds
 import xarray as xr 
 from transforms.grids import get_grid_vars
 from utils.arguments import options

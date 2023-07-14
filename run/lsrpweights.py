@@ -5,7 +5,7 @@ from constants.paths import average_highres_fields_path
 from utils.slurm import flushed_print
 import torch
 import numpy as np
-from utils.xarray import  tonumpydict#,fromnumpydict
+from utils.xarray_oper import  tonumpydict#,fromnumpydict
 import xarray as xr
 def main():
     depth = 0 if sys.argv[1] == '1' else 5

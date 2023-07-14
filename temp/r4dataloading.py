@@ -1,6 +1,6 @@
 from data.coords import REGIONS
 from data.load import get_data, load_xr_dataset
-from utils.xarray import plot_ds
+from utils.xarray_oper import plot_ds
 
 
 def main():

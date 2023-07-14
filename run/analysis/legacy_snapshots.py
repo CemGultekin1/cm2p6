@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from models.load import load_model
 from run.analysis.legacy_comparison import get_legacy_args
 from constants.paths import LEGACY_PLOTS,LEGACY
-from utils.xarray import fromtorchdict2tensor, fromtorchdict,fromtensor
+from utils.xarray_oper import fromtorchdict2tensor, fromtorchdict,fromtensor
 import xarray as xr
 from utils.arguments import options
 import numpy as np

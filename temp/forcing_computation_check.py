@@ -205,7 +205,7 @@ def main():
     forcings_list[f"greedy_gaussian"] = ssbf(u_v_dataset,'usurf vsurf'.split(),'S_x S_y'.split())
 
 
-    from utils.xarray import plot_ds,drop_unused_coords
+    from utils.xarray_oper import plot_ds,drop_unused_coords
 
     subgrid_forcing_names = list(forcings_list.keys())
     cmpr_forcings = None

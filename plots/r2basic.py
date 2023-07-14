@@ -3,7 +3,7 @@ import os
 import matplotlib.pyplot as plt
 import matplotlib
 from constants.paths import  all_eval_path
-from utils.xarray import skipna_mean
+from utils.xarray_oper import skipna_mean
 import xarray as xr
 import numpy as np
 from plots.for_paper.saliency import SubplotAxes

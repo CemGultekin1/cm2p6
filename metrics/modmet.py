@@ -5,7 +5,7 @@ from constants.paths import EVALS, all_eval_path
 from options.reduce import ScalarArguments
 from utils.arguments import options
 from utils.slurm import flushed_print
-from utils.xarray import drop_unused_coords, is_empty_xr,skipna_mean,cat#,start_nan_dataset
+from utils.xarray_oper import drop_unused_coords,skipna_mean,cat
 import xarray as xr
 import numpy as np
 
@@ -57,7 +57,7 @@ class MergeMetrics(ModelMetric):
     def load(self,):
         self.metrics = xr.open_dataset(self.filename,)
         # met = self.metrics.isel(co2 = 0,depth = 0)
-        # from utils.xarray import plot_ds
+        # from utils.xarray_oper import plot_ds
         # keys = met.data_vars.keys()
         # met_data = {key:met[key] for key in keys if 'Su_true' in key}
         # plot_ds(met_data,f'metrue-{self.coord_dict["sigma"]}-{self.coord_dict["filtering"]}.png',ncols = 3)
@@ -75,13 +75,17 @@ class ModelResultsCollection:
     @staticmethod
     def collision_naming(mkey:str):
         return ModelResultsCollection.collision_tag + mkey
+    
     def merged_dataset(self,):
+        if not self.models:
+            print('no metrics to merge')
+            return xr.Dataset()
         model = self.models[0]
         model_coord,feat_coord = model.get_coords_dict()
         
         
         model_coord = {key:[val] for key,val in model_coord.items()}
-        feat_coord :Dict[str,list]= {key:np.array(val).tolist() for key,val in feat_coord.items()}
+        feat_coord :Dict[str,list]= {key:np.array(val).flatten().tolist() for key,val in feat_coord.items()}
         
         for model in self.models:
             mdict,fdict = model.get_coords_dict()
@@ -96,23 +100,8 @@ class ModelResultsCollection:
         feat_coord = {key:np.unique(val).tolist() for key,val in feat_coord.items()}
         
         
+        
         rename_dict = {mkey:self.collision_naming(mkey) if mkey in feat_coord else mkey for mkey in model_coord.keys() }
-        
-        model_keys = list(model_coord.keys())
-        for key in model_keys:
-            val = model_coord[key]
-            if len(val) > 1:
-                continue
-            model_coord.pop(key)
-            
-        feat_keys = list(feat_coord.keys())
-        for key in feat_keys:
-            val = feat_coord[key]
-            if len(val) > 1:
-                continue
-            feat_coord.pop(key)
-        
-        
         def rename_dict_fun(dc:dict):
             dc_ = {}
             for key in dc:
@@ -122,14 +111,32 @@ class ModelResultsCollection:
                     dc_[key] = dc[key]
             return dc_
         model_coord = rename_dict_fun(model_coord,)
-        merged_coord = dict(model_coord,**feat_coord)
+        attrs = dict()
+        model_keys = list(model_coord.keys())
+        for key in model_keys:
+            val = model_coord[key]
+            if len(val) > 1 or len(val)==0:
+                continue
+            attrs[key] = model_coord.pop(key)[0]
+            
+        feat_keys = list(feat_coord.keys())
+        for key in feat_keys:
+            val = feat_coord[key]
+            if len(val) > 1 or len(val)==0:
+                continue
+            attrs[key] = feat_coord.pop(key)[0]
         
+        
+        
+        merged_coord = dict(model_coord,**feat_coord)
+       
+        for key in merged_coord:
+            if key in attrs:
+                attrs.pop(key)
         shape = [len(v) for v in merged_coord.values()]
         print(
             ' '.join([f'{key}:{n}' for key,n in zip(merged_coord,shape)])
         )
-        def empty_arr():
-            return np.ones(np.prod(shape))*np.nan
         
         # data_set = start_nan_dataset(list(model.metrics.data_vars.keys()),merged_coord)
         # print(data_set)
@@ -144,7 +151,10 @@ class ModelResultsCollection:
             new_metrics = new_metrics.expand_dims(**mdict)
             datasets.append(new_metrics)
         ds = xr.merge(datasets,fill_value = np.nan)
-
+        ds.attrs = attrs
+        # for key,val in ds.attrs.items():
+        #     print(f'{key} \t- {val} \t- {type(val)}')
+        # raise Exception
         # for key,val in data_vars.items():
         #     data_vars[key] = (list(merged_coord.keys()),val.reshape(shape))
         # ds = xr.Dataset(data_vars = data_vars,coords = merged_coord)

@@ -5,7 +5,7 @@ from data.scalars import save_scalar
 from utils.arguments import populate_data_options
 import xarray as xr
 import numpy as np
-from utils.xarray import fromtorchdict, make_dimensional, tonumpydict
+from utils.xarray_oper import fromtorchdict, make_dimensional, tonumpydict
 from utils.slurm import flushed_print
 
 def update_value(a,b):

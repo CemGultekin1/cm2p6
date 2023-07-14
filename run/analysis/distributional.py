@@ -11,7 +11,7 @@ from utils.parallel import get_device
 from constants.paths import DISTS
 from utils.slurm import flushed_print
 import numpy as np
-from utils.xarray import fromtensor, fromtorchdict, fromtorchdict2tensor,drop_unused_coords
+from utils.xarray_oper import fromtensor, fromtorchdict, fromtorchdict2tensor,drop_unused_coords
 import xarray as xr
 from run.helpers import PrecisionToStandardDeviation,AdaptiveHistogram,Timer
 def lsrp_pred(respred,tr):

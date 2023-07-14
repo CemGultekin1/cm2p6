@@ -3,7 +3,7 @@ from transforms.coarse_graining_inverse import  MatMultFiltering,MatMultMaskedFi
 from transforms.grids import forward_difference
 from transforms.krylov import  krylov_inversion
 import numpy as np
-from utils.xarray import plot_ds
+from utils.xarray_oper import plot_ds
 import xarray as xr
 
 

@@ -2,7 +2,7 @@
 from data.load import load_filter_weights, load_xr_dataset
 from transforms.gcm_compression_spatially_variant import Variant2DMatmult,GcmInversion
 import numpy as np
-from utils.xarray import plot_ds
+from utils.xarray_oper import plot_ds
 import xarray as xr 
 from transforms.grids import get_grid_vars
 from utils.arguments import options

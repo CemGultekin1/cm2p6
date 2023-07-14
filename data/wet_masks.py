@@ -5,7 +5,7 @@ import itertools
 from data.load import get_data, load_xr_dataset,get_wet_mask_location
 import xarray as xr
 from data.coords import SIGMAS,DEPTHS
-from utils.xarray import plot_ds
+from utils.xarray_oper import plot_ds
 
 def generate_save_wet_masks():
     for sigma,depth in itertools.product(SIGMAS,DEPTHS[:2]):

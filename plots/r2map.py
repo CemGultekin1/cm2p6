@@ -3,7 +3,7 @@ import os
 import matplotlib.pyplot as plt
 from plots.metrics_ import metrics_dataset
 from constants.paths import JOBS, R2_PLOTS, EVALS
-from utils.xarray import skipna_mean
+from utils.xarray_oper import skipna_mean
 import xarray as xr
 from utils.arguments import options
 from utils.slurm import flushed_print

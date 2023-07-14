@@ -4,7 +4,7 @@ from typing import List
 import matplotlib.pyplot as plt
 from constants.paths import  all_eval_path
 from models.load import load_model
-from utils.xarray import drop_unused_coords, plot_ds, skipna_mean
+from utils.xarray_oper import drop_unused_coords, plot_ds, skipna_mean
 import xarray as xr
 import numpy as np
 from constants.paths import SALIENCY

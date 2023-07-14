@@ -7,7 +7,7 @@ from constants.paths import JOBS, EVALS, all_eval_path
 from constants.paths import DISTS
 from metrics.modmet import ModelMetric, ModelResultsCollection
 from utils.slurm import flushed_print
-from utils.xarray import plot_ds, skipna_mean
+from utils.xarray_oper import plot_ds, skipna_mean
 import xarray as xr
 from utils.arguments import args2dict, options
 import numpy as np

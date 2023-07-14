@@ -48,7 +48,7 @@ def main():
             data[key] = ds.sel(filtering = gcmnum)
             
             
-    from utils.xarray import select_coords_by_extremum
+    from utils.xarray_oper import select_coords_by_extremum
     for key,val in data.items():
         for key1,val1 in data.items():
             if key1 == key:

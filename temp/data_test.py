@@ -11,7 +11,7 @@ from constants.paths import OUTPUTS_PATH,ONLINE_MODELS
 import os
 import matplotlib.pyplot as plt
 
-from utils.xarray import fromtorchdict2tensor
+from utils.xarray_oper import fromtorchdict2tensor
 
 
 def main():

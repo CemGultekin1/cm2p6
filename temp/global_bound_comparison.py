@@ -11,7 +11,7 @@ from utils.parallel import get_device
 from constants.paths import LEGACY
 from utils.slurm import flushed_print
 import numpy as np
-from utils.xarray import fromtensor, fromtorchdict, fromtorchdict2tensor, plot_ds
+from utils.xarray_oper import fromtensor, fromtorchdict, fromtorchdict2tensor, plot_ds
 import xarray as xr
 from run.helpers import PrecisionToStandardDeviation
 

@@ -4,7 +4,7 @@ from models.nets.cnn import kernels2spread
 from plots.metrics_ import metrics_dataset
 from constants.paths import JOBS, EVALS, all_eval_path
 from utils.slurm import flushed_print
-from utils.xarray import plot_ds, skipna_mean
+from utils.xarray_oper import plot_ds, skipna_mean
 import xarray as xr
 from utils.arguments import args2dict, options
 import numpy as np

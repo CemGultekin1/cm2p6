@@ -12,7 +12,7 @@ from constants.paths import TIME_LAPSE
 from utils.slurm import flushed_print
 from run.helpers import PrecisionToStandardDeviation
 import numpy as np
-from utils.xarray import concat, fromtensor, fromtorchdict, fromtorchdict2tensor
+from utils.xarray_oper import concat, fromtensor, fromtorchdict, fromtorchdict2tensor
 import xarray as xr
 
 class CoordinateLocalizer:

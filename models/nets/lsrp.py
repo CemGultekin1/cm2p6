@@ -7,7 +7,7 @@ import torch.nn as nn
 import torch
 
 from transforms.subgrid_forcing import forward_difference
-from utils.xarray import concat, fromtorch, totorch
+from utils.xarray_oper import concat, fromtorch, totorch
 
 class ConvolutionalLSRP:
     def __init__(self,sigma,clats,span):

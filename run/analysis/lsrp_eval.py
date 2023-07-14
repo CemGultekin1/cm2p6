@@ -7,7 +7,7 @@ from data.load import get_data
 from utils.arguments import options, populate_data_options
 from constants.paths import EVALS
 from utils.slurm import flushed_print
-from utils.xarray import fromtensor, fromtorchdict, fromtorchdict2tensor, plot_ds
+from utils.xarray_oper import fromtensor, fromtorchdict, fromtorchdict2tensor, plot_ds
 import xarray as xr
 from utils.arguments import replace_params
 
@@ -92,7 +92,7 @@ def main():
             predicted_forcings = fromtensor(mean,forcings,forcing_coords, forcing_mask,denormalize = True,**kwargs)
             true_forcings = fromtorchdict(forcings,forcing_coords,forcing_mask,denormalize = True,**kwargs)
             (predicted_forcings,lsrp_forcings),true_forcings = lsrp_pred(predicted_forcings,true_forcings)
-            from utils.xarray import plot_ds
+            from utils.xarray_oper import plot_ds
             plot_ds(true_forcings,'true_forcings.png',ncols = 3)
             print(lsrp_forcings)
             # # return

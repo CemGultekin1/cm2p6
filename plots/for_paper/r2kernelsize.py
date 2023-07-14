@@ -2,7 +2,7 @@ import itertools
 import os
 import matplotlib.pyplot as plt
 from constants.paths import  all_eval_path
-from utils.xarray import drop_unused_coords, skipna_mean
+from utils.xarray_oper import drop_unused_coords, skipna_mean
 import xarray as xr
 import numpy as np
 

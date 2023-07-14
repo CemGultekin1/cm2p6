@@ -1,7 +1,7 @@
 import copy
 from typing import Tuple
 from data.vars import FIELD_MASK, FORCING_MASK
-from utils.xarray import no_nan_input_mask, plot_ds
+from utils.xarray_oper import no_nan_input_mask, plot_ds
 import xarray as xr
 import numpy as np
 from transforms.grids import bound_grid, fix_grid, larger_longitude_grid

@@ -4,7 +4,7 @@ from data.load import  get_filter_weights_generator
 from run.train import Timer
 from utils.arguments import options
 from utils.slurm import flushed_print
-from utils.xarray import plot_ds
+from utils.xarray_oper import plot_ds
 import xarray as xr
 import numpy as np
 

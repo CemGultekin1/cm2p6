@@ -1,7 +1,7 @@
 
 import os
 from constants.paths import JOBS
-
+from math import ceil
 
 def flushed_print(*args,**kwargs):
     print(*args,**kwargs,flush = True)
@@ -24,3 +24,19 @@ class ArgsReader:
     def iterate_lines(self,):
         for line in self.lines:
             yield line
+class PartitionedArgsReader(ArgsReader):
+    def __init__(self, filename: str,part_id:int,num_parts:int):
+        super().__init__(filename)
+        n = len(self)
+        d = ceil(n/num_parts)
+        st = d*(part_id -1)
+        tr = d*part_id
+        tr = min(tr,n)
+        slc = slice(st,tr)
+        self.slice = (st,tr)
+        self.lines = self.lines[slc]
+        self.part_id = part_id
+        self.num_parts = num_parts
+    def iterate_lines(self):
+        for i,line in enumerate(super().iterate_lines()):
+            yield i + self.slice[0],line

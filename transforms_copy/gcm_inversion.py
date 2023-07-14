@@ -3,7 +3,7 @@ from transforms.coarse_graining import GcmFiltering,GreedyCoarseGrain
 from transforms.grids import get_grid_vars
 from utils.arguments import options
 import numpy as np
-from utils.xarray import plot_ds
+from utils.xarray_oper import plot_ds
 import xarray as xr 
 from transforms.multi_gmres import MultiGmres,MultiLinearOps
 from transforms.gcm_compression import MultiMatmult2DFilter

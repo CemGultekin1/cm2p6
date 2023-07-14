@@ -1,7 +1,7 @@
 from data.legacy_datagen import eddy_forcing,spatial_filter_dataset
 from data.high_res_dataset import HighResCm2p6
 from constants.paths import FINE_CM2P6_PATH,TEMPORARY_DATA
-from utils.xarray import plot_ds,fromtorchdict
+from utils.xarray_oper import plot_ds,fromtorchdict
 from data.load import load_grid,load_xr_dataset
 import xarray as xr
 import os

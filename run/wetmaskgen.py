@@ -3,7 +3,7 @@ from data.paths import get_low_res_data_location, get_preliminary_low_res_data_l
 from data.load import get_data
 from run.train import Timer
 from utils.arguments import options
-from utils.xarray import plot_ds
+from utils.xarray_oper import plot_ds
 from utils.slurm import flushed_print
 import xarray as xr
 import torch

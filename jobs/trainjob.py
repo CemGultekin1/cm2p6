@@ -11,7 +11,7 @@ from utils.arguments import options,replace_param,replace_params
 from constants.paths import JOBS, JOBS_LOGS
 from utils.slurm import flushed_print
 from data.coords import DEPTHS
-TRAINJOB = 'g-MSE'
+TRAINJOB = 'offline_sweep2'
 root = JOBS
 
 NCPU = 8

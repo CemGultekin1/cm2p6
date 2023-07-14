@@ -4,7 +4,7 @@ from data.load import load_filter_weights,load_xr_dataset
 from utils.arguments import options
 from transforms.grids import get_grid_vars
 from transforms.gcm_inversion import GcmInversion
-from utils.xarray import plot_ds
+from utils.xarray_oper import plot_ds
 import itertools
 import numpy as np
 import matplotlib.pyplot as plt

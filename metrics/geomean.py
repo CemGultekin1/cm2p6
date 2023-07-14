@@ -6,7 +6,7 @@ from metrics.modmet import MergeMetrics
 from data.coords import DEPTHS,SIGMAS
 from metrics.moments import moments_metrics_reduction
 import xarray as xr
-from utils.xarray import is_empty_xr, select_coords_by_extremum, select_coords_by_value,cat, shape_dict,plot_ds,drop_unused_coords
+from utils.xarray_oper import is_empty_xr, select_coords_by_extremum, select_coords_by_value,cat, shape_dict,plot_ds,drop_unused_coords
 import numpy as np
 
 class CoarseGridInteriorOceanWetMask(SingleDomain):
@@ -74,10 +74,10 @@ class WetMaskedMetrics(MergeMetrics):
         return self.wet_mask_collector.get_wet_mask(sigma,stencil)
     def reduce_moments_metrics(self,stencil :int= 0):
         metrics = self.metrics.copy()
-        wetmask = self.get_mask(stencil = stencil)
-        wetmask = select_coords_by_extremum(wetmask,metrics.coords,'lat lon'.split())
-        wetmask = select_coords_by_value(wetmask,metrics.coords,'depth')        
-        metrics = xr.where(wetmask,metrics,np.nan)    
+        # wetmask = self.get_mask(stencil = stencil)
+        # wetmask = select_coords_by_extremum(wetmask,metrics.coords,'lat lon'.split())
+        # wetmask = select_coords_by_value(wetmask,metrics.coords,'depth')        
+        # metrics = xr.where(wetmask,metrics,np.nan)    
         metrics = moments_metrics_reduction(metrics,dim = 'lat lon'.split())        
         return metrics
     def latlon_reduct(self,stencil :int= 0):

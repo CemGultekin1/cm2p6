@@ -1,7 +1,7 @@
 from typing import List
 from metrics.modmet import MergeMetrics, ModelMetric
 import numpy as np
-from utils.xarray import is_empty_xr
+from utils.xarray_oper import is_empty_xr
 import xarray as xr
 
 
@@ -63,7 +63,7 @@ def moments_metrics_reduction(sn, dim = ['lat','lon']):
             #     mm = mms[key]
             #     mm = xr.where(nonan,mm,np.nan)
             #     mm = mm.isel(co2 = 0,depth = 1).drop('co2 depth'.split())
-            #     from utils.xarray import plot_ds
+            #     from utils.xarray_oper import plot_ds
             #     plot_ds({str(key):mm},f'{str(key)}.png',ncols = 1)
             # plot_ds({'nonan':nonan.isel(co2 = 0,depth = 0)},'nonan.png',ncols = 1)
             # raise Exception

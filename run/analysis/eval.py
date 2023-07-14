@@ -14,7 +14,7 @@ from utils.parallel import get_device
 from constants.paths import EVALS
 from utils.slurm import flushed_print
 import numpy as np
-from utils.xarray import fromtensor, fromtorchdict, fromtorchdict2tensor, plot_ds
+from utils.xarray_oper import fromtensor, fromtorchdict, fromtorchdict2tensor, plot_ds
 import xarray as xr
 from utils.arguments import replace_params
 
