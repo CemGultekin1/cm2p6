@@ -67,7 +67,7 @@ def lsrp_gather():
     wc   = WetMaskCollector()
     for i,line in enumerate(argsreader.iterate_lines()):
         print(line)
-        wmm = VariableWetMaskedMetrics(line.split(),wc,stencils = [1,3,5,7,9,11,15,21])
+        wmm = VariableWetMaskedMetrics(line.split(),wc,ocean_interior = [1,3,5,7,9,11,15,21])
         if not wmm.file_exists():
             continue
         wmm.load() 
@@ -86,7 +86,7 @@ def cnn_gather():
     wc   = WetMaskCollector()
     lines = np.array(lines)
     for i,line in enumerate(lines):
-        wmm = VariableWetMaskedMetrics(line.split(),wc,stencils = [1,3,5,7,9,11,15,21])
+        wmm = VariableWetMaskedMetrics(line.split(),wc,ocean_interior = [1,3,5,7,9,11,15,21])
         if not wmm.file_exists():
             continue
         wmm.load()        
@@ -104,19 +104,20 @@ def cnn_gather():
 
 
 class ModelMetricsGathering(PartitionedArgsReader):
+    date:str = date.today()
     def __init__(self, model_list_file_name: str, part_id: int,\
                     num_parts: int,model:str = MODEL_PARAMS['model']['choices'][0],\
-                        stencil_variation = [1,3,5,7,9,11,15,21]):
-        super().__init__(model_list_file_name, part_id, num_parts)
+                        ocean_interior_variation = [1,3,5,7,9,11,15,21],):
+        super().__init__(model_list_file_name, part_id, num_parts,)
         self.model_results = ModelResultsCollection()
         self.wet_masks  = WetMaskCollector()
-        self.stencil_variation = stencil_variation
+        self.ocean_interior_variation = ocean_interior_variation
         self.model = model
-    def gather_evals(self,):
+    def gather_evals(self,):        
         for i,(index,line) in enumerate(self.iterate_lines()):
             flushed_print(f'\t {i}/{len(self)} - {index}')# - {line}')
             # continue
-            wmm = VariableWetMaskedMetrics(line.split(),self.wet_masks,stencils = self.stencil_variation)
+            wmm = VariableWetMaskedMetrics(line.split(),self.wet_masks,ocean_interior = self.ocean_interior_variation)
             if not wmm.file_exists():
                 continue
             wmm.load()
@@ -140,25 +141,30 @@ class ModelMetricsGathering(PartitionedArgsReader):
         return os.path.join(EVALS,self.target_file_name(index = index))
     @property
     def merged_target_name(self,):
-        return f'{self.extension(all_eval_path(),remove = True)}-{date.today()}-{self.model}'
+        return f'{self.extension(all_eval_path(),remove = True)}-{self.date}-{self.model}'
     def write(self,x:xr.Dataset,path:str):
         path = self.extension(path,add = True)
         # turn_to_writable_attrs(x)
         flushed_print(f'writing to {path}')
         if bool(x.attrs):
-            with open(path.replace('.nc','.json'),'w') as outfile:
+            with open(self.to_json_path(path),'w') as outfile:
                 json.dump(x.attrs,outfile)
         x.attrs = {}
         x.to_netcdf(path,mode = 'w')
         flushed_print(f'\t\t\t ...success')
+    def to_json_path(self,path:str):
+        return path.replace('.nc','.json')
     def read(self,path:str)->xr.Dataset:
         path = self.extension(path,add = True)
-        flushed_print(f'reading from {path}...')        
+        flushed_print(f'reading from {path}')        
         ds = xr.open_dataset(path,)
-        if os.path.exists(path.replace('.nc','.json')):
-            with open(path.replace('.nc','.json'),'r') as infile:
+        json_path = self.to_json_path(path)
+        if os.path.exists(json_path):
+            with open(json_path,'r') as infile:
                 attrs = json.load(infile)
+            
             ds.attrs = attrs
+            os.remove(json_path)
         flushed_print(f'\t\t\t ...success')
         return ds
         
@@ -209,7 +215,8 @@ class ModelMetricsGathering(PartitionedArgsReader):
                 return False
         return True
        
-        
+
+            
 def main():
     args = sys.argv[1:]
     model_type = args[0]
@@ -223,7 +230,7 @@ def main():
         )
     )
     model_list,model = model_list_file_names[model_type]
-    mmg = ModelMetricsGathering(model_list,part_id,num_parts,model = model,stencil_variation=[1,])
+    mmg = ModelMetricsGathering(model_list,part_id,num_parts,model = model,ocean_interior_variation=[1,])
     mmg.gather_evals()
     mmg.merge_write_this_partition()
     mmg.merge_write_all_partitions()

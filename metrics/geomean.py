@@ -66,22 +66,22 @@ class WetMaskedMetrics(MergeMetrics):
     def __init__(self, modelargs: List[str],wc:WetMaskCollector) -> None:
         super().__init__(modelargs)
         self.wet_mask_collector = wc
-    def get_mask(self,stencil:int = 0,):
+    def get_mask(self,ocean_interior:int = 0,):
         model_coords,metric_coords = self.get_coords_dict()
         model_coords.update(metric_coords)
-        stencil = model_coords['stencil'] if stencil == 0 else stencil
+        ocean_interior = model_coords['stencil'] if ocean_interior == 0 else ocean_interior
         sigma = model_coords['sigma']
-        return self.wet_mask_collector.get_wet_mask(sigma,stencil)
-    def reduce_moments_metrics(self,stencil :int= 0):
+        return self.wet_mask_collector.get_wet_mask(sigma,ocean_interior)
+    def reduce_moments_metrics(self,ocean_interior :int= 0):
         metrics = self.metrics.copy()
-        # wetmask = self.get_mask(stencil = stencil)
+        # wetmask = self.get_mask(ocean_interior = ocean_interior)
         # wetmask = select_coords_by_extremum(wetmask,metrics.coords,'lat lon'.split())
         # wetmask = select_coords_by_value(wetmask,metrics.coords,'depth')        
         # metrics = xr.where(wetmask,metrics,np.nan)    
         metrics = moments_metrics_reduction(metrics,dim = 'lat lon'.split())        
         return metrics
-    def latlon_reduct(self,stencil :int= 0):
-        self.metrics = self.reduce_moments_metrics(stencil=stencil)
+    def latlon_reduct(self,ocean_interior :int= 0):
+        self.metrics = self.reduce_moments_metrics(ocean_interior=ocean_interior)
     def filtering_name_fix(self,):
         if 'filtering' not in self.metrics.coords:
             return 
@@ -109,12 +109,12 @@ class WetMaskedMetrics(MergeMetrics):
             print(f'\t\t{fls}->{legal_terms}')
             
 class VariableWetMaskedMetrics(WetMaskedMetrics):
-    def __init__(self, modelargs: List[str], wc: WetMaskCollector,stencils:List[int]) -> None:
+    def __init__(self, modelargs: List[str], wc: WetMaskCollector,ocean_interior:List[int]) -> None:
         super().__init__(modelargs, wc)
-        self.stencils = stencils
+        self.ocean_interior = ocean_interior
     def latlon_reduct(self,):
         metrics = {}
-        for stencil in self.stencils:
-            metrics[stencil] = self.reduce_moments_metrics(stencil=stencil)
-        self.metrics = cat(metrics,'stencil')        
+        for ocean_interior in self.ocean_interior:
+            metrics[ocean_interior] = self.reduce_moments_metrics(ocean_interior=ocean_interior)
+        self.metrics = cat(metrics,'ocean_interior')        
         self.metrics = drop_unused_coords(self.metrics)

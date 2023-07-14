@@ -45,7 +45,7 @@ def main():
     root = DISTS
     filename = os.path.join(root,'all.nc')
     # ds = xr.open_dataset(filename,mode = 'r')
-    mr = ModelResults('',path = filename)
+    mr = ModelMetricsCollection('',path = filename)
     print(mr.metrics)
     return
     ds = ds.isel(depth = 0,training_depth = 0,co2 = 0).drop('depth training_depth co2'.split())

@@ -15,6 +15,10 @@ def read_args(line_num,filename :str = 'trainjob.txt'):
 class ArgsReader:
     def __init__(self,filename:str):
         self.path = os.path.join(JOBS,filename)
+        self.lines = []
+    def read_model_list(self,):
+        if not os.path.exists(self.path):
+            return
         file1 = open(self.path, 'r')
         lines = file1.readlines()
         file1.close()
@@ -22,21 +26,25 @@ class ArgsReader:
     def __len__(self,):
         return len(self.lines)
     def iterate_lines(self,):
+        self.read_model_list()
         for line in self.lines:
             yield line
 class PartitionedArgsReader(ArgsReader):
-    def __init__(self, filename: str,part_id:int,num_parts:int):
-        super().__init__(filename)
+    def __init__(self, filename: str,part_id:int,num_parts:int,):
+        super().__init__(filename,)
+        self.part_id = part_id
+        self.num_parts = num_parts
+    def read_model_list(self):
+        super().read_model_list()
         n = len(self)
-        d = ceil(n/num_parts)
-        st = d*(part_id -1)
-        tr = d*part_id
+        d = ceil(n/self.num_parts)
+        st = d*(self.part_id -1)
+        tr = d*self.part_id
         tr = min(tr,n)
         slc = slice(st,tr)
         self.slice = (st,tr)
         self.lines = self.lines[slc]
-        self.part_id = part_id
-        self.num_parts = num_parts
+        
     def iterate_lines(self):
         for i,line in enumerate(super().iterate_lines()):
             yield i + self.slice[0],line
