@@ -56,7 +56,7 @@ def main():
     args = sys.argv[1:]
     
     # from utils.slurm import read_args
-    # args = read_args(19,filename = 'offline_sweep.txt')
+    # args = read_args(68,filename = 'offline_sweep.txt')
     # args = replace_params(args,'mode','eval','num_workers','1')
     
     
@@ -191,6 +191,8 @@ def main():
             allstats[key].append(stats[key].copy())
 
     for key in allstats:
+        if key == lsrpid:
+            continue
         filename = os.path.join(EVALS,key+'.nc')
         print(filename)
         xr.merge(allstats[key]).to_netcdf(filename,mode = 'w')

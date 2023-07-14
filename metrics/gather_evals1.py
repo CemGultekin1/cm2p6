@@ -120,8 +120,6 @@ def _main():
 def filtering_correction():
     filename = '/scratch/cg3306/climate/outputs/evals/all20230710.nc' #all_eval_path()
     stats = xr.open_dataset(filename)
-    # lsrp = stats.isel(model = 1)
-    # skipna_mean(lsrp,)
     stats_ = []
     training_filterings = stats.training_filtering.values
     for i in range(len(training_filterings)):

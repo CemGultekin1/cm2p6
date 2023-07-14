@@ -63,12 +63,13 @@ class MultiDomainDataset(MultiDomain):
         return slice(self.half_spread,-self.half_spread)
 
     def pad(self,data_vars:dict,coords:dict):
+        forcing_mask_names = [get_var_mask_name(fn) for fn in  self.forcing_names]
         for name in data_vars.keys():
             dims,vals = data_vars[name]
             if 'lat' not in dims or 'lon' not in dims:
                 continue
             pad = (0,0)
-            if name in self.forcing_names + [FORCING_MASK] and self.half_spread>0:
+            if name in self.forcing_names + forcing_mask_names and self.half_spread>0:
                 vrshp = list(vals.shape)
                 vals = vals.reshape([-1]+ vrshp[-2:])
                 vals =  vals[:,self.sslice,self.sslice]
