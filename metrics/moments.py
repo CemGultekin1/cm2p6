@@ -46,13 +46,32 @@ def moments_metrics_reduction(sn, dim = ['lat','lon']):
     xarrs = []
     for key in dvn:
         mms = {}
+        nonan = None
         for mtuple,mname in moment_names.items():
             mms[mtuple] = sn[f"{key}_{mname}"].copy()
+            if nonan is None:
+                nonan = mms[mtuple].copy()
+            else:
+                nonan += mms[mtuple]
+        nonan = xr.where(np.isnan(nonan),0,1)
+                
         if len(reduckwargs) > 0:
-            nonan = xr.where(np.isnan(mms[(1,0)]),0,1)
+            # nonan = xr.where(np.isnan(mms[(1,0)]),0,1)
             def skipna_average(st):
                 return xr.where(np.isnan(st),0,st).sum(**reduckwargs)/nonan.sum(**reduckwargs)
+            # for key in mms:
+            #     mm = mms[key]
+            #     mm = xr.where(nonan,mm,np.nan)
+            #     mm = mm.isel(co2 = 0,depth = 1).drop('co2 depth'.split())
+            #     from utils.xarray import plot_ds
+            #     plot_ds({str(key):mm},f'{str(key)}.png',ncols = 1)
+            # plot_ds({'nonan':nonan.isel(co2 = 0,depth = 0)},'nonan.png',ncols = 1)
+            # raise Exception
+            
             mms = {key:skipna_average(val) for key,val in mms.items()}
+            # print(nonan.sum(**reduckwargs))
+            # print(mms)
+            # raise Exception
 
 
         mse = mms[(2,0)] + mms[(0,2)] - 2*mms[(1,1)]

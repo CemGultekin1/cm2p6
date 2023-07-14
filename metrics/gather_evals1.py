@@ -1,10 +1,11 @@
 import itertools
 import os
-from metrics.geomean import WetMaskCollector, WetMaskedMetrics
+from metrics.geomean import VariableWetMaskedMetrics, WetMaskCollector, WetMaskedMetrics
 from models.nets.cnn import kernels2spread
 from plots.metrics_ import metrics_dataset
 from constants.paths import JOBS, EVALS, all_eval_path
 from metrics.modmet import ModelMetric, ModelResultsCollection
+from utils.slurm import ArgsReader
 from utils.xarray import skipna_mean
 import xarray as xr
 from utils.arguments import args2dict, options
@@ -57,25 +58,19 @@ def kernel_size_fun(kernels):
     ks = kernels2spread(kernels)*2 + 1
     return ks
 def main():
-    models = os.path.join(JOBS,'lsrpjob.txt')
-    file1 = open(models, 'r')
-    lines = file1.readlines()
-    file1.close()
+    argsreader = ArgsReader('lsrpjob.txt')
     mrc = ModelResultsCollection()
     wc   = WetMaskCollector()
-    lines = np.array(lines)
-    for i,line in enumerate(lines):
-        wmm = WetMaskedMetrics(line.split(),wc)
+    for i,line in enumerate(argsreader.iterate_lines()):
+        print(line)
+        wmm = VariableWetMaskedMetrics(line.split(),wc,stencils = [1,3,5,7,9,11,15,21])
         if not wmm.file_exists():
             continue
-        wmm.load()        
-        wmm.latlon_reduct()
-        wmm.filtering_name_fix()
-        print(f'{i}/{len(lines)}')
-        wmm.past_coords_to_metric(('filtering',))
+        wmm.load() 
+        wmm.latlon_reduct()        
         mrc.add_metrics(wmm)
-    ds = mrc.merged_dataset()
-    filename = all_eval_path().replace('.nc','20230712_.nc')
+    ds = mrc.merged_dataset()    
+    filename = all_eval_path().replace('.nc','20230712_linear.nc')
     ds.to_netcdf(filename,mode = 'w')
     
 # def filtering_correction():
@@ -109,7 +104,7 @@ def _main():
     # lines = lines[:1]
     # lines = lines[[0,1,2,48,49,50,147,148,149]]
     for i,line in enumerate(lines):
-        wmm = WetMaskedMetrics(line.split(),wc)
+        wmm = VariableWetMaskedMetrics(line.split(),wc,stencils = [1,3,5,7,9,11,15,21])
         if not wmm.file_exists():
             continue
         wmm.load()        
@@ -119,7 +114,7 @@ def _main():
         wmm.past_coords_to_metric(('filtering',))
         mrc.add_metrics(wmm)
     ds = mrc.merged_dataset()
-    filename = all_eval_path().replace('.nc','20230712_.nc')
+    filename = all_eval_path().replace('.nc','20230714.nc')
     ds.to_netcdf(filename,mode = 'w')
     
 def filtering_correction():
@@ -143,4 +138,4 @@ def filtering_correction():
     stats = xr.merge(stats_)
     stats.to_netcdf(filename.replace('.nc','_.nc'),mode = 'w')
 if __name__=='__main__':
-    main()
+    _main()

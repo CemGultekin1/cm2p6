@@ -1,4 +1,4 @@
-from typing import Callable, List, Tuple, Union
+from typing import Any, Callable, Dict, List, Tuple, Union
 from data.vars import get_var_mask_name
 import xarray as xr
 import torch
@@ -6,6 +6,27 @@ import numpy as np
 import torch.nn as nn
 from scipy.ndimage import gaussian_filter
 
+# def start_nan_dataset(varnames:List[str],coords:Dict[str,np.ndarray]):
+#     shape = [len(v) for v in coords.values()]
+#     dims = list(coords.keys())
+#     data_vars = {
+#         varname: (dims,np.ones(shape,dtype = float)*np.nan) for varname in varnames
+#     }
+#     return xr.Dataset(data_vars,coords)
+# def put_data_in_place(ds:xr.Dataset,ds1:xr.Dataset,coords:Dict[str,Any]):
+#     coords = {key:coords[key] for key in ds.coords.keys()}
+    
+    
+def cat(ds_dict:Dict[Union[str,int,float],Union[xr.DataArray,xr.Dataset]],dim_name:str):
+    values = list(ds_dict.keys())
+    wms = xr.Dataset()
+    for val,wm in ds_dict.items():
+        wm = wm.expand_dims({dim_name:[val]},axis = 0).reindex(indexers = {dim_name:values},fill_value = 0)
+        if is_empty_xr(wms):
+            wms = wm.copy()
+        else:
+            wms += wm
+    return wms
 def existing_sel(ds:xr.Dataset,**select_dict):
     keys = []
     for key in select_dict.keys():

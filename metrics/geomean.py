@@ -6,7 +6,7 @@ from metrics.modmet import MergeMetrics
 from data.coords import DEPTHS,SIGMAS
 from metrics.moments import moments_metrics_reduction
 import xarray as xr
-from utils.xarray import is_empty_xr, select_coords_by_extremum, select_coords_by_value, shape_dict
+from utils.xarray import is_empty_xr, select_coords_by_extremum, select_coords_by_value,cat, shape_dict,plot_ds,drop_unused_coords
 import numpy as np
 
 class CoarseGridInteriorOceanWetMask(SingleDomain):
@@ -45,25 +45,17 @@ class WetMaskCollector:
         return CoarseGridInteriorOceanWetMask(ds)
     def get_wet_mask(self,sigma,stencil):
         wetmask = WetMask(sigma,stencil)
+        # #---------------------------For Debugging---------------------------#
+        # if len(self.masks) > 0:
+        #     return self.masks[0].wet_mask
+        # #-------------------------------------------------------------------#
         if wetmask in self.masks:
             return self.masks[self.masks.index(wetmask)].wet_mask      
-        wms = xr.DataArray()
-        
-        # wm_ = None
+        wms = {}
         for depth in DEPTHS: 
             ds = self.get_dataset(sigma,depth)
-            # if wm_ is None:
-            wm= ds.get_mask(wetmask.stencil)
-            #     wm_ = wm.copy()
-            # else:
-            #     wm = wm_.copy()
-            # from utils.xarray import plot_ds
-            # plot_ds(dict(wetmask = wm),f'wm-{int(depth)}.png')
-            wm = wm.expand_dims({'depth':[depth]},axis = 0).reindex(indexers = {'depth':DEPTHS},fill_value = 0)
-            if is_empty_xr(wms):
-                wms = wm
-            else:
-                wms += wm
+            wms[depth]= ds.get_mask(wetmask.stencil)
+        wms = cat(wms,'depth')
         wetmask.wet_mask = wms
         self.masks.append(wetmask)
         return wetmask.wet_mask
@@ -81,10 +73,12 @@ class WetMaskedMetrics(MergeMetrics):
         sigma = model_coords['sigma']
         return self.wet_mask_collector.get_wet_mask(sigma,stencil)
     def reduce_moments_metrics(self,stencil :int= 0):
+        metrics = self.metrics.copy()
         wetmask = self.get_mask(stencil = stencil)
-        wetmask = select_coords_by_extremum(wetmask,self.metrics.coords,'lat lon'.split())
-        wetmask = select_coords_by_value(wetmask,self.metrics.coords,'depth')
-        metrics = xr.where(wetmask,self.metrics,np.nan)        
+        wetmask = select_coords_by_extremum(wetmask,metrics.coords,'lat lon'.split())
+        wetmask = select_coords_by_value(wetmask,metrics.coords,'depth')        
+        metrics = xr.where(wetmask,metrics,np.nan)    
+        metrics = moments_metrics_reduction(metrics,dim = 'lat lon'.split())        
         return metrics
     def latlon_reduct(self,stencil :int= 0):
         self.metrics = self.reduce_moments_metrics(stencil=stencil)
@@ -119,24 +113,8 @@ class VariableWetMaskedMetrics(WetMaskedMetrics):
         super().__init__(modelargs, wc)
         self.stencils = stencils
     def latlon_reduct(self,):
+        metrics = {}
         for stencil in self.stencils:
-            metric = self.reduce_moments_metrics(stencil=stencil)
-            
-# def co2_nan_expansion(sn:xr.Dataset):
-#     if 'co2' not in sn.coords:
-#         return sn
-#     snco2slcs = []
-#     for i in range(len(sn.co2)):
-#         snco2slcs.append(sn.isel(co2 = i).drop('co2'))
-#     mask = np.isnan(snco2slcs[0])*0
-#     for snco2 in snco2slcs:
-#         mask = mask + np.isnan(snco2)
-#     mask = mask>0
-#     for i,snco2 in enumerate(snco2slcs):
-#         snco2 = xr.where(mask,np.nan,snco2)
-#         snco2 = snco2.expand_dims({'co2':[sn.co2.values[i]]})
-#         snco2slcs[i] = snco2
-#     snco2slcs = xr.merge(snco2slcs)
-#     return snco2slcs
-    
-
+            metrics[stencil] = self.reduce_moments_metrics(stencil=stencil)
+        self.metrics = cat(metrics,'stencil')        
+        self.metrics = drop_unused_coords(self.metrics)

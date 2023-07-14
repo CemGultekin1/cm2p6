@@ -17,7 +17,8 @@ def get_args(**kwargs):
     kw = deepcopy(kwargs)
     kw.pop('co2')
     consistent_found = False
-    for _,args in lr.itertate_args():
+    for line in lr.iterate_lines():
+        args = line.split()
         if is_consistent(args,key = 'model',**kw):
             consistent_found = True
             break

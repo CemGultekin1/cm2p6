@@ -18,7 +18,9 @@ class ArgsReader:
         file1 = open(self.path, 'r')
         lines = file1.readlines()
         file1.close()
-        self.lines = lines
-    def itertate_args(self,):
-        for i,line in enumerate(self.lines):
-            yield i,line.split()
+        self.lines = [line.strip() for line in lines]
+    def __len__(self,):
+        return len(self.lines)
+    def iterate_lines(self,):
+        for line in self.lines:
+            yield line

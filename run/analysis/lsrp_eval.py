@@ -1,19 +1,12 @@
-import itertools
 import os
 import sys
 from data.exceptions import RequestDoesntExist
-from plots.metrics_ import metrics_dataset, moments_dataset
-from run.train import Timer
+from plots.metrics_ import moments_dataset
 import torch
 from data.load import get_data
-from data.vars import get_var_mask_name
-from models.load import load_model, load_old_model
-import matplotlib.pyplot as plt
 from utils.arguments import options, populate_data_options
-from utils.parallel import get_device
 from constants.paths import EVALS
 from utils.slurm import flushed_print
-import numpy as np
 from utils.xarray import fromtensor, fromtorchdict, fromtorchdict2tensor, plot_ds
 import xarray as xr
 from utils.arguments import replace_params
@@ -48,7 +41,7 @@ def get_lsrp_modelid(args):
 def main():
     args = sys.argv[1:]
     # coarse_graining_factor = int(sys.argv[1])
-    # args = f'--model lsrp:0 --sigma {coarse_graining_factor} --lsrp True --num_workers 1 --temperature True --filtering gcm --mode eval'.split()
+    args = f'--model lsrp:0 --sigma 12 --lsrp True --num_workers 1 --temperature True --filtering gaussian --mode eval'.split()
     
     # from utils.slurm import read_args
     # args = read_args(289,filename = 'offline_sweep.txt')
@@ -83,6 +76,8 @@ def main():
             #             print(f'{key} : {val}')
             depth = forcing_coords['depth'].item()
             co2 = forcing_coords['co2'].item()
+            if abs(depth - 5)>1 or co2 > 0:
+                break
             kwargs = dict(contained = '' if not lsrp_flag else 'res', \
                 expand_dims = {key:forcing_coords[key].item() for key in non_static_params},\
                 drop_normalization = True,
@@ -96,11 +91,19 @@ def main():
 
             predicted_forcings = fromtensor(mean,forcings,forcing_coords, forcing_mask,denormalize = True,**kwargs)
             true_forcings = fromtorchdict(forcings,forcing_coords,forcing_mask,denormalize = True,**kwargs)
-            predicted_forcings,true_forcings = lsrp_pred(predicted_forcings,true_forcings)
-            predicted_forcings,lsrp_forcings = predicted_forcings
-            stats = update_stats(stats,lsrp_forcings,true_forcings,lsrpid)
+            (predicted_forcings,lsrp_forcings),true_forcings = lsrp_pred(predicted_forcings,true_forcings)
+            from utils.xarray import plot_ds
+            plot_ds(true_forcings,'true_forcings.png',ncols = 3)
+            print(lsrp_forcings)
+            # # return
+            plot_ds(lsrp_forcings,'lsrp_forcings.png',ncols = 3)
+            stats = update_stats(stats,lsrp_forcings,true_forcings,lsrpid)                        
+            plot_ds(stats[lsrpid],'eval_interp.png',ncols = 3)
+
+            raise Exception
             nt += 1
-            flushed_print(nt)
+            if nt%20 == 0:
+                flushed_print(nt)
 
 
         for key in stats:

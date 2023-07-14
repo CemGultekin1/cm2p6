@@ -5,7 +5,7 @@ from constants.paths import EVALS, all_eval_path
 from options.reduce import ScalarArguments
 from utils.arguments import options
 from utils.slurm import flushed_print
-from utils.xarray import drop_unused_coords, is_empty_xr,skipna_mean
+from utils.xarray import drop_unused_coords, is_empty_xr,skipna_mean,cat#,start_nan_dataset
 import xarray as xr
 import numpy as np
 
@@ -56,6 +56,13 @@ class MergeMetrics(ModelMetric):
         return os.path.exists(self.filename)
     def load(self,):
         self.metrics = xr.open_dataset(self.filename,)
+        # met = self.metrics.isel(co2 = 0,depth = 0)
+        # from utils.xarray import plot_ds
+        # keys = met.data_vars.keys()
+        # met_data = {key:met[key] for key in keys if 'Su_true' in key}
+        # plot_ds(met_data,f'metrue-{self.coord_dict["sigma"]}-{self.coord_dict["filtering"]}.png',ncols = 3)
+        # raise Exception
+        self.metrics = drop_unused_coords(self.metrics)
         return self
     
     
@@ -124,29 +131,23 @@ class ModelResultsCollection:
         def empty_arr():
             return np.ones(np.prod(shape))*np.nan
         
-        data_vars = {}
+        # data_set = start_nan_dataset(list(model.metrics.data_vars.keys()),merged_coord)
+        # print(data_set)
+        # raise Exception
+        datasets = []
         flushed_print(f'total number of models = {len(self.models)}')
         for model in self.models:
             mdict,_ = model.get_coords_dict()
             mdict = rename_dict_fun(mdict)
-            # print(mdict)
-            # print(fdict)
-            inds = [v.index(mdict[k]) for k,v in model_coord.items()]
-            lent = np.prod(shape[len(inds):])
-            inds = inds + [0]*(len(shape) - len(inds))            
-            alpha0 = np.ravel_multi_index(inds,shape)
-            alpha1 = alpha0 + lent
-            for key in model.metrics.data_vars.keys():
-                if key not in data_vars:
-                    data_vars[key] = empty_arr()
-                datarr = model.metrics[key]
-                datarr = datarr.reindex(indexers = feat_coord, fill_value = np.nan)
-                values = datarr.values
-                data_vars[key][alpha0:alpha1] = values.flatten()
+            mdict = {key:[val] for key,val in mdict.items() if key in merged_coord}
+            new_metrics = model.metrics.copy()
+            new_metrics = new_metrics.expand_dims(**mdict)
+            datasets.append(new_metrics)
+        ds = xr.merge(datasets,fill_value = np.nan)
 
-        for key,val in data_vars.items():
-            data_vars[key] = (list(merged_coord.keys()),val.reshape(shape))
-        ds = xr.Dataset(data_vars = data_vars,coords = merged_coord)
+        # for key,val in data_vars.items():
+        #     data_vars[key] = (list(merged_coord.keys()),val.reshape(shape))
+        # ds = xr.Dataset(data_vars = data_vars,coords = merged_coord)
         return ds
     
     
@@ -197,47 +198,51 @@ class ModelResults:
         reduc_coords = [key for key in metrics.coords.keys() if key not in leave_dims] #+ [varname]
         newmetric = xr.Dataset()
         metrics = metrics.drop(varname)
+        metrics_dict = {}
         for ux_ in ux:
             uxx = xr.where(x == ux_,metrics,np.nan)
             if resolve_collisions == 'max':
                 uxx = uxx.max(dim = reduc_coords,skipna = True)
             elif resolve_collisions == 'mean':
                 uxx = skipna_mean(uxx,reduc_coords)
-            uxx = uxx.expand_dims(dim = {varname:[ux_]},axis = 0)
-            uxx = uxx.reindex(indexers = {varname:ux},fill_value =0)
-            if is_empty_xr(newmetric):
-                newmetric = uxx
-            else:
-                newmetric += uxx
+            metrics_dict[ux_] = uxx
+        newmetric = cat(metrics_dict,varname)
         self.metrics = newmetric
     def diagonal_slice(self,seldict:Dict[str,Tuple[Union[int,float,str]]]):
         metrics = self.metrics
         selnames = list(seldict.keys())
         keyname = selnames[0]
         keyvals = seldict[keyname]
-        newmetric = xr.Dataset()
+        newmetric = {}
         for vals in zip(*seldict.values()):
-            slc = metrics.sel(dict(zip(selnames,vals))).drop(selnames)
-            slc = slc.expand_dims({keyname:vals[:1]},axis = 0).reindex(indexers = {keyname:keyvals},fill_value = 0)
-            if is_empty_xr(newmetric):
-                newmetric = slc
-            else:
-                newmetric += slc
+            newmetric[vals[0]] = metrics.sel(dict(zip(selnames,vals))).drop(selnames)
+            # slc = slc.expand_dims({keyname:vals[:1]},axis = 0).reindex(indexers = {keyname:keyvals},fill_value = 0)
+            # if is_empty_xr(newmetric):
+            #     newmetric = slc
+            # else:
+            #     newmetric += slc
+        newmetric = cat(newmetric,'keyname')
         self.metrics = newmetric
 
             
 def main():
-    mr = ModelResults('20230712_')
-    # metrics = mr.metrics
+    mr = ModelResults('20230712_linear')
+    metrics = mr.metrics
+    # print(metrics)
+    # return
+    metrics = metrics.isel(co2 = 1,sigma = 0).sel(stencil = [1,3],depth = 0)
+    print(metrics)
     # metrics = metrics.isel(co2 = 0,lr = 1,lossfun= 0,temperature = 0,training_filtering=1,training_depth=0,depth=0,minibatch = 0,filtering = 1 ,)
     # metrics = metrics.sel(stencil = 21)
     # metrics = metrics.sel(sigma = 4)
-    # for key in metrics.data_vars:
-    #     print(
-    #         f'{key}:\t\t\t{metrics[key].values}'
-    #     )
+    for key in metrics.data_vars:
+        print(
+            f'{key}:\t\t\t{metrics[key].values}'
+        )
     
-    # return
+    return
+    mr = ModelResults('20230712_')
+    metrics = mr.metrics
     mr.reduce_coord('lr','temperature','stencil','minibatch')
     mr.pick_training_value('filtering',)
     mr.sel(depth = 0,training_depth = 0,co2 = 0)
