@@ -1,11 +1,5 @@
 import itertools
-import os
 from typing import Dict, List, Tuple, Union
-from constants.paths import EVALS, all_eval_path
-from options.params import MODEL_PARAMS
-from options.reduce import ScalarArguments
-from utils.arguments import options
-from utils.slurm import flushed_print
 from utils.xarray_oper import drop_unused_coords,skipna_mean,cat
 import xarray as xr
 import numpy as np
@@ -83,26 +77,28 @@ class ModelMetricsCollection(ModelMetricsGathering):
         self.metrics = newmetric
             
 def main():
-    mr = ModelMetricsCollection(date ='2023-07-14',model = 'linear')
-    metrics = mr.metrics
-    print(metrics)
-    return
-    metrics = metrics.isel(co2 = 1,sigma = 0).sel(stencil = [1,3],depth = 0)
+    # mr = ModelMetricsCollection(date ='2023-07-14',model = 'fcnn')
+    # metrics = mr.metrics
+
+    # metrics = metrics.isel(co2 = 1,sigma = 0).sel(stencil = [1,3],depth = 0)
     
     # metrics = metrics.isel(co2 = 0,lr = 1,lossfun= 0,temperature = 0,training_filtering=1,training_depth=0,depth=0,minibatch = 0,filtering = 1 ,)
-    # metrics = metrics.sel(stencil = 21)
+    # metrics = metrics.sel(stencil = 21,ocean_interior = 21)
     # metrics = metrics.sel(sigma = 4)
-    for key in metrics.data_vars:
-        print(
-            f'{key}:\t\t\t{metrics[key].values}'
-        )
+    # for key in metrics.data_vars:
+    #     print(
+    #         f'{key}:\t\t\t{metrics[key].values}'
+    #     )
     
-    return
-    mr = ModelMetricsCollection('20230712_')
-    metrics = mr.metrics
+    # return
+    mr = ModelMetricsCollection(date ='2023-07-14',model = 'fcnn')
+    # for key,val in mr.metrics.coords.items():
+    #     print(f'{key} - {len(val)}')
+    # return
     mr.reduce_coord('lr','temperature','stencil','minibatch')
     mr.pick_training_value('filtering',)
-    mr.sel(depth = 0,training_depth = 0,co2 = 0)
+    mr.sel(depth = 0,co2 = 0,)#ocean_interior = 21)
+    mr.isel(training_depth = 0)
     def name_fun(**kwargs):
         contains = 'filtering lossfun domain'.split()
         values = [str(kwargs[k].item()) for k in contains]

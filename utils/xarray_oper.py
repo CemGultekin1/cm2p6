@@ -78,12 +78,23 @@ def merge_by_attrs(datasets:List[xr.Dataset],**kwargs):
             if nc not in coord_collection:
                 coord_collection[nc] = []
             coord_collection[nc].append(val)
+    for i,ds in enumerate(datasets):
+        coord_keys = list(ds.coords.keys())
+        for key in coord_keys:
+            if key in coord_collection:
+                coord_collection[key].extend(ds[key].values.tolist())
     keys = list(coord_collection.keys())
+    # for key,val in coord_collection.items():
+    #     print(f'{key} - {coord_collection[key]}')  
+    # print('-'*64)
     for key in keys:
         val = coord_collection[key]
         coord_collection[key] = np.unique(val)
         if len(coord_collection[key]) <= 1:
-            coord_collection.pop(key)
+            coord_collection.pop(key) 
+    # for key,val in coord_collection.items():
+    #     print(f'{key} - {coord_collection[key]}')   
+    # raise Exception
     for i,ds in enumerate(datasets):        
         new_coords = ds.attrs
         new_coords = {nc:[val] for nc,val in new_coords.items() if nc in coord_collection}

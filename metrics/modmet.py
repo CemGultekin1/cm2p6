@@ -113,16 +113,18 @@ class ModelResultsCollection:
         model_coord = rename_dict_fun(model_coord,)
         attrs = dict()
         model_keys = list(model_coord.keys())
+        renamed_keys = tuple(rename_dict.values())
         for key in model_keys:
             val = model_coord[key]
-            if len(val) > 1 or len(val)==0:
+            if (len(val) > 1 or len(val)==0) and key in renamed_keys:
                 continue
             attrs[key] = model_coord.pop(key)[0]
+            
             
         feat_keys = list(feat_coord.keys())
         for key in feat_keys:
             val = feat_coord[key]
-            if len(val) > 1 or len(val)==0:
+            if (len(val) > 1 or len(val)==0) and key in renamed_keys:
                 continue
             attrs[key] = feat_coord.pop(key)[0]
         
