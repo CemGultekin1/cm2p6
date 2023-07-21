@@ -197,6 +197,7 @@ def main():
         temperature = True,
         lossfun = ['heteroscedastic','MSE'],
         sigma = [4,8,12,16],
+        domain = 'four_regions'
     )
     
     testing_kwargs = dict(            

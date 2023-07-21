@@ -221,7 +221,9 @@ def main():
         ylim = [0,1]
         nrows = 1
         ncols = 2#4
-        fig,axs = plt.subplots(nrows,ncols,figsize = (5*ncols,5/3*2*nrows))
+        import matplotlib
+        matplotlib.rcParams.update({'font.size': 14})
+        fig,axs = plt.subplots(nrows,ncols,figsize = (7*ncols,7/3*2*nrows))
 
         fcnn_by_sigma = [fcnn.isel(sigma = ss) for ss in range(4)]
         fcnn_lsrp_by_sigma = [fcnn_lsrp.isel(sigma = ss) for ss in range(4)]

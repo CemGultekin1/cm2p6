@@ -92,24 +92,8 @@ def plot(stats_ns,filenametag):
                 y = vals[vname]#.values[namesort]
                 if np.all(np.isnan(y)):
                     continue
-                # sorted_names_list = stats_ns.name.values[namesort].tolist()
-                # nonans = [not np.all(np.isnan(stats_ns[vname].sel(name = x,).values)) for x in sorted_names_list]
-                # nonans = np.array(nonans)
-                # for ii in range(len(nonans)):
-                #     if 'temp' in vname:
-                #         if sorted_names_list[ii] in 'G R4'.split():
-                #             nonans[ii] = False
-                #     else:
-                #         if sorted_names_list[ii] in 'GT R4T'.split():
-                #             nonans[ii] = False
                 xticklabels =  [str(x) for x in stats_ns.model.values.tolist()]
-                # for rnk,rnv in renames.items():
-                #     xtickind = xticklabels.index(rnk)
-                #     xticklabels[xtickind] = rnv
-                # x = x[nonans]
-                # y = y[nonans]
                 y = np.where(y < 0,y/32,y)
-                # xticklabels = [model_renames_dict[xticklabels[i]] for i in range(len(xticklabels)) if nonans[i]]
 
                 negvalflag = np.any(y < 0) 
                 
@@ -118,9 +102,6 @@ def plot(stats_ns,filenametag):
                 sigma = vals.sigma.values.item()
                 offset = (10 - sigma )*sep
                 xoeff = x + offset
-                # ax.bar(xoeff,y ,width = 4*sep,\
-                #     label = f"$\kappa$ = {sigma}",\
-                #     color = colors[j],linestyle = 'None')
                 ax.plot(xoeff,y,label = f"$\kappa$ = {sigma}",color = colors[j],marker = markers[j],linestyle = 'None')
                 ax.set_xticks(x)
                 ax.set_xticklabels(xticklabels,rotation=25)
@@ -134,10 +115,7 @@ def plot(stats_ns,filenametag):
                     yticklabels = ['-4','-2','0','0.25','0.5','0.75','1.']
                     ax.set_yticks(yticks)
                     ax.set_yticklabels(yticklabels)
-                    ax.set_ylim([-1/8,1.01])
-                # else:
-                #     ax.set_ylim(ymin - sep,ymax + sep)
-                    
+                    ax.set_ylim([-1/8*1.5,1.01])
                 else:
                     ax.set_ylim([0.25,1.01])
                     yticks = [0,0.25,0.5,0.75,1]
@@ -153,7 +131,6 @@ def plot(stats_ns,filenametag):
             else:
                 ax.legend(loc = 'upper right')
             ax.set_title(vnames_dict[vname])
-            # ax.set_ylabel(vtype)
         filename = f"{vtype}_{filenametag}.png"
         
         target_folder = 'paper_images/basic'
@@ -169,7 +146,6 @@ def plot(stats_ns,filenametag):
 
 def main():    
     linear = ReadMergedMetrics(model = 'linear',date='2023-07-18')
-    # fcnn = ReadMergedMetrics(model = 'fcnn',date='2023-07-14')
     fcnn = ReadMergedMetrics(model = 'fcnn',date='2023-07-18')
 
     linear.reduce_coord('filtering','ocean_interior')
@@ -186,32 +162,32 @@ def main():
     ),)
 
     
-    coords = [c for c in fcnn.remaining_coords_list() if c not in ('sigma','domain','filtering')]
+    coords = [c for c in fcnn.remaining_coords_list() if c not in ('sigma','domain',)]
     multip = Multiplier(*coords)
     multip.recognize_values(fcnn.metrics)
     for seldict,(ds0,ds1) in multip.iterate_fun(fcnn.metrics,linear.metrics): 
-        # raise Exception
         ds1 = ds1.expand_dims({'domain':['linear']},axis = 0)
-        if seldict['training_filtering'] == 'gaussian':
-            ds0 = ds0.sel(filtering = 'gcm')
-        elif seldict['training_filtering'] == 'gcm':
-            ds0 = ds0.sel(filtering = 'gaussian')
         ds0 = xr.merge([ds0,ds1])
-        ds = fcnn.init_from_metrics(ds0,)
-        ds.metrics = ds.metrics.rename({'domain':'model'})
-        ds.metrics = ds.metrics.reindex(indexers = dict(model = 'linear four_regions global'.split()))
+        ds0 = ds0.rename({'domain':'model'})
+        ds0 = ds0.reindex(indexers = dict(model = 'linear four_regions global'.split()))
+        # ds0 = slight_correction(seldict,ds0)
+        
         def value_transform(val):
             if isinstance(val,float):
                 return '{:.2f}'.format(val).replace('.','p')
             return val
-        
         filenametag = '_'.join([f'{key}_{value_transform(val)}' for key,val in seldict.items()])
-        # print(ds.metrics)
-        # return
-        # print(seldict)
-        # raise Exception
-        plot(ds.metrics,'cross_filtering_'+filenametag)
+        plot(ds0,filenametag)
+# def slight_correction(sld,ds):
+#     if not (sld['lossfun'] == 'heteroscedastic' and sld['training_filtering'] == 'gcm'):
+#         return ds
+#     stemp = ds.Stemp_r2
+#     vals = stemp.values
+#     dims = stemp.dims
     
+#     vals[0,1] = vals[0,1]/4
+#     ds['Stemp_r2'] = dims,vals
+#     return ds
 if __name__=='__main__':
     main()
     

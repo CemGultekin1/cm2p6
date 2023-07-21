@@ -188,18 +188,42 @@ def main():
         sigma = (4,8,12,16),
         stencil = (21,11,7,7)
     ),)
-
     
+    model_names_dict = {
+        'linear' : 'Linear',
+        'global' : 'CNN (global)',
+        'four_regions' : 'CNN (4 regions)',
+    }
+
+    def model_names(**kwargs):
+        dom = kwargs.get('domain',)
+        model_name = model_names_dict[dom]
+        return model_name
+    def model_names_with_lossfuns(**kwargs):
+        lsf = kwargs.get('lossfun','')
+        mod = model_names(**kwargs)
+        return mod +'_' + lsf
+    def model_name_from_coordinate(**kwargs):
+        mod = kwargs.get('model')
+        mod = '_'.join(mod.split('_')[:-1])
+        return mod
+    # def model_reindexer(ds):
+        
     coords = [c for c in fcnn.remaining_coords_list() if c not in ('sigma','domain','lossfun',)]
     multip = Multiplier(*coords)
     multip.recognize_values(fcnn.metrics)
     for seldict,(ds0,ds1) in multip.iterate_fun(fcnn.metrics,linear.metrics):        
         ds1 = ds1.expand_dims({'domain':['linear']},axis = 0)
         ds0 = xr.merge([ds0,ds1])
-        ds = fcnn.init_from_metrics(ds0,)
+
+        ds = fcnn.init_from_metrics(ds0,)        
+        ds.assign_new_variable(model_names_with_lossfuns,'model')
+        ds.variable2coordinate('model',resolve_collisions='max',leave_dims='sigma')
+        ds.assign_new_variable(model_name_from_coordinate,'model_name')
+
         ds.metrics = ds.metrics.rename({'domain':'model'})
-        
-        ds.metrics = ds.metrics.reindex(indexers = dict(model = 'linear four_regions global'.split()))
+        ds.assign_new_variable()
+        ds.metrics = ds.metrics.
         def value_transform(val):
             if isinstance(val,float):
                 return '{:.2f}'.format(val).replace('.','p')
