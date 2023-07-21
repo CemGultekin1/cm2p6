@@ -20,11 +20,12 @@ def load_dataset(sigma:int,depth:int):
 def main():    
     sigma = 1
     ds = load_dataset(sigma,0)
+    matplotlib.rcParams.update({'font.size': 14})
     target_folder = 'paper_images/four_regions'
     if not os.path.exists(target_folder):
         os.makedirs(target_folder)
     mp = MurrayPlotter(sigma=(sigma,),\
-        nrows = 1,ncols = 1,figsize = (4.5,3),\
+        nrows = 1,ncols = 1,figsize = (9,5),\
         interxmarg=0.03,leftxmarg = 0.12,ymarg = 0.08,colorbarxmarg=0.2,colorbarwidth=0.025)
     path = os.path.join(target_folder,f'snapshot.png')
     
@@ -54,6 +55,7 @@ def main():
         grid_lines={'alpha':0.5},\
         **kwargs_)
     ax.set_title('Surface Temperature')
+    
     import matplotlib.patches as patches
     for coords in four_regions:
         ax.add_patch(
@@ -63,7 +65,8 @@ def main():
             coords[1] - coords[0],
             fill=True,color = 'black',edgecolor = None,alpha = 0.5
         ) ) 
-    mp.save(path,transparent=True)
+    mp.save(path,transparent=False)
+    print(path)
 
 
 if __name__ == '__main__':

@@ -40,15 +40,19 @@ class EnergyDecayWithRadii:
                 k = np.where(self.empirical_cdf[:,i]>p)[0][0]
                 quarters[j,i] = self.midpoints[k]
         return quarters
-    def plot_quarters(self,ax:plt.Axes,):
+    def plot_quarters(self,ax:plt.Axes,offset:float,color:str = 'b',label = ''):
         quarters = self.compute_central_energy()
         quarters = -quarters[:,1:]
-        xaxis = range(1,10)
-        color = 'b'
+        xaxis = np.arange(1,10)
         # ax.semilogy(xaxis,quarters[1],'o',color = color,)#label = tag)
-        ax.errorbar(xaxis,quarters[1],\
+        ax.errorbar(xaxis+(offset - 0.5)/4,quarters[1],\
             yerr = (np.abs(np.abs(quarters[2]-quarters[1]),quarters[1] - quarters[0])),\
-            fmt='x',linestyle = 'dotted', color=color,ecolor='black',capsize=5,)#mew = 4)
+            fmt='s',linestyle = 'none',fillstyle = 'none', \
+                        color=color,ecolor='black',\
+                            markersize = 8,\
+                                capsize=7,label = label)#mew = 4)
+        ax.plot(xaxis+(offset - 0.5)/4,quarters[1],\
+            linestyle = 'dotted', color=color,alpha = 0.2)#mew = 4)
         # ax.set_yscale('log')
         ax.grid(which = 'major',color='k', linestyle='--',linewidth = 1,alpha = 0.4)
         ax.grid(which = 'minor',color='k', linestyle='--',linewidth = 1,alpha = 0.3)
@@ -84,17 +88,19 @@ def main():
     # fig,axs = plt.subplots(2,3,figsize = (14/1.5,8/1.8))
     # fig = plt.figure(figsize = (10,6))
     # subaxes = SubplotAxes(2,3,xmargs=(0.05,0.03,0.05),ymargs = (0.05,0.05,0.05))
-    sigmas = [4,8,12]
+    sigmas = [4,8,12,16]
     colors = 'r g b y'.split()
     
-    varrename = dict(
-        Su = '$S_u$',\
-        Sv = '$S_v$',\
-        Stemp = '$S_T$',\
-    )
+    varnames = 'Su Sv Stemp'.split()
     targetfolder = 'paper_images/saliency'
     if not os.path.exists(targetfolder):
         os.makedirs(targetfolder)
+    import matplotlib
+    matplotlib.rcParams.update({'font.size': 17})
+    pvarname =  'Stemp'
+    figs = {s:plt.figure(figsize = (6,5)) for s in varnames}
+    axs = {s:fig.add_axes([0.15,0.13,0.8,0.85]) for s,fig in figs.items()}
+    sigma_kwargs = {s: dict(color = 'r g b k'.split()[i],label = f'$\kappa = {s}$') for i,s in enumerate(sigmas)}
     for i,sigma in enumerate(sigmas):
         args = read_args(i+1,filename = 'saliency.txt')
         modelid,_,_,_,_,_,_,_=load_model(args)
@@ -102,33 +108,39 @@ def main():
         mah = MultiAdaptiveHistograms()
         mah.load_from_file(os.path.join(SALIENCY,f'{modelid}.npz'))
         
-        ahists = [mah.ahists[i] for i in [0,2]]
-        for j,(mahi,varname) in enumerate(zip(ahists,'Su Stemp'.split())):
-            # ax = axs[j,i]
+        ahists = [mah.ahists[i] for i in [0,1,2]]
+        for j,(mahi,varname) in enumerate(zip(ahists,'Su Sv Stemp'.split())):
+
             ds = mahi.to_xarray(varname)
             edr = EnergyDecayWithRadii(ds)
-            # dims = subaxes.get_ax_dims(j,i)
-            # ax = fig.add_axes(dims)
-            import matplotlib
-            matplotlib.rcParams.update({'font.size': 14})
-            fig = plt.figure(figsize = (5,4))
-            ax = fig.add_axes([0.15,0.13,0.8,0.85])
-            # fig,ax = plt.subplots(1,1,figsize = (4,4))
-            edr.plot_quarters(ax,)
-            title = f'{varrename[varname]}: $\kappa$={sigma}'
-            # ax.set_title(title)
-            yticks = [1,2,3]
-            ax.set_yticks(yticks)
-            yticklabels = ['0.' + '9'*i for i in yticks]
-            ax.set_yticklabels(yticklabels,rotation='vertical')
-            if j == 1:
-                ax.set_xlabel('Input stencils')
-            if i == 0:
-                ax.set_ylabel('$L^2$ concentration')
             
-            title = title.replace('$','').replace('\kappa','kappa')
-            fig.savefig(os.path.join(targetfolder,f'distribution-{title}.png'),transparent=False)
-            plt.close()
+
+            edr.plot_quarters(axs[varname],(sigma - 4)/12,**sigma_kwargs[sigma])
+            yticks = [1,2,3]
+            axs[varname].set_yticks(yticks)
+            yticklabels = ['0.' + '9'*i for i in yticks]
+            axs[varname].set_yticklabels(yticklabels,rotation='vertical')
+            axs[varname].set_xlabel('Input stencils (Field of view)')
+            # if j == 1:
+            #     ax.set_xlabel('Input stencils')
+            # if i == 0:
+            #     ax.set_ylabel('$L^2$ concentration')
+            
+            # title = title.replace('$','').replace('\kappa','kappa')
+            # fig.savefig(os.path.join(targetfolder,f'distribution-{title}.png'),transparent=False)
+            # plt.close()
+    for name,fig in figs.items():
+        path = os.path.join(targetfolder,f'distribution-{name}-no-legend.png')
+        fig.savefig(path,transparent=True)
+        print(path)
+        axs[name].set_ylabel('Concentration')
+        axs[name].legend(loc = 'upper left')
+        path = os.path.join(targetfolder,f'distribution-{name}.png')
+        fig.savefig(path,transparent=True)
+        print(path)
+        # if name != pvarname:
+        #     continue
+        
     # plt.subplots_adjust(bottom=0.05, right=0.96, top=0.95, left= 0.09)
     # fig.savefig(os.path.join(targetfolder,'distribution_.png'),transparent=False)
     

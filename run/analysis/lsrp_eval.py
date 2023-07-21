@@ -41,7 +41,7 @@ def get_lsrp_modelid(args):
 def main():
     args = sys.argv[1:]
     # coarse_graining_factor = int(sys.argv[1])
-    args = f'--model lsrp:0 --sigma 12 --lsrp True --num_workers 1 --temperature True --filtering gaussian --mode eval'.split()
+    args = f'--model lsrp:0 --sigma 12 --lsrp True --num_workers 1 --temperature True --filtering gcm --mode eval'.split()
     
     # from utils.slurm import read_args
     # args = read_args(289,filename = 'offline_sweep.txt')
@@ -49,7 +49,7 @@ def main():
     
     lsrp_flag, lsrpid = get_lsrp_modelid(args)
     
-    non_static_params=['depth','co2',]
+    non_static_params=['depth','co2','filtering']
     multidatargs = populate_data_options(args,non_static_params=non_static_params,domain = 'global',interior = False)
     # multidatargs = [args]
     allstats = {}
@@ -58,6 +58,7 @@ def main():
             test_generator, = get_data(datargs,half_spread = 0, torch_flag = False, data_loaders = True,groups = ('test',))
         except RequestDoesntExist:
             print('data not found!')
+            print(datargs)
             test_generator = None
         if test_generator is None:
             continue

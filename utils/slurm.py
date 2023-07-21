@@ -2,6 +2,7 @@
 import os
 from constants.paths import JOBS
 from math import ceil
+from utils.arguments import is_consistent, options
 
 def flushed_print(*args,**kwargs):
     print(*args,**kwargs,flush = True)
@@ -48,3 +49,20 @@ class PartitionedArgsReader(ArgsReader):
     def iterate_lines(self):
         for i,line in enumerate(super().iterate_lines()):
             yield i + self.slice[0],line
+            
+class ArgsFinder(ArgsReader):
+    def find_fits(self,argstr:str,key:str ='model'):
+        args = argstr.split()
+        runargs,_ = options(args,key = key)
+        lines = []
+        di = runargs.__dict__
+        dikeys = list(di.keys())
+        for dikey in dikeys:
+            if dikey not in argstr:
+                di.pop(dikey)
+            
+        for line in self.iterate_lines():
+            args_ = line.split()
+            if is_consistent(args_,key = key,**di):
+                lines.append(line)
+        return lines

@@ -5,11 +5,14 @@ from typing import List
 from options.params import DATA_PARAMS,MODEL_PARAMS,ARCH_PARAMS,RUN_PARAMS, SCALAR_PARAMS, TRAIN_PARAMS,USUAL_PARAMS,PARAMS
 import numpy as np
 
+
+
 def is_consistent(args:List[str],key = 'model',**kwargs):
     runargs,_ = options(args,key = key)
     for key,item in kwargs.items():
         val = runargs.__dict__[key]
         if np.isscalar(item):            
+            # print(key,val,item,val != item)
             if val != item:
                 return False
         else:

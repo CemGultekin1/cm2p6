@@ -173,7 +173,7 @@ def main():
     CO2S = [False,True]
     cf = ColorFinder()
     plt_kwargs = dict(linewidth = 3)
-    matplotlib.rcParams.update({'font.size': 14})
+    matplotlib.rcParams.update({'font.size': 20})
     root_folder = 'paper_images/distributions'
     label_conversion = {
         'global': 'CNN(Global)',
@@ -225,7 +225,7 @@ def main():
             gauss = gauss/np.sum(gauss)        
             feat = '$\mathcal{N}(0,1)$'
             ax.plot(coords,gauss,linestyle = '--',color = cf.give_color(feat),label = feat,alpha=0.5,**plt_kwargs)
-            ax.legend()
+            
             ax.set_ylim([1e-6,5e-2])
             ax.grid( which='major', color='k', linestyle='--',alpha = 0.5)
             ax.grid( which='minor', color='k', linestyle='--',alpha = 0.5)
@@ -234,6 +234,10 @@ def main():
             filename = '_'.join(filename) + '.png'
             path = os.path.join(root_folder,filename)
             fig.tight_layout()
+            
+            
+            fig.savefig(path.replace('.png','_no_legend.png'))
+            ax.legend()
             fig.savefig(path)
             print(path)
             plt.close()

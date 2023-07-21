@@ -6,12 +6,13 @@ from typing import List
 from metrics.geomean import VariableWetMaskedMetrics, WetMaskCollector
 from constants.paths import EVALS, all_eval_path
 from metrics.modmet import  ModelResultsCollection
-from utils.slurm import  PartitionedArgsReader, flushed_print
+from utils.slurm import  PartitionedArgsReader
+import logging
 from utils.xarray_oper import merge_by_attrs
 import xarray as xr
 from datetime import date
 from options.params import MODEL_PARAMS
-
+logging.basicConfig(level=logging.INFO)
 class ModelMetricsGathering(PartitionedArgsReader):
     def __init__(self, model_list_file_name: str, part_id: int,\
                     num_parts: int,model:str = MODEL_PARAMS['model']['choices'][0],\
@@ -28,7 +29,7 @@ class ModelMetricsGathering(PartitionedArgsReader):
         return ds
     def gather_evals(self,):        
         for i,(index,line) in enumerate(self.iterate_lines()):
-            flushed_print(f'\t {i}/{len(self)} - {index}')# - {line}')
+            logging.info(f'\t {i}/{len(self)} - {index}')# - {line}')
             # continue
             wmm = VariableWetMaskedMetrics(line.split(),self.wet_masks,ocean_interior = self.ocean_interior_variation)
             if not wmm.file_exists():
@@ -41,34 +42,35 @@ class ModelMetricsGathering(PartitionedArgsReader):
             self.model_results.add_metrics(wmm)    
     def extension(self,path:str,remove :bool= False,add: bool = False):
         ext = '.nc'
-        if ext not in path and add:
+        path = path.replace(ext,'')
+        
+        if  add:
             return f'{path}{ext}'
-        if ext  in path and remove:
-            return path.replace(ext,'')
-        return path
+        else:
+            return path
     def target_file_name(self,index = -1):
         if index< 0:
             index = self.part_id
-        return f'{self.merged_target_name}-{index}-{self.num_parts}'
+        return self.extension(f'{self.merged_target_name}-{index}-{self.num_parts}',add = True)
     def target_path(self,index = -1):
         return os.path.join(EVALS,self.target_file_name(index = index))
     @property
     def merged_target_name(self,):
-        return f'{self.extension(all_eval_path(),remove = True)}-{self.date}-{self.model}'
+        return self.extension(f'{self.extension(all_eval_path(),remove = True)}-{self.date}-{self.model}',add = True)
     def write(self,x:xr.Dataset,path:str):
         path = self.extension(path,add = True)
-        flushed_print(f'writing to {path}')
+        logging.info(f'writing to {path}')
         if bool(x.attrs):
             with open(self.to_json_path(path),'w') as outfile:
                 json.dump(x.attrs,outfile)
         x.attrs = {}
         x.to_netcdf(path,mode = 'w')
-        flushed_print(f'\t\t\t ...success')
+        logging.info(f'\t\t\t ...success')
     def to_json_path(self,path:str):
         return path.replace('.nc','.json')
     def read(self,path:str)->xr.Dataset:
         path = self.extension(path,add = True)
-        flushed_print(f'reading from {path}')        
+        logging.info(f'reading from {path}')        
         ds = xr.open_dataset(path,)
         json_path = self.to_json_path(path)
         if os.path.exists(json_path):
@@ -78,9 +80,9 @@ class ModelMetricsGathering(PartitionedArgsReader):
             ds.attrs = attrs
         key = 'training_depth'
         if key in ds.attrs:
-            print(f'{key} - {ds.attrs[key]}')
+            logging.info(f'{key} - {ds.attrs[key]}')
         
-        flushed_print(f'\t\t\t ...success')
+        logging.info(f'\t\t\t ...success')
         return ds
         
     @property
@@ -88,9 +90,9 @@ class ModelMetricsGathering(PartitionedArgsReader):
         return os.path.join(EVALS,self.merged_target_name)
     def merge_write_this_partition(self,):
         ds = self.model_results.merged_dataset()
-        print(ds)
+        logging.info(ds)
         target_path = self.target_path()
-        # self.write(ds,target_path)
+        self.write(ds,target_path)
     def iterate_sister_partitions(self,):
         for i in range(1,self.num_parts + 1):            
             path = self.target_path(index = i)
@@ -107,15 +109,15 @@ class ModelMetricsGathering(PartitionedArgsReader):
         datasets = []
         for path in self.iterate_sister_partitions():
             datasets.append(self.read(path).load())
-        print(f'{len(datasets)} datasets were read')
+        logging.info(f'{len(datasets)} datasets were read')
         merged_datasets =merge_by_attrs(datasets,).compute()#compat = 'override'
         self.write(merged_datasets,self.merged_path)
-        flushed_print(f'\t\t... success.')
+        logging.info(f'\t\t... success.')
         # flag = self.clean_sister_partitions()
         # if not flag:
-        #     flushed_print(f'Sister files couldn\'t be deleted!')
+        #     logging.info(f'Sister files couldn\'t be deleted!')
         #     paths = list(self.iterate_sister_partitions())
-        #     flushed_print( '\n'.join(paths))
+        #     logging.info( '\n'.join(paths))
     def clean_sister_partitions(self,):   
         flag = self.all_paths_created()
         if not flag:
@@ -125,7 +127,7 @@ class ModelMetricsGathering(PartitionedArgsReader):
             if os.path.exists(json_path):
                 os.remove(json_path)
             if os.path.exists(path):
-                flushed_print(f'\t\tdeleting {path}...')
+                logging.info(f'\t\tdeleting {path}...')
                 try:                    
                     os.remove(path)
                 except:
@@ -152,18 +154,20 @@ def main():
     mmg = ModelMetricsGathering(model_list,\
                 part_id,num_parts,\
                 model = model,\
-                date = '2023-07-14',\
+                date = '2023-07-18',\
                 ocean_interior_variation=[1,3,5,7,11,15,21])
-    # print(mmg.target_path())
-    # return
+    logging.info(f'mmg.target_path() = {mmg.target_path()}')
+    logging.info(f'mmg.target_file_name() = {mmg.target_file_name()}')
+    logging.info(f'mmg.merged_target_name = {mmg.merged_target_name}')
+    
+
     # ds = mmg.read_dataset()
-    # print(ds)
     # ds = ds.sel(depth = 0, co2 = 0,filtering = 'gcm',ocean_interior = 21,sigma = 4,stencil = 21,minibatch = 4)
-    # print(ds.Su_r2.values)
+    # logging.info(ds.Su_r2.values)
     # attrs = ds.attrs
     # for key,val in attrs.items():
-    #     print(key,val)
-    # print(ds)
+    #     logging.info(key,val)
+    # logging.info(ds)
     # return
     # mmg.gather_evals()
     # mmg.merge_write_this_partition()

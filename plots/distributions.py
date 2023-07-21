@@ -1,6 +1,7 @@
 import itertools
 import os
 import matplotlib.pyplot as plt
+import matplotlib
 from models.load import load_model
 from constants.paths import DISTRIBUTION_PLOTS,DISTS
 import xarray as xr
@@ -15,6 +16,7 @@ def main():
     
     from utils.slurm import read_args
     from utils.arguments import replace_params
+    matplotlib.rcParams.update({'font.size': 14})
     for arg_index in range(1,2):
         args = read_args(arg_index + 1)
         # args = replace_params(args,'mode','eval','num_workers','1','disp','25','minibatch','1','gz21','True')
@@ -29,7 +31,7 @@ def main():
             if not os.path.exists(snfile):
                 continue
             sn = xr.open_dataset(snfile)
-
+            
             names = "Su Sv".split()
             unames = np.unique([n.split('_')[0] for n in list(sn.data_vars)])
             names = [n for n in names if n in unames]

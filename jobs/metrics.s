@@ -5,7 +5,7 @@
 #SBATCH --job-name=metrics
 #SBATCH --output=/scratch/cg3306/climate/outputs/slurm_logs/metrics_%A_%a.out
 #SBATCH --error=/scratch/cg3306/climate/outputs/slurm_logs/metrics_%A_%a.err
-#SBATCH --cpus-per-task=1
+#SBATCH --cpus-per-task=3
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 echo "$(date)"

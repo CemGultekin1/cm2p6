@@ -6,50 +6,11 @@ import numpy as np
 import torch.nn as nn
 from scipy.ndimage import gaussian_filter
 
-
-
-# def turn_to_writable_attrs(x:xr.Dataset):
-#     list_attrs = dictionary2listuple(x.attrs)
-#     x.attrs = {'list_attrs':list_attrs}
-# def from_writable_converted_attrs(x:xr.Dataset):
-#     attrslist = x.attrs['list_attrs']
-#     attrs = listuple2dictionary(attrslist)
-#     x.attrs = attrs
-            
-
-# def dictionary2listuple(x:dict,):
-#     def internal_dictionary2attributes(x:dict,key = 'attrs'):
-#         l = [key]
-#         for key,val in x.items():
-#             if isinstance(val,dict):
-#                 l.append(internal_dictionary2attributes(val,key = key))
-#             else:
-#                 l.append((key,val))
-#         return l
-#     y = internal_dictionary2attributes(x)
-#     y =  y[1:]
-#     return y
-    
-# def listuple2dictionary(x:list):
-#     attrs_str = 'attrs'
-#     def internal_attrs(x:list):
-#         attrs = {}
-#         if not bool(x):
-#             return attrs
-#         assert isinstance(x[0],str)
-#         key = x[0]
-#         attrs = {}
-#         for x_ in x[1:]:
-#             if isinstance(x_,list):
-#                 key_,vals = internal_attrs(x_)
-#                 attrs[key_] = vals
-#             elif isinstance(x_,tuple):
-#                 assert len(x_) == 2
-#                 key_,vals = x_
-#                 attrs[key_] = vals
-#         return key,attrs
-#     _,attrs = internal_attrs([attrs_str] + x)
-#     return attrs
+def sel_available(x:xr.Dataset,seldict:Dict[str,Any],index_sel_flag = False):
+    seldict = {k:v for k,v in seldict.items() if k in x.coords}
+    if not index_sel_flag:
+        return x.sel(**seldict)
+    return x.isel(**seldict)
 def main():
     attrs =  {'dict1': {'x1':3,'y1':4},'dict2':{'dict_dict2':{},'x2':5}}
     # attrs_list = dictionary2listuple(attrs)

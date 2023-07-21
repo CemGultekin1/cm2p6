@@ -1,11 +1,11 @@
 import itertools
 import os
-from typing import Dict, List, Tuple, Union
-from constants.paths import EVALS, all_eval_path
+from typing import Dict, List, Tuple
+from constants.paths import EVALS
 from options.reduce import ScalarArguments
 from utils.arguments import options
 from utils.slurm import flushed_print
-from utils.xarray_oper import drop_unused_coords,skipna_mean,cat
+from utils.xarray_oper import drop_unused_coords
 import xarray as xr
 import numpy as np
 
@@ -65,9 +65,9 @@ class MergeMetrics(ModelMetric):
         self.metrics = drop_unused_coords(self.metrics)
         return self
     
-    
+training_collision_tag = 'training_'
 class ModelResultsCollection:
-    collision_tag:str = 'training_'
+    collision_tag:str = training_collision_tag
     def __init__(self) -> None:
         self.models : List[MergeMetrics] = []
     def add_metrics(self,mm:MergeMetrics):
@@ -140,9 +140,6 @@ class ModelResultsCollection:
             ' '.join([f'{key}:{n}' for key,n in zip(merged_coord,shape)])
         )
         
-        # data_set = start_nan_dataset(list(model.metrics.data_vars.keys()),merged_coord)
-        # print(data_set)
-        # raise Exception
         datasets = []
         flushed_print(f'total number of models = {len(self.models)}')
         for model in self.models:

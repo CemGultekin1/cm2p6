@@ -264,7 +264,7 @@ class MurrayPlotter2:
             sigma:int = 0,\
             projection_flag:bool = True,\
             cmap = matplotlib.cm.viridis,grid_lines = {},\
-            set_bad_alpha:float = 1.):
+            set_bad_alpha:float = 1.,**kwargs):
         grid = self.get_grid(sigma)
         grid_lines = {key:grid_lines[key] if key in grid_lines else val for key,val in self.grid_lines.items()}
         if grid_lines is not None:
@@ -300,7 +300,7 @@ class MurrayPlotter2:
             xrvar = xrvar.sel(**coord_sel)
             grid,xrvar = constrain_by_index(grid,xrvar,'lon')
             grid,xrvar = constrain_by_index(grid,xrvar,'lat')
-        kwargs = dict(vmin = vmin,vmax = vmax)
+        kwargs.update(dict(vmin = vmin,vmax = vmax))
         keys = list(kwargs.keys())
         for key in keys:
             if kwargs[key] is None:

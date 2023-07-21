@@ -14,7 +14,17 @@ class ModelMetricsCollection(ModelMetricsGathering):
             super().__init__('', 0, 0,model = model)
         self.date = date
         self.metrics = self.read(self.merged_path)
-        
+    def init_from_metrics(self,ds:xr.Dataset):
+        mmc = ModelMetricsCollection.__new__(ModelMetricsCollection)
+        mmc.metrics = ds
+        mmc.date = self.date
+        return mmc
+    def select_values(self, sel = {}, isel = {}):
+        self.sel(**sel)
+        self.isel(**isel)
+    def remaining_coords_list(self,):
+        self.drop_unused_coords()
+        return list(self.metrics.coords.keys())
     def reduce_coord(self,*coords:str):
         for coord in coords:
             if coord not in self.metrics.coords.keys():
@@ -29,16 +39,19 @@ class ModelMetricsCollection(ModelMetricsGathering):
             self.metrics = xr.where(self.metrics[coord] == self.metrics[colcoord],self.metrics,0).sum(dim = colcoord)
     def sel(self,**kwargs):
         self.metrics = self.metrics.sel(**kwargs)
-        self.metrics = drop_unused_coords(self.metrics)
+        self.drop_unused_coords()
     def isel(self,**kwargs):
         self.metrics = self.metrics.isel(**kwargs)
+        self.drop_unused_coords()
+    def drop_unused_coords(self,):
         self.metrics = drop_unused_coords(self.metrics)
     def assign_new_variable(self,fun:callable,varname:str):
         coordvals = tuple(self.metrics.coords.values())
         shp = [len(cd) for cd in coordvals]
         names = []
         coordkeys = tuple(self.metrics.coords.keys())
-        for x in itertools.product(*coordvals):            
+        for x in itertools.product(*coordvals):    
+            x = [x_.item() for x_ in x]        
             names.append(fun(**dict(zip(coordkeys,x))))
         names = np.array(names).reshape(shp)
         self.metrics[varname] = (coordkeys,names)
@@ -65,15 +78,15 @@ class ModelMetricsCollection(ModelMetricsGathering):
             metrics_dict[ux_] = uxx
         newmetric = cat(metrics_dict,varname)
         self.metrics = newmetric
-    def diagonal_slice(self,seldict:Dict[str,Tuple[Union[int,float,str]]]):
+    def diagonal_slice(self,seldict:Dict[str,Tuple[Union[int,float,str]]],**kwargs):
         metrics = self.metrics
         selnames = list(seldict.keys())
         keyname = selnames[0]
         keyvals = seldict[keyname]
         newmetric = {}
         for vals in zip(*seldict.values()):
-            newmetric[vals[0]] = metrics.sel(dict(zip(selnames,vals))).drop(selnames)
-        newmetric = cat(newmetric,'keyname')
+            newmetric[vals[0]] = metrics.sel(dict(zip(selnames,vals)),**kwargs).drop(selnames)
+        newmetric = cat(newmetric,keyname)
         self.metrics = newmetric
             
 def main():

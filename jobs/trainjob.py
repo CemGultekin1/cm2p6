@@ -71,15 +71,19 @@ def check_training_task(args):
     #     return True
     # if runargs.gz21:
     #     return True
-    if runargs.depth > 0:
-        return True
+    # if runargs.depth > 0:
+    #     return True
     
-    if not (runargs.lossfun == 'MSE' and runargs.filtering == 'gaussian'):
-        return True
+    # if not (runargs.lossfun == 'MSE' and runargs.filtering == 'gaussian'):
+    #     return True
+    # if runargs.lr < 1e-7:
+    #     return False
     # else:
     #     return True
     # if runargs.seed > 0 or runargs.lossfun == 'heteroscedastic':
     #     return True
+    if runargs.depth > 0 and runargs.filtering == 'gaussian':
+        return True
     _,modelid = options(args,key = "model")
     return is_trained(modelid)
 

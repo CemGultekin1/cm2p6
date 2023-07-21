@@ -43,7 +43,7 @@ class WetMaskCollector:
             return self.datasets[datargs]
         ds, = get_data(datargs.split(),torch_flag=False,data_loaders=False,groups = ('train',))
         return CoarseGridInteriorOceanWetMask(ds)
-    def get_wet_mask(self,sigma,stencil):
+    def get_wet_mask(self,sigma,stencil,sel_depth = None):
         wetmask = WetMask(sigma,stencil)
         # #---------------------------For Debugging---------------------------#
         # if len(self.masks) > 0:
@@ -52,9 +52,13 @@ class WetMaskCollector:
         if wetmask in self.masks:
             return self.masks[self.masks.index(wetmask)].wet_mask      
         wms = {}
+            
         for depth in DEPTHS: 
-            ds = self.get_dataset(sigma,depth)
+            ds = self.get_dataset(sigma,depth)            
             wms[depth]= ds.get_mask(wetmask.stencil)
+            if sel_depth is not None:
+                if int(sel_depth) == int(depth):
+                    return wms[depth]
         wms = cat(wms,'depth')
         wetmask.wet_mask = wms
         self.masks.append(wetmask)

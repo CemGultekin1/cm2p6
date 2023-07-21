@@ -44,6 +44,7 @@ def run():
         ds = xr.Dataset(data_vars = data_vars,coords = coords)
         chk = {k:len(ds[k]) for k in list(ds.coords)}
         ds = ds.chunk(chunks=chk)
+        
         # ds.to_zarr(filename,mode='w')
         # depth = int(ds.depth.values[0])
         # ds = ds.isel(time = 0,)

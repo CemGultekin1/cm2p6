@@ -264,7 +264,7 @@ def main():
                 vn = corrvariable_names[coli]
             title = vn
             ax.set_title(title)
-            ax.set_xlabel('Input stencils')
+            ax.set_xlabel('Input stencils (Field of view)')
         targetfolder = 'paper_images/field_of_view'
         if not os.path.exists(targetfolder):
             os.makedirs(targetfolder)
