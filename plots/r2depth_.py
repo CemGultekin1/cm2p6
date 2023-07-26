@@ -140,15 +140,19 @@ def plot(stats,lsrp,filenametag):
         else:
             vn = corrvariable_names[chan]
         title = vn# + f': $\kappa$={sigma}'
-        ax.set_title(title)
-        ax.set_xlabel('Test depth (m)')
+        # ax.set_title(title)
+        # ax.set_xlabel('Test depth (m)')
     target_folder = 'paper_images/depth'
     if not os.path.exists(target_folder):
         os.makedirs(target_folder)
-    fig.savefig(os.path.join(target_folder,f'depth_{r2corr_str}_{filenametag}_no_legend.png'),transparent=False)
+    
+    # fig.savefig(os.path.join(target_folder,f'depth_{r2corr_str}_{filenametag}_xlabel.png'),transparent=False)
     axs[0].legend(loc="lower left",fontsize = 10,\
         handlelength =1,ncol= 5,title="Training depth (m)",title_fontsize = 10)
-    fig.savefig(os.path.join(target_folder,f'depth_{r2corr_str}_{filenametag}.png'),transparent=False)
+    if 'heteroscedastic' in filenametag:
+        axs[0].set_xlabel('Test depths (m)')
+        axs[1].set_xlabel('Test depths (m)')
+    fig.savefig(os.path.join(target_folder,f'depth_{r2corr_str}_{filenametag}.png'),transparent=True)
     print(os.path.join(target_folder,f'depth_{r2corr_str}_{filenametag}.png'))
     plt.close()
     # raise Exception

@@ -245,6 +245,7 @@ class MurrayPlotter2:
             crs=ccrs.PlateCarree(), draw_labels=True,
                         linewidth=1, color='gray', alpha=0, linestyle='--'
         )
+        pass
     def get_ax(self,dims,fig,projection_flag:bool = True):
         # dims = self.spa.get_ax_dims(i,j)
         if projection_flag:

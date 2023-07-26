@@ -81,12 +81,15 @@ def plot(stats_ns,filenametag):
         ncols = len(vnselect)
         nrows = 1
         # fig,axs = plt.subplots(nrows,ncols, figsize = (ncols*3,nrows*3))
-        fig = plt.figure(figsize = (ncols*5,nrows*5))
-        spaxes = SubplotAxes(1,ncols,sizes = ((1,),(3,3,3)),ymargs=(0.18,0.01,0.1),xmargs = (0.05,0.03,0.01))
+        # fig = plt.figure(figsize = (ncols*5,nrows*5))
+        # spaxes = SubplotAxes(1,ncols,sizes = ((1,),(3,3,3)),ymargs=(0.18,0.01,0.1),xmargs = (0.05,0.03,0.01))
         for i in range(ncols):
             vname = vnselect[i]
             # ax = axs[i]
-            ax = fig.add_axes(spaxes.get_ax_dims(0,i))
+            # ax = fig.add_axes(spaxes.get_ax_dims(0,i))
+            fig = plt.figure(figsize = (5,5))
+            spaxes = SubplotAxes(1,ncols,sizes = ((1,),(1,)),ymargs=(0.17,0.0,0.1),xmargs = (0.13,0.0,0.01))
+            ax = fig.add_axes(spaxes.get_ax_dims(0,0))
             for j in range(len(stats_ns.sigma)):
                 vals = stats_ns.isel(sigma = j,)
                 y = vals[vname]#.values[namesort]
@@ -130,16 +133,17 @@ def plot(stats_ns,filenametag):
                     ax.legend(loc = 'lower right')
             else:
                 ax.legend(loc = 'upper right')
-            ax.set_title(vnames_dict[vname])
-        filename = f"{vtype}_{filenametag}.png"
-        
-        target_folder = 'paper_images/basic'
-        if not os.path.exists(target_folder):
-            os.makedirs(target_folder)
-        plt.subplots_adjust(bottom=0.18, right=0.98, top=0.91, left= 0.05)
-        fig.savefig(os.path.join(target_folder,filename),transparent=False)
-        logging.info(os.path.join(target_folder,filename))
-        plt.close()
+            # ax.set_title(vnames_dict[vname])
+            tag = filenametag +'_'+ vname
+            filename = f"{vtype}_{tag}.png"
+            
+            target_folder = 'paper_images/basic'
+            if not os.path.exists(target_folder):
+                os.makedirs(target_folder)
+            plt.subplots_adjust(bottom=0.18, right=0.98, top=0.95, left= 0.05)
+            fig.savefig(os.path.join(target_folder,filename),transparent=True)
+            logging.info(os.path.join(target_folder,filename))
+            plt.close()
         # raise Exception
 
 

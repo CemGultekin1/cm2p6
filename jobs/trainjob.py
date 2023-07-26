@@ -82,7 +82,12 @@ def check_training_task(args):
     #     return True
     # if runargs.seed > 0 or runargs.lossfun == 'heteroscedastic':
     #     return True
-    if runargs.depth > 0 and runargs.filtering == 'gaussian':
+    if runargs.depth == 0 \
+        and runargs.filtering == 'gcm' \
+        and runargs.domain == 'global' \
+        and runargs.temperature == True:
+        return False
+    else:
         return True
     _,modelid = options(args,key = "model")
     return is_trained(modelid)
