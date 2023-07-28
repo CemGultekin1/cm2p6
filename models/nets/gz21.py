@@ -122,8 +122,8 @@ class SoftPlusTransform(PrecisionTransform):
         return ''.join(('SoftPlusTransform(', str(self.min_value), ')'))
 class FullyCNN(DetectOutputSizeMixin, Sequential):
 
-    def __init__(self, n_in_channels: int = 2, n_out_channels: int = 4,seed :int = 0,
-                 padding=None, batch_norm=False,final_activation:str = "softplus",**kwargs):
+    def __init__(self, n_in_channels: int = 3, n_out_channels: int = 4,seed :int = 0,
+                 padding=None, batch_norm=True,final_activation:str = "softplus",**kwargs):
         print("class FullyCNN")
         torch.manual_seed(seed)
         if padding is None:

@@ -83,7 +83,7 @@ class SubplotAxes:
         yw = dy*self.sizes[0][i]
         return [xloc,yloc,xw,yw]
 def main():
-    from utils.slurm import read_args    
+    from utils.slurm import read_args
     
     # fig,axs = plt.subplots(2,3,figsize = (14/1.5,8/1.8))
     # fig = plt.figure(figsize = (10,6))

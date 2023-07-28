@@ -166,6 +166,8 @@ class SingleDomain(CM2p6Dataset):
     def __getitem__(self,t):
         ds = self.ds.isel(time =t).load()
         ds = self.get_grid_fixed_lres(ds)
+        # plot_ds(ds,'ds.png',ncols = 1)
+        # raise Exception
         # def apply_mask(ds,wetmaskv,keys):
         #     for name in keys:
         #         v = ds[name].values

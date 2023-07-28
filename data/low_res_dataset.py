@@ -6,7 +6,7 @@ from data.geography import frequency_encoded_latitude
 import numpy as np
 from data.vars import FIELD_MASK, FIELD_NAMES, FORCING_MASK, FORCING_NAMES, get_var_mask_name
 import xarray as xr
-from utils.xarray_oper import tonumpydict
+from utils.xarray_oper import plot_ds, tonumpydict
 def determine_ndoms(*args,**kwargs):
     arglens = [1]
     for i in range(len(args)):
@@ -265,7 +265,29 @@ class MultiDomainDataset(MultiDomain):
 
         data_vars,coords = self.normalize(data_vars,coords)
         data_vars = self.mask(data_vars)
+        
+        
         data_vars,coords,forcing_coords = self.pad(data_vars,coords)
+        
+        
+        # dropkeys = []
+        # for key in data_vars:
+        #     if 'normalization' in key or 'scale' in key:
+        #         dropkeys.append(key)
+        #         continue
+        #     if 'S' not in key:
+        #         dropkeys.append(key)
+        #         continue
+        # for dk in dropkeys:
+        #     data_vars.pop(dk)
+        # selkeys = 'Su Sv Stemp'.split()
+        # data_vars = {key:data_vars[key] for key in selkeys}
+        # ds = xr.Dataset(data_vars,forcing_coords)        
+        # ds = np.log10(np.abs(ds))
+        # print(ds)
+        # plot_ds(ds,'ds.png',ncols = 1)
+        # raise Exception
+        
         
         grouped_vars = self.group_variables(data_vars)
         

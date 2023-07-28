@@ -195,14 +195,14 @@ def main():
         depth = 0,
         filtering = ['gcm'],
         temperature = True,
-        lossfun = ['heteroscedastic','MSE'],
+        lossfun = ['MSE',],
         sigma = [4,8,12,16],
         domain = 'four_regions'
     )
     
     testing_kwargs = dict(            
         filtering = ['gcm',],
-        co2 = [0.,0.01],
+        co2 = [0.,],
     )
     pick_from_training = ['depth']
     

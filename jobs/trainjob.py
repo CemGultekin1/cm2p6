@@ -85,7 +85,7 @@ def check_training_task(args):
     if runargs.depth == 0 \
         and runargs.filtering == 'gcm' \
         and runargs.domain == 'global' \
-        and runargs.temperature == True:
+        and runargs.temperature == False:
         return False
     else:
         return True

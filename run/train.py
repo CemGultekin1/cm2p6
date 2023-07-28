@@ -25,7 +25,6 @@ def main():
     # args = read_args(68,filename = 'offline_sweep2.txt')
     # args = replace_params(args,'num_workers','1','disp','1','reset',\
     #             'True','minibatch','4','domain','global')
-
     modelid,state_dict,net,criterion,optimizer,scheduler,logs,runargs = load_model(args)
     print(net)
     flushed_print('torch.cuda.is_available():\t',torch.cuda.is_available())

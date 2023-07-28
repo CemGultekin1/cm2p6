@@ -8,6 +8,7 @@ from data.load import get_data
 from models.load import load_model
 from utils.arguments import options, populate_data_options
 from utils.parallel import get_device
+from utils.slurm import flushed_print
 import numpy as np
 from constants.paths import SALIENCY
 from utils.xarray_oper import fromtorchdict2tensor
@@ -51,7 +52,9 @@ class CNNSaliencyOnWindow:
         inputvec.requires_grad = True
         
         inputvec.grad = None
-        outputs,_ = self.net(inputvec)
+        
+        mean,var = self.net(inputvec)
+        outputs = torch.cat([mean,var],dim = 1)
         
         shp = list(inputvec.shape)
         shp[1] = outputs.shape[1]
@@ -60,7 +63,8 @@ class CNNSaliencyOnWindow:
         for i in range(outputs.shape[1]):
             if i > 0:
                 inputvec.grad = None
-                outputs,_ = self.net(inputvec)
+                mean,var = self.net(inputvec)
+                outputs = torch.cat([mean,var],dim = 1)
             outputs[0,i,0,0].backward()
             grad_energy[0,i] = torch.mean(inputvec.grad**2,dim = 1,keepdim = True)
         return grad_energy.numpy()
@@ -249,7 +253,7 @@ def main():
     # from utils.slurm import read_args    
     # args = read_args(4,filename = 'saliency.txt')
     from utils.arguments import replace_params
-    args = replace_params(args,'num_workers','1','disp','1','reset','False','minibatch','1','mode','eval')
+    args = replace_params(args,'num_workers','3','disp','1','reset','False','minibatch','1','mode','eval')
     
     
     modelid,_,net,_,_,_,_,runargs=load_model(args)
@@ -265,7 +269,7 @@ def main():
     assert runargs.mode == "eval"
     
     multidatargs = populate_data_options(args,non_static_params=[],domain = 'global',interior = False,wet_mask_threshold = 0.5)
-    adaptive_histogram = MultiAdaptiveHistograms(num_samples=1024,nbins = 512)
+    adaptive_histogram = MultiAdaptiveHistograms(num_samples=1024,nbins = 512,size = 3 if runargs.lossfun == 'MSE' else 6)
     for datargs in multidatargs:
         try:
             test_generator, = get_data(datargs,half_spread = net.spread, torch_flag = False, data_loaders = True,groups = ('all',),shuffle = True)
@@ -279,7 +283,7 @@ def main():
         for fields,_,forcing_mask,field_coords,forcing_coords in test_generator:
             time,depth,co2 = field_coords['time'].item(),field_coords['depth'].item(),field_coords['co2'].item()
 
-            print(time,depth,co2)
+            flushed_print(time,depth,co2)
             kwargs = dict(contained = '' if not lsrp_flag else 'res', \
                 expand_dims = {'co2':[co2],'time':[time],'depth':[depth]},\
                 masking = False)

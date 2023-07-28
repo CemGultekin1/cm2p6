@@ -56,11 +56,14 @@ def main():
     args = sys.argv[1:]
     
     # from utils.slurm import read_args
-    # args = read_args(68,filename = 'offline_sweep.txt')
-    # args = replace_params(args,'mode','eval','num_workers','1')
+    # args = read_args(60,filename = 'gz21.txt')
+    # # args = read_args(3,filename = 'offline_sweep2.txt')
+    args = replace_params(args,'mode','eval','num_workers','1')
     
+    # args = ''.split()
     
     modelid,_,net,_,_,_,_,runargs=load_model(args)
+
     device = get_device()
     net.to(device)
     lsrp_flag, lsrpid = get_lsrp_modelid(args)
@@ -84,6 +87,8 @@ def main():
         # timer = Timer()
         for fields,forcings,forcing_mask,_,forcing_coords in test_generator:
             fields_tensor = fromtorchdict2tensor(fields).type(torch.float32)
+            fields_mask = torch.where(fields_tensor[:,:1] == 0,0,1)
+            fields_tensor = torch.cat([fields_tensor,fields_mask],dim = 1)
             non_static_vals = {key:forcing_coords[key].item() for key in non_static_params}
             # depth = forcing_coords['depth'].item()
             # co2 = forcing_coords['co2'].item()
@@ -102,22 +107,23 @@ def main():
 
             
             # outfields = fromtorchdict2tensor(forcings).type(torch.float32)
-            # mask = fromtorchdict2tensor(forcing_mask).type(torch.float32)
-            # yhat = mean.numpy()[0]
-            # y = outfields.numpy()[0]
-            # m = mask.numpy()[0] < 0.5
-            # y[m] = np.nan
-            # yhat[m[:3]] = np.nan
-            # prst = lambda y: print(np.mean(y[y==y]),np.std(y[y==y]))
-            # prst(y),prst(yhat),prst(fields_tensor.numpy())
+            # # mask = fromtorchdict2tensor(forcing_mask).type(torch.float32)
+            # yhat = np.log(np.abs(mean.numpy()[0]))
+            # y = np.log(np.abs(outfields.numpy()[0]))
+            # # m = mask.numpy()[0] < 0.5
+            # # y[m] = np.nan
+            # # yhat[m[:3]] = np.nan
+            # # prst = lambda y: print(np.mean(y[y==y]),np.std(y[y==y]))
+            # # prst(y),prst(yhat),prst(fields_tensor.numpy())
             # nchan = yhat.shape[0]
-            # import matplotlib.pyplot as plt
-            # fig,axs = plt.subplots(nchan,2,figsize = (2*5,nchan*6))
+            # fig,axs = plt.subplots(nchan,2,figsize = (2*9,nchan*6))
             # for chani in range(nchan):
             #     ax = axs[chani,0]
-            #     ax.imshow(y[chani,::-1])
+            #     pos = ax.imshow(y[chani,::-1],cmap = 'seismic')
+            #     fig.colorbar(pos,ax= ax)
             #     ax = axs[chani,1]
-            #     ax.imshow(yhat[chani,::-1])
+            #     pos = ax.imshow(yhat[chani,::-1],cmap = 'seismic')
+            #     fig.colorbar(pos,ax= ax)
             # fig.savefig('eval_intervention.png')
             # return
 

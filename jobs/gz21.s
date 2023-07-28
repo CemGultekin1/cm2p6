@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --time=2:00:00
-#SBATCH --array=52-56
+#SBATCH --array=60
 #SBATCH --mem=60GB
 #SBATCH --job-name=gz21
 #SBATCH --output=/scratch/cg3306/climate/outputs/slurm_logs/gz21_%A_%a.out
@@ -17,7 +17,5 @@ singularity exec --nv --overlay /scratch/cg3306/climate/cm2p6/overlay-15GB-500K.
 		source /ext3/env.sh;
 		python3 run/analysis/eval.py $ARGS --mode eval;
 		python3 run/analysis/distributional.py $ARGS --mode eval;
-		python3 run/analysis/legacy_comparison.py $ARGS --mode eval;
-		python3 run/analysis/legacy_snapshots.py $ARGS --mode eval;
 	"
 echo "$(date)"

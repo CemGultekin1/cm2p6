@@ -1,11 +1,11 @@
 #!/bin/bash
-#SBATCH --time=8:00:00
-#SBATCH --array=1-4
-#SBATCH --mem=80GB
+#SBATCH --time=5:00:00
+#SBATCH --array=1-16
+#SBATCH --mem=40GB
 #SBATCH --job-name=saliency
 #SBATCH --output=/scratch/cg3306/climate/outputs/slurm_logs/saliency_%A_%a.out
 #SBATCH --error=/scratch/cg3306/climate/outputs/slurm_logs/saliency_%A_%a.err
-#SBATCH --cpus-per-task=1
+#SBATCH --cpus-per-task=4
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 echo "$(date)"
