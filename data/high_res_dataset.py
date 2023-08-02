@@ -177,7 +177,7 @@ class HighResCm2p6perDepth:
         # raise Exception
         ff =  self.fields2forcings(i,u,v,temp)
         return ff
-    def fields2forcings(self,i,u,v,temp,ScipyFiltering = False):
+    def fields2forcings(self,i,u,v,temp,):
         u_t,v_t = self.grid_interpolation(u,v)
         uvars = dict(u=u,v=v)
         tvars = dict(u = u_t, v = v_t,temp = temp,)
