@@ -200,12 +200,12 @@ class CollectParts:
     @classmethod    
     def unite_all_sparse(cls,files:List[str]):
         i = 0
-        
+        formatter = '{:.2e}'
         dok_arr = sp.load_npz(files[i])
-        logging.info(f'\t\t load_npz {i}/{len(files)}\t {files[i].split("/")[-1]} nnz = {dok_arr.nnz}')
+        logging.info(f'\t\t load_npz {i}/{len(files)}\t {files[i].split("/")[-1]} nnz = {dok_arr.nnz}, density = {formatter.format(dok_arr.nnz/np.prod(dok_arr.shape))}')
         for i in range(1, len(files)):            
             dok_arr += sp.load_npz(files[i])
-            logging.info(f'\t\t load_npz {i}/{len(files)}\t {files[i].split("/")[-1]} nnz = {dok_arr.nnz}')
+            logging.info(f'\t\t load_npz {i}/{len(files)}\t {files[i].split("/")[-1]} nnz = {dok_arr.nnz}, density = {formatter.format(dok_arr.nnz/np.prod(dok_arr.shape))}')
         return dok_arr
                 
                 
@@ -264,7 +264,7 @@ def main():
                 format = '%(asctime)s %(message)s',)
     root = os.path.join(OUTPUTS_PATH,'filter_weights')
     cp = CollectParts(root)
-    flist = cp.all_parts_collect(head = 'gcm-dpth-0-sgm-4')
+    flist = cp.all_parts_collect(head = 'gcm-dpth-0-sgm-16')
     logging.info('\n'.join(flist))
 if __name__ == '__main__':
     main()
