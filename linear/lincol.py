@@ -108,7 +108,6 @@ class SparseVecCollection:
         
         part_ind,tot_parts = partition
         logging.basicConfig(level=logging.INFO,\
-                filename=f'lincol-run-{part_ind}-{tot_parts}.log',\
                 format = '%(asctime)s %(message)s',)
         
         logging.info(f'ncpu ={ncpu}')
@@ -145,7 +144,7 @@ class SparseVecCollection:
 class CollectParts:
     def __init__(self,root:str) -> None:
         self.root = root
-    def all_parts_collect(self,):
+    def all_parts_collect(self,head:str = ''):
         root = self.root
         flist = os.listdir(root)
         splist = [CollectParts.separate(fl) for fl in flist if CollectParts.is_conformal(fl)]
@@ -155,6 +154,8 @@ class CollectParts:
         uheads = np.unique(heads)
         united_files = []
         for uh in uheads:
+            if head not in uh:
+                continue
             uhlist = []
             for hd,nump,fl in zip(heads,num_parts,flist):
                 if hd != uh:
@@ -180,8 +181,22 @@ class CollectParts:
         sp.save_npz(path,dok_array.tocsc())
         return path
     @classmethod
+    def load_spmat(cls,path:str):
+        return sp.load_npz(path)
+    @classmethod
+    def save_spmat(cls,path:str,mat):
+        return sp.save_npz(path,mat.tocsc())
+    @classmethod
     def united_filename(cls,head:str):
         return head + '.npz'
+    @classmethod
+    def latest_united_file(cls,path:str,head:str):
+        files = os.listdir(path)
+        nfiles = [fl for fl in files if not CollectParts.is_conformal(fl) and head in fl and '.npz' in fl]
+        partnum = [fl.replace(head,'').split('-')[-1].replace('.npz','') for fl in nfiles]
+        partnum = [0 if len(part) == 0  else int(part) for part in partnum]
+        i = np.argmax(partnum)
+        return  os.path.join(path,nfiles[i])
     @classmethod    
     def unite_all_sparse(cls,files:List[str]):
         i = 0
@@ -249,7 +264,7 @@ def main():
                 format = '%(asctime)s %(message)s',)
     root = os.path.join(OUTPUTS_PATH,'filter_weights')
     cp = CollectParts(root)
-    flist = cp.all_parts_collect()
+    flist = cp.all_parts_collect(head = 'gcm-dpth-0-sgm-4')
     logging.info('\n'.join(flist))
 if __name__ == '__main__':
     main()

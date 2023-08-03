@@ -2,114 +2,138 @@ import logging
 from typing import Tuple
 import numpy as np
 import scipy.sparse as sp
-import multiprocessing
 logging.basicConfig(level=logging.INFO,\
                 format = '%(asctime)s %(message)s',)
 
-class HierarchicalInversion:
-    def __init__(self,mat,tol = 1e-5,max_inversion_size:int = 128) -> None:
+
+def coo_submatrix_pull(matr, rows, cols):
+    """
+    Pulls out an arbitrary i.e. non-contiguous submatrix out of
+    a sparse.coo_matrix. 
+    """
+    if type(matr) != sp.coo_matrix:        
+        raise TypeError(f'Matrix must be sparse COOrdinate format, type is {type(matr)}')
+    
+    gr = -1 * np.ones(matr.shape[0])
+    gc = -1 * np.ones(matr.shape[1])
+    
+    lr = len(rows)
+    lc = len(cols)
+    
+    ar = np.arange(0, lr)
+    ac = np.arange(0, lc)
+    gr[rows[ar]] = ar
+    gc[cols[ac]] = ac
+    mrow = matr.row
+    mcol = matr.col
+    newelem = (gr[mrow] > -1) & (gc[mcol] > -1)
+    newrows = mrow[newelem]
+    newcols = mcol[newelem]
+    return sp.coo_matrix((matr.data[newelem], np.array([gr[newrows],
+        gc[newcols]])),(lr, lc))
+    
+class RecursiveHierarchicalInversion:
+    def __init__(self,mat,tol = 1e-5,max_inversion_size:int = 128,num_inversions :int = 0,tot_inversions:int = -1,level:int = 0) -> None:
         self.tol = tol
         self.mat = mat
         self.dim = self.mat.shape[0]
         self.max_inversion_size = max_inversion_size
+        self.num_inversions= num_inversions
+        self.tot_inversions = tot_inversions        
+        self.level = level
+        
     def extend2nearest2power(self,):
-        pow = np.ceil(np.log2(self.dim)).astype(int)
-        sep = pow - np.log2(self.max_inversion_size*2)
-        if sep  < 1:
-            return self.mat
-        sep = np.ceil(sep).astype(int)
-        sep2 = 2**sep
-        new_span = np.ceil(self.dim/sep2).astype(int) * sep2
-        extended_mat = sp.dok_array((new_span,new_span))
-        extended_mat[:self.dim,:self.dim] = self.mat
-        for i in range(self.dim,new_span):
-            extended_mat[i,i] = 1
-        return extended_mat
-    def get_slices(self,mat,nsplits,i):
-        dim = mat.shape[0]
-        dx = dim//nsplits
-        x0 = dx*i
-        x1 = x0 + dx//2
-        x2 = x1 + dx//2
-        slc01 = slice(x0,x1)
-        slc12 = slice(x1,x2)
+        if self.level > 0:
+            return
 
-        tp00 = (slc01,slc01)
-        tp01 = (slc01,slc12)
-        tp10 = (slc12,slc01)
-        tp11 = (slc12,slc12)
+        k = np.ceil(np.log2(self.dim) - np.log2(self.max_inversion_size) - 1).astype(int)
+        sep = 2**(k+1)*self.max_inversion_size - self.dim
+        speye = sp.eye(sep).tocoo()
+        self.mat = sp.bmat([[self.mat.tocoo(),None],[None,speye]]).tocoo()
+        if self.tot_inversions < 0:
+            self.tot_inversions = self.mat.shape[0]//self.max_inversion_size
         
-        m00 = mat[tp00]
-        m01 = mat[tp01]
-        m10 = mat[tp10]
-        m11 = mat[tp11]
-        
-        return (m00,m01,m10,m11),(tp00,tp01,tp10,tp11)
+    def pull_quad_submatrices(self,):
+        dim = self.mat.shape[0]
+        dx = dim //2
+        x0 = 0
+        x1 = x0 + dx
+        x2 = x1 + dx
+        i0 = np.arange(x0,x1)
+        i1 = np.arange(x1,x2)
+        self.mat = self.mat.tocoo()
+        m00 = coo_submatrix_pull(self.mat,i0,i0)
+        m01 = coo_submatrix_pull(self.mat,i0,i1)
+        m10 = coo_submatrix_pull(self.mat,i1,i0)
+        m11 = coo_submatrix_pull(self.mat,i1,i1)
+        return m00,m01,m10,m11
     
-    def sparsify(self,mat:np.ndarray):
+    def sparsify(self,mat:np.ndarray):        
         amat = np.abs(mat)
         mat[amat < self.tol] = 0
-        return sp.dok_array(mat)
+        mat = sp.csr_matrix(mat)
+        return mat
+    
+    def create_child(self,mat)->'RecursiveHierarchicalInversion':
+        return RecursiveHierarchicalInversion(mat,\
+                    tol = self.tol, \
+                    max_inversion_size=self.max_inversion_size,\
+                    num_inversions=self.num_inversions,\
+                    tot_inversions=self.tot_inversions,\
+                    level = self.level + 1)  
+    def eat_child(self,mat:'RecursiveHierarchicalInversion'):
+        self.num_inversions = mat.num_inversions
+        
     def invert(self,):
-        # logging.info(f'HierarchicalInversion.invert,dim = {self.dim}')
-        extended_mat = self.extend2nearest2power()
-        inverses_mat = sp.dok_array(extended_mat.shape)
-        dim = extended_mat.shape[0]
-        # logging.info(f'extended_mat.shape[0] = {dim}')
-        nsplits =  dim//self.max_inversion_size//2
-        for i in range(nsplits):
-            # logging.info(f'\t\t for {i} in range({nsplits})')
-            (amat,bmat,cmat,dmat),tps = self.get_slices(extended_mat,nsplits,i)
-            dinv = np.linalg.inv(dmat.toarray())
-            dinv = self.sparsify(dinv)
-            m_sl_d = amat - bmat @ dinv @ cmat
-            # logging.info(f'{m_sl_d.shape} = {amat.shape} - {bmat.shape} @ {dinv.shape} @ {cmat.shape}')
-            m_sl_d_inv = np.linalg.inv(m_sl_d.toarray())
-            m_sl_d_inv = self.sparsify(m_sl_d_inv)
-
-            # logging.info(f'tps = {tps[0][0].start,tps[0][0].stop,tps[1][1].start,tps[1][1].stop}')
-            inverses_mat[tps[0]] = m_sl_d_inv
-                        
-            inverses_mat[tps[1]] = -m_sl_d_inv @ bmat @ dinv
-            
-            inverses_mat[tps[2]] = - dinv @ cmat @ m_sl_d_inv
-            
-            inverses_mat[tps[3]] = dinv  + dinv @ cmat @ m_sl_d_inv @ bmat @ dinv
-            
+        self.extend2nearest2power()
+        dim = self.mat.shape[0]
+        if dim == self.max_inversion_size:            
+            invmat = np.linalg.inv(self.mat.toarray())
+            self.num_inversions += 1
+            mat =  self.sparsify(invmat)            
+            return mat
         
-        nsplits= nsplits//2        
-        while nsplits >= 1:       
-            # logging.info(f'\t\t while {nsplits} > 1:       ')     
-            for i in range(nsplits):
-                (amat,bmat,cmat,dmat),tps = self.get_slices(extended_mat,nsplits,i)
-                (_,_,_,dinv),tps = self.get_slices(inverses_mat,nsplits,i)
-                
-                m_sl_d = amat - bmat @ dinv @ cmat
-                hinv = HierarchicalInversion(m_sl_d, tol = self.tol, max_inversion_size=self.max_inversion_size)
-                m_sl_d_inv = hinv.invert()
-                                
-                inverses_mat[tps[0]] = m_sl_d_inv
-                        
-                inverses_mat[tps[1]] = -m_sl_d_inv @ bmat @ dinv
-                
-                inverses_mat[tps[2]] = - dinv @ cmat @ m_sl_d_inv
-                
-                inverses_mat[tps[3]] = dinv  + dinv @ cmat @ m_sl_d_inv @ bmat @ dinv
-            nsplits= nsplits//2
-        return inverses_mat[:self.dim,:self.dim]
-
+        amat,bmat,cmat,dmat= self.pull_quad_submatrices()
         
+        dinv_creator = self.create_child(dmat,)
+        dinv = dinv_creator.invert()
+        self.eat_child(dinv_creator)
+        
+        amat,bmat,cmat,dmat  = (x.tocsr() for x in (amat,bmat,cmat,dmat))
+        m_sl_d = amat - bmat @ dinv @ cmat
+        
+        m_sl_dinv_creator = self.create_child(m_sl_d,)        
+        m_sl_d_inv = m_sl_dinv_creator.invert()
+        self.eat_child(m_sl_dinv_creator)
+        
+        new_a = m_sl_d_inv
+        new_b = -m_sl_d_inv @ bmat @ dinv
+        new_c = - dinv @ cmat @ m_sl_d_inv
+        new_d = dinv  + dinv @ cmat @ m_sl_d_inv @ bmat @ dinv  
             
+
+        mat =  sp.bmat([[new_a,new_b],[new_c,new_d]])
+        logging.info(f'inversion #{self.num_inversions}/{self.tot_inversions}, level = {self.level}, density = {mat_density(mat)},side = {mat.shape[0]}')
+        if self.level== 0:
+            return coo_submatrix_pull(mat.tocoo(),np.arange(self.dim),np.arange(self.dim))
+        return mat
+def mat_density(mat):
+    return mat.nnz/(mat.shape[0]**2)
 def main():
-    n = 1843
-    x = np.random.randn(n,n)
-    mat = sp.dok_array(x)
-    hinv = HierarchicalInversion(mat,tol = 1e-9,max_inversion_size=16,)
+    sigma = 16
+    n = (2700*3600)//(sigma**2)
+    x = sp.coo_matrix((n,n))
+    x.setdiag(np.ones(n,))
+    for k in range(1,10):
+        x.setdiag(np.ones(n,)/(2**k),k = k)
+        x.setdiag(np.ones(n,)/(2**k),k = -k)
+    hinv = RecursiveHierarchicalInversion(x,tol = 1e-9,max_inversion_size=2**6,)
     matinv = hinv.invert()
-    matinv = matinv.toarray()
-    err = np.mean(np.abs(x @ matinv - np.eye(n)))
+    err = np.mean(np.abs(x @ matinv - sp.eye(n)))
     logging.info(f'n = {n},\t err = {err}')
 
-
+    
+    
+    
 if __name__ == '__main__':
     main()

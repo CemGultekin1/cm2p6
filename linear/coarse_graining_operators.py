@@ -15,7 +15,7 @@ class BaseFiltering(LinFun):
         self.depth = depth
     def post__init__(self,) -> None:
         grid = get_grid(self.sigma,self.depth)
-        grid['wet_mask'] = grid.wet_mask*0 + 1
+        # grid['wet_mask'] = grid.wet_mask*0 + 1
         self.grid = grid
         self.indim = grid.lat.size * grid.lon.size
         self.outdim = grid.lat.size//self.sigma * grid.lon.size//self.sigma
@@ -75,7 +75,7 @@ class BaseFiltering(LinFun):
         x = x.flatten()             
         return x
         
-        
+
 
 def get_grid(sigma:int,depth:int,**isel_kwargs):
     args = f'--sigma {sigma} --depth {depth} --mode data --filtering gcm'.split()
