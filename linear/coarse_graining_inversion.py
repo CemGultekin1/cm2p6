@@ -6,7 +6,8 @@ from constants.paths import OUTPUTS_PATH
 import os
 import scipy.sparse as sp
 import sys
-
+import xarray as xr
+import itertools
 class RemoveZeroRows:
     def __init__(self,mat,) -> None:
         x = np.ones(mat.shape[1],)
@@ -15,15 +16,15 @@ class RemoveZeroRows:
         self.nrows = mat.shape[0]
     def remove_nnz_rows(self,mat ):
         return coo_submatrix_pull(mat.tocoo(),self.nnzrows,np.arange(mat.shape[1]))
-    def sprase_expansion_mat(self,nrows):
-        x = sp.lil_matrix((nrows,len(self.nnzrows)))
+    def sprase_expansion_mat(self,):
+        x = sp.lil_matrix((self.nrows,len(self.nnzrows)))
         for i,nnz in enumerate(self.nnzrows):
             x[nnz,i] = 1
         x = x.tocsr()
         return x
-    def expand_with_zero_rows(self,mat,nrows):
+    def expand_with_zero_rows(self,mat,):
         assert mat.shape[0] == len(self.nnzrows)
-        x = self.sprase_expansion_mat(nrows)
+        x = self.sprase_expansion_mat()
         return x @ mat
         
         
@@ -37,6 +38,7 @@ class NormalEquations:
         self.qmat = None
         self.invmat = None
         self.rzr = None
+        self.leftinvmat = None
     def load(self,):
         self.mat = CollectParts.load_spmat(self.path).tocsr()
         rzr = RemoveZeroRows(self.mat)
@@ -44,8 +46,9 @@ class NormalEquations:
         self.rzr = rzr
     def compute_quadratic_mat(self,):
         self.qmat =  self.mat @ self.mat.T
-        
-    def compute_left_inv(self,save_dir:str,tol = 1e-3,verbose:bool = False):
+    def load_quad_inverse(self,):
+        self.invmat = CollectParts.load_spmat(self.inverse_path,)
+    def compute_quad_inverse(self,save_dir:str,tol = 1e-3,verbose:bool = False):
         milestones = np.arange(10)/10
         milestones = np.append(milestones,[.99,.999,1])
         
@@ -56,21 +59,68 @@ class NormalEquations:
                         continue_flag= True,\
                         milestones=milestones,
                         save_dir=save_dir)
-        qinv = hinv.invert(inplace = True)
-        self.invmat = self.mat.T @ qinv
-        self.invmat = self.rzr.expand_with_zero_rows(self.invmat.T,self.rzr.nrows).T
+        self.invmat = hinv.invert(inplace = True)#self.mat.T @ qinv
+    def compute_left_inverse(self,):
+        self.leftinvmat = self.mat.T @ self.invmat
     @property
     def inverse_path(self,):
         return self.path.replace('.npz','-inv.npz')
+    @property
+    def left_inverse_path(self,):
+        return self.path.replace('.npz','-left-inv.npz')
     def save_inverse(self,):
         CollectParts.save_spmat(self.inverse_path, self.invmat)
+    def save_left_inverse(self,):
+        CollectParts.save_spmat(self.inverse_path, self.leftinvmat)
+        
+        
+class CoarseGrainingInverter(NormalEquations):
+    def __init__(self,filtering:str = 'gcm',depth:int = 0, sigma:int = 16) -> None:
+        self.sigma = sigma
+        self.depth = depth
+        self.filtering = filtering
+        head = f'{filtering}-dpth-{depth}-sgm-{sigma}' 
+        root = os.path.join(OUTPUTS_PATH,'filter_weights')
+        path = CollectParts.latest_united_file(root,head)
+        super().__init__(path)
+        
+    def load_parts(self,):
+        self.load()
+        self.load_quad_inverse()
+    
+    def forward_model(self,u :xr.DataArray   ):
+        dims = u.dims
+        lat = [d for d in dims if 'lat' in d][0]
+        lon = [d for d in dims if 'lon' in d][0]
+        nonlatlondims = [d for d in dims if 'lat' not in d and 'lon' not in d]
+        nnll = {d:u[d].values for d in nonlatlondims}
+        clatlon = {lat:u[lat].coarsen(**{lat : self.sigma,'boundary' : 'trim'}).mean(),\
+                    lon:u[lon].coarsen(**{lon : self.sigma,'boundary' : 'trim'}).mean()}
+        keys = list(nnll.keys())
+        cus = []
+        for vals in itertools.product(*nnll.values()):
+            curdict = dict(tuple(zip(keys,vals)))
+            subu = u.sel(**curdict).fillna(0).values.squeeze().flatten()
+            cu = self.mat @ subu
+            cu = self.rzr.expand_with_zero_rows(cu)
+            # cu = subu.coarsen({
+            #     lat: self.sigma,lon:self.sigma
+            # },boundary = 'trim').mean()
+            cus.append(cu)
+        cus = np.stack(cus,axis = 0)
+        nvl = [len(val) for val in nnll.values()]
+        shp = nvl + [len(clatlon[lat]),len(clatlon[lon])]
+        cus = cus.reshape(shp)        
+        dims = list(nnll.keys()) + [lat, lon]
+        nnll.update(clatlon)
+        return xr.DataArray(
+            data = cus, dims = dims,coords = nnll
+        )
 def main():
-    
-    
     args = sys.argv[1:]
     filtering = args[0]
-    sigma = args[1]
-    depth = args[2]
+    depth = args[1]
+    sigma = args[2]
     head = f'{filtering}-dpth-{depth}-sgm-{sigma}' 
     
     
@@ -87,24 +137,46 @@ def main():
     logging.info('neq.load()...')
     neq.load()
     logging.info('\t\t\t\t done.')
-    logging.info(f'shape = {neq.mat.shape}')
-    logging.info('neq.compute_quadratic_mat()...')
-    neq.compute_quadratic_mat()
-    logging.info('\t\t\t\t done.')    
     
     
+    logging.info(f'neq.mat.shape = {neq.mat.shape}')
     
-    
-    save_dir = os.path.join(root,head)
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
-    logging.info('neq.compute_left_inv()...')
-    neq.compute_left_inv(save_dir,tol = 1e-7,verbose=True)
+    logging.info('neq.load_quad_inverse()...')
+    neq.load_quad_inverse()
     logging.info('\t\t\t\t done.')
-    logging.info('neq.save_inverse()...')
-    neq.save_inverse()
-    logging.info('\t\t\t\t done.')
-
+    
+    logging.info(f'neq.invmat.shape = {neq.invmat.shape}')
+    
+    
+    # logging.info(f'shape = {neq.mat.shape}')
+    # logging.info('neq.compute_quadratic_mat()...')
+    # neq.compute_quadratic_mat()
+    # logging.info('\t\t\t\t done.')    
+    
+    
+    
+    
+    # save_dir = os.path.join(root,head)
+    # if not os.path.exists(save_dir):
+    #     os.makedirs(save_dir)
+    # logging.info('neq.compute_quad_inverse()...')
+    # neq.compute_quad_inverse(save_dir,tol = 1e-7,verbose=True)
+    # logging.info('\t\t\t\t done.')
+    # logging.info('neq.save_inverse()...')
+    # neq.save_inverse()
+    # logging.info('\t\t\t\t done.')
+    
+    
+    
+    # logging.info('neq.compute_left_inverse()...')
+    # neq.compute_left_inverse()
+    # logging.info('\t\t\t\t done.')
+    
+    # logging.info('neq.save_left_inverse()...')
+    # neq.save_left_inverse()
+    # logging.info('\t\t\t\t done.')
+    
+    
 
 if __name__ == '__main__':
     main()

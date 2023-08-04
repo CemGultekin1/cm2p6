@@ -308,7 +308,7 @@ class SparseHierarchicalInversion(SizeChagingHierarchicalInversion):
         self.continue_flag = continue_flag
         self.latest_arr = ()
         self.continue_file = ''
-        
+        self_org_size = mat.shape[0]
         if continue_flag:
             arr,ltst = self.find_latest_progression()
             self.latest_arr = arr
@@ -320,6 +320,7 @@ class SparseHierarchicalInversion(SizeChagingHierarchicalInversion):
                 self.continue_flag = False
             
         super().__init__(mat, invertible_size,**kwargs)
+        self.org_size = self_org_size
         self.tol = tol
 
         self.milestones = milestones

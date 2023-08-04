@@ -97,6 +97,7 @@ def single_cpu_process(kwargsdict):
             if enumi%200 == 0:
                 sp.save_npz(path,dok_array.tocsc())
             last_num_el = dok_array.nnz
+    sp.save_npz(path,dok_array.tocsc())
     return dok_array
 
 class SparseVecCollection:
@@ -106,7 +107,6 @@ class SparseVecCollection:
         self.fileroot = fileroot
         self.ncpu = ncpu
         
-        part_ind,tot_parts = partition
         logging.basicConfig(level=logging.INFO,\
                 format = '%(asctime)s %(message)s',)
         
@@ -194,7 +194,7 @@ class CollectParts:
         files = os.listdir(path)
         nfiles = [fl for fl in files if not CollectParts.is_conformal(fl) and head in fl and '.npz' in fl]
         partnum = [fl.replace(head,'').split('-')[-1].replace('.npz','') for fl in nfiles]
-        partnum = [0 if len(part) == 0  else int(part) for part in partnum]
+        partnum = [0 if len(part) == 0 or not part.isnumeric()  else int(part) for part in partnum]
         i = np.argmax(partnum)
         return  os.path.join(path,nfiles[i])
     @classmethod    
