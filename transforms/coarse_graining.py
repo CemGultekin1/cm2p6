@@ -23,8 +23,10 @@ class GreedyCoarseGrain(PlainCoarseGrain):
     def __call__(self,x,greedy = True):
         if greedy:
             forcing_coarse = x.coarsen(**self._coarse_specs).mean()
-            grd = forcing_coarse/self.coarse_wet_density
-            grd = xr.where(np.isinf(grd),np.nan,grd)
+            landpts = self.coarse_wet_density== 0
+            cwd = xr.where(landpts,1, self.coarse_wet_density)
+            grd = forcing_coarse/cwd
+            grd = xr.where(landpts,np.nan,grd)
             return grd
         else:
             return super().__call__(x)

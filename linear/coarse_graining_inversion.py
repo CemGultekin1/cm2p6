@@ -12,9 +12,9 @@ class RemoveZeroRows:
     def __init__(self,mat,) -> None:
         x = np.ones(mat.shape[1],)
         y = mat@x
-        self.nnzrows = np.where(np.abs(y)>0)[0]
+        self.nnzrows = np.where(np.abs(y)>= 0)[0]
         self.nrows = mat.shape[0]
-    def remove_nnz_rows(self,mat ):
+    def remove_zero_rows(self,mat ):
         return coo_submatrix_pull(mat.tocoo(),self.nnzrows,np.arange(mat.shape[1]))
     def sprase_expansion_mat(self,):
         x = sp.lil_matrix((self.nrows,len(self.nnzrows)))
@@ -42,7 +42,7 @@ class NormalEquations:
     def load(self,):
         self.mat = CollectParts.load_spmat(self.path).tocsr()
         rzr = RemoveZeroRows(self.mat)
-        self.mat = rzr.remove_nnz_rows(self.mat)
+        self.mat = rzr.remove_zero_rows(self.mat)
         self.rzr = rzr
     def compute_quadratic_mat(self,):
         self.qmat =  self.mat @ self.mat.T
@@ -107,6 +107,42 @@ class CoarseGrainingInverter(NormalEquations):
             #     lat: self.sigma,lon:self.sigma
             # },boundary = 'trim').mean()
             cus.append(cu)
+        cus = np.stack(cus,axis = 0)
+        nvl = [len(val) for val in nnll.values()]
+        shp = nvl + [len(clatlon[lat]),len(clatlon[lon])]
+        cus = cus.reshape(shp)        
+        dims = list(nnll.keys()) + [lat, lon]
+        nnll.update(clatlon)
+        return xr.DataArray(
+            data = cus, dims = dims,coords = nnll
+        )
+    
+    def inverse_model(self,u :xr.DataArray ,fucoords:dict  ):
+        dims = u.dims
+        lat = [d for d in dims if 'lat' in d][0]
+        lon = [d for d in dims if 'lon' in d][0]
+        
+        lat_ = [d for d in fucoords if 'lat' in d][0]
+        lon_ = [d for d in fucoords if 'lon' in d][0]
+        
+        nonlatlondims = [d for d in dims if 'lat' not in d and 'lon' not in d]
+        nnll = {d:u[d].values for d in nonlatlondims}
+        
+        clatlon = {l:v for l,v in fucoords.items() if l in (lat_,lon_)}
+        
+        keys = list(nnll.keys())
+        cus = []
+        for vals in itertools.product(*nnll.values()):
+            curdict = dict(tuple(zip(keys,vals)))
+            subu = u.sel(**curdict).fillna(0).values.squeeze().flatten()
+            subu_ = self.rzr.remove_zero_rows(sp.coo_matrix(subu.reshape([-1,1])))
+            logging.info(f'subu_.size = {subu_.size}')
+            cu = self.invmat @ subu_
+            logging.info(f'cu.size = {cu.size}')
+            fu = self.mat.T @ cu      
+            logging.info(f'fu.size = {fu.size}')
+            fu = fu.toarray().flatten()      
+            cus.append(fu)
         cus = np.stack(cus,axis = 0)
         nvl = [len(val) for val in nnll.values()]
         shp = nvl + [len(clatlon[lat]),len(clatlon[lon])]

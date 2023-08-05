@@ -2,6 +2,7 @@ import logging
 from typing import Any, List, Tuple
 import numpy as np
 import time
+from scipy.linalg import pinvh
 from datetime import datetime, timedelta
 import os
 class BinaryCounter:
@@ -140,7 +141,10 @@ class HierarchicalMatrixInverter:
                 
     @staticmethod
     def invert_mat(mat):
-        return np.linalg.inv(mat)
+        try:
+            return np.linalg.inv(mat)
+        except:
+            return pinvh(mat)
     
     def m_a_placement(self,arr:Tuple[int,...]):
         '''
@@ -348,7 +352,10 @@ class SparseHierarchicalInversion(SizeChagingHierarchicalInversion):
 
     def invert_mat(self,mat:sp.csr_matrix):
         mat = mat.toarray()
-        mat = np.linalg.inv(mat)
+        try:
+            mat = np.linalg.inv(mat)
+        except:
+            mat = pinvh(mat)
         mat = np.where(np.abs(mat)<=self.tol,0,mat)        
         return sp.csr_matrix(mat)
     

@@ -10,6 +10,8 @@ from constants.paths import OUTPUTS_PATH
 import os
 from utils.slurm import flushed_print
 import matplotlib.pyplot as plt
+import xarray as xr
+
 filtering_class = GcmFiltering
 coarse_grain_class =  GreedyCoarseGrain
 class BaseFiltering(LinFun):
@@ -19,6 +21,7 @@ class BaseFiltering(LinFun):
     def post__init__(self,) -> None:
         grid = get_grid(self.sigma,self.depth)
         self.grid = grid
+        # self.grid['wet_mask'] = self.grid['wet_mask']*0 + 1
         self.indim = grid.lat.size * grid.lon.size
         
         self.outdim = (grid.lat.size//self.sigma )* (grid.lon.size//self.sigma)
@@ -53,42 +56,54 @@ class BaseFiltering(LinFun):
         nlon = self.grid.lon.size        
             
         clat,clon = nlat//2,nlon//2
-        clat,clon,ilat,ilon = self.capitalize(clat,clon,ilat,ilon)
         rolldict = dict(lat = -ilat + clat,lon = -ilon + clon)#roll_coords = True)
         backrolldict = deepcopy(rolldict)
         for key in 'lat lon'.split():
             backrolldict[key] = -backrolldict[key]
         
-        hspan = 5
+        hspan = 3
         
-        slc = {t:slice(c - self.sigma*hspan,c + self.sigma*hspan ) for t,c in zip('lat lon'.split(),[clat,clon])}
+        bnds = {t:(c - self.sigma*hspan,c + self.sigma*hspan ) for t,c in zip('lat lon'.split(),[clat,clon])}
+        bnds = {key: (np.maximum(val[0],0).astype(int),np.minimum(val[1],size).astype(int)) \
+                    for (key,val),size in zip(bnds.items(),[nlat,nlon])}
+        slc = {key:slice(val[0],val[1]) for key,val in bnds.items()}
         return rolldict,slc,backrolldict
-    def output_patch(self,ilat:int,ilon:int):
-        _,_,cslc = self.centralization(ilat,ilon)
-        return cslc
     def give_ocean_point_indices(self,):
         return np.where(self.grid.wet_mask.values[0] > 0,)
-    def __call__(self,x:np.ndarray):
-        x = x.reshape(*self.inshape)
-        ilats,ilons = np.where(x > 0 )
+    def __call__(self,ilatilon):
+        ilon = ilatilon %  self.nlon
+        ilat = ilatilon // self.nlon
         
-        assert ilats.size == 1  and ilons.size == 1
-        ilat,ilon = ilats.item(),ilons.item()
         if self.grid.wet_mask.values[0,ilat,ilon] == 0:
-            return np.zeros((self.outdim))
+            return None                
+        dims = 'lat lon'.split()
+        coords= {c:self.grid[c].values for c in dims}                
+        x = np.zeros(self.inshape)
+        x[ilat,ilon] = 1
         
-        x = np.stack([x],axis = 0) # depth
-        self.grid['x'] = ('depth lat lon'.split(),x)     
-           
-        filt,slcdict,lclgrid,backroll = self.get_local_operators(ilat,ilon)
-        x = lclgrid.x
-        fx = filt(x)
-        x = self.grid.x.copy()*0
-        x.data[:,slcdict['lat'],slcdict['lon']] = fx.data
-        x = x.roll(**backroll)
-        cx = self.coarse_graining(x).fillna(0).compute().values
+        x = xr.DataArray(
+            data = x,dims = dims, coords = coords
+        ).expand_dims({'depth':[0]},axis = 0)
+         
+        rolldict,slc,backrolldict = self.centralization(ilat,ilon)
+        subgrid = self.grid.roll(**rolldict).isel(**slc)
+        subx = x.roll(**rolldict).isel(**slc)                
+
+        slc_ = tuple(slc.values())
+        filtering = filtering_class(self.sigma,subgrid)
+
+        fsubx = filtering(subx)
+        fsubx_ = np.zeros(self.inshape)
+        fsubx_[slc_] = fsubx.values
+       
+        fsubx = xr.DataArray(
+            data = fsubx_,dims = dims, coords = coords
+        )                    
+        fsubx = fsubx.roll(**backrolldict)
+        cx = self.coarse_graining(fsubx).fillna(0).compute().values    
         cx = cx.flatten()
         return cx
+    
     def test(self,):
         self.post__init__()
         lat,lon = self.give_ocean_point_indices()
@@ -124,21 +139,21 @@ def get_grid(sigma:int,depth:int,**isel_kwargs):
     x0 = x.per_depth[0]
     ugrid = x0.ugrid
     ugrid = ugrid.isel(**isel_kwargs).drop('time co2'.split())
-    return ugrid#.isel(lat = slice(1000,1200 + off),lon = slice(1000,1200 + off))
+    return ugrid
+    m = 80
+    return ugrid.isel(lat = slice(1000,1000+m),lon = slice(1000,1000+m))
 
 def main():
-    args = sys.argv[1:]
+    logging.basicConfig(level=logging.INFO,format = '%(asctime)s %(message)s',)
+    args = sys.argv[1:] 
     parti = int(args[0])
     partm = int(args[1])
     sigma = int(args[2])
     ncpu = int(args[3])
-    logging.basicConfig(level=logging.INFO,format = '%(message)s',)
     foldername = os.path.join(OUTPUTS_PATH,'filter_weights')
     if not os.path.exists(foldername):
         os.makedirs(foldername)
     bf = BaseFiltering(sigma,0)
-    # bf.test()
-    # return
     
     fileroot = f'gcm-dpth-{0}-sgm-{sigma}'
     pathroot = os.path.join(foldername,fileroot)
@@ -148,9 +163,48 @@ def main():
     flushed_print(
         f'pathroot = {pathroot}'
     )
-    spvc = SparseVecCollection(bf,pathroot,partition = (parti,partm),ncpu=ncpu)
+    spvc = SparseVecCollection(bf,pathroot,partition = (parti,partm),ncpu=ncpu,tol = 1e-19)
     spvc.collect_basis_elements()
-
+    
+# def main():
+#     logging.basicConfig(level=logging.INFO,format = '%(asctime)s %(message)s',)
+#     # dummy()
+#     # return
+#     from linear.coarse_graining_inversion import CollectParts
+#     sigma = 4
+#     head = f'gcm-dpth-0-sgm-{sigma}' 
+#     # CollectParts.collect(head)
+#     root = os.path.join(OUTPUTS_PATH,'filter_weights')
+#     path = CollectParts.latest_united_file(root,head)
+    
+#     # path = '/scratch/cg3306/climate/outputs/filter_weights/gcm-dpth-0-sgm-4.npz'
+#     bf = BaseFiltering(sigma,0)
+#     bf.post__init__()
+#     grid = get_grid(sigma,0)
+#     import scipy.sparse as sp
+#     matform = sp.load_npz(path).toarray()
+    
+#     class_args = (sigma,grid)
+#     filtering = filtering_class(*class_args)
+#     coarse_graining = coarse_grain_class(*class_args)
+#     x = np.random.randn(*bf.inshape)
+#     # x[30,30] = 1
+#     cx_ = (matform @ x.flatten()).reshape(bf.outshape)
+#     cx = coarse_graining(filtering(x)).values.reshape(bf.outshape)
+#     relerr = np.log10(np.abs(cx_ - cx) + 1e-19)
+#     logging.info(f'shapes = {cx_.shape,cx.shape}')
+    
+#     fig,axs = plt.subplots(ncols = 3,figsize = (20,10))
+    
+#     for ax,val in zip(axs,[cx_,cx,relerr]):
+#         vmax = np.amax(np.abs(val))
+#         neg = ax.imshow(val,cmap = 'bwr',vmin = -vmax,vmax = vmax)
+#         fig.colorbar(neg,ax = ax)
+#     fig.savefig('dummy.png')
+#     plt.close()
+    
+        
+    
 # def main():
 #     args = sys.argv[1:]
 #     parti = int(args[0])
