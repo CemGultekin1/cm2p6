@@ -166,27 +166,11 @@ class SingleDomain(CM2p6Dataset):
     def __getitem__(self,t):
         ds = self.ds.isel(time =t).load()
         ds = self.get_grid_fixed_lres(ds)
-        # plot_ds(ds,'ds.png',ncols = 1)
-        # raise Exception
-        # def apply_mask(ds,wetmaskv,keys):
-        #     for name in keys:
-        #         v = ds[name].values
-        #         vshp = list(v.shape)
-        #         v = v.reshape([-1] + vshp[-2:])
-        #         v[:,wetmaskv<1] = np.nan
-        #         v = v.reshape(vshp)
-        #         ds[name] = (ds[name].dims,v)
-        #     return ds
         for key in 'interior_wet_mask wet_mask'.split():
             if key in ds.data_vars.keys():
                 ds = ds.drop(key)
         ds[FIELD_MASK] = (['lat','lon'],self.field_wet_mask.data.copy())
         ds[FORCING_MASK] = (['lat','lon'],self.forcing_wet_mask.data.copy())
-        # if self.apply_mask:
-            # ds = apply_mask(ds,self.field_wet_mask.values,list(ds.data_vars))
-            # ds = apply_mask(ds,self.forcing_wet_mask.values,[field for field in list(ds.data_vars) if 'S' in field])
-        # print(ds)
-        # print(f'SingleDomain - {[f"{key}-{val.shape}" for key,val in ds.coords.items()]}')
         return ds
 
     def get_grid_fixed_lres(self,ds):

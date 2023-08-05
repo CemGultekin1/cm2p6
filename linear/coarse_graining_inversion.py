@@ -116,6 +116,7 @@ class CoarseGrainingInverter(NormalEquations):
         return xr.DataArray(
             data = cus, dims = dims,coords = nnll
         )
+
 def main():
     args = sys.argv[1:]
     filtering = args[0]
@@ -130,41 +131,44 @@ def main():
     
     
     
-    
     path = CollectParts.latest_united_file(root,head)
+    if not bool(path):
+        CollectParts.collect(head)
+        path = CollectParts.latest_united_file(root,head)
+        assert bool(path)
+        
     logging.info(f'loading path : {path}')
-    neq = NormalEquations(path)    
+    neq = NormalEquations(path)   
+     
     logging.info('neq.load()...')
     neq.load()
     logging.info('\t\t\t\t done.')
     
     
-    logging.info(f'neq.mat.shape = {neq.mat.shape}')
     
-    logging.info('neq.load_quad_inverse()...')
-    neq.load_quad_inverse()
+    # logging.info('neq.load_quad_inverse()...')
+    # neq.load_quad_inverse()
+    # logging.info('\t\t\t\t done.')
+    
+    
+    
+    logging.info(f'shape = {neq.mat.shape}')
+    logging.info('neq.compute_quadratic_mat()...')
+    neq.compute_quadratic_mat()
+    logging.info('\t\t\t\t done.')    
+    
+    
+    
+    
+    save_dir = os.path.join(root,head)
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+    logging.info('neq.compute_quad_inverse()...')
+    neq.compute_quad_inverse(save_dir,tol = 1e-9,verbose=True)
     logging.info('\t\t\t\t done.')
-    
-    logging.info(f'neq.invmat.shape = {neq.invmat.shape}')
-    
-    
-    # logging.info(f'shape = {neq.mat.shape}')
-    # logging.info('neq.compute_quadratic_mat()...')
-    # neq.compute_quadratic_mat()
-    # logging.info('\t\t\t\t done.')    
-    
-    
-    
-    
-    # save_dir = os.path.join(root,head)
-    # if not os.path.exists(save_dir):
-    #     os.makedirs(save_dir)
-    # logging.info('neq.compute_quad_inverse()...')
-    # neq.compute_quad_inverse(save_dir,tol = 1e-7,verbose=True)
-    # logging.info('\t\t\t\t done.')
-    # logging.info('neq.save_inverse()...')
-    # neq.save_inverse()
-    # logging.info('\t\t\t\t done.')
+    logging.info('neq.save_inverse()...')
+    neq.save_inverse()
+    logging.info('\t\t\t\t done.')
     
     
     

@@ -4,9 +4,9 @@ import torch
 from data.low_res import SingleDomain
 from data.geography import frequency_encoded_latitude
 import numpy as np
-from data.vars import FIELD_MASK, FIELD_NAMES, FORCING_MASK, FORCING_NAMES, get_var_mask_name
+from data.vars import FIELD_MASK,  FORCING_MASK,  get_var_mask_name
 import xarray as xr
-from utils.xarray_oper import plot_ds, tonumpydict
+from utils.xarray_oper import  tonumpydict
 def determine_ndoms(*args,**kwargs):
     arglens = [1]
     for i in range(len(args)):

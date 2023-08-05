@@ -118,8 +118,8 @@ class ugrid2tgrid_interpolation:
         ut = ut.assign_coords(**coords).fillna(0)
         vt = vt.assign_coords(**coords).fillna(0)
         
-        # ut = xr.where(self.tgrid.wet_mask,ut,0)
-        # vt = xr.where(self.tgrid.wet_mask,vt,0)
+        ut = xr.where(self.tgrid.wet_mask,ut,0)
+        vt = xr.where(self.tgrid.wet_mask,vt,0)
         return ut,vt
 
 

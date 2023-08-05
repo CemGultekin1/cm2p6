@@ -179,6 +179,7 @@ class CollectParts:
                 path = path.replace(f'-{i-1}.npz',f'-{i}.npz')
         logging.info(f'\t\t saving to {path.split("/")[-1]} ')
         sp.save_npz(path,dok_array.tocsc())
+        
         return path
     @classmethod
     def load_spmat(cls,path:str):
@@ -193,6 +194,8 @@ class CollectParts:
     def latest_united_file(cls,path:str,head:str):
         files = os.listdir(path)
         nfiles = [fl for fl in files if not CollectParts.is_conformal(fl) and head in fl and '.npz' in fl]
+        if not bool(nfiles):
+            return ''
         partnum = [fl.replace(head,'').split('-')[-1].replace('.npz','') for fl in nfiles]
         partnum = [0 if len(part) == 0 or not part.isnumeric()  else int(part) for part in partnum]
         i = np.argmax(partnum)
@@ -206,6 +209,8 @@ class CollectParts:
         for i in range(1, len(files)):            
             dok_arr += sp.load_npz(files[i])
             logging.info(f'\t\t load_npz {i}/{len(files)}\t {files[i].split("/")[-1]} nnz = {dok_arr.nnz}, density = {formatter.format(dok_arr.nnz/np.prod(dok_arr.shape))}')
+        for i in range(len(files)):
+            os.remove(files[i])
         return dok_arr
                 
                 
@@ -226,6 +231,23 @@ class CollectParts:
     @classmethod
     def to_filename(cls,fileroot:str,part_ind,tot_parts):
         return fileroot.split('.')[0] + f'-part-{part_ind}-{tot_parts}.npz'
+    @classmethod
+    def collect(cls,head:str):
+        logging.basicConfig(level=logging.INFO,\
+                format = '%(asctime)s %(message)s',)
+        root = os.path.join(OUTPUTS_PATH,'filter_weights')
+        cp = CollectParts(root)
+        flist = cp.all_parts_collect(head = head)
+        logging.info('\n'.join(flist))
+    @classmethod
+    def clean_files(cls,head:str):
+        logging.basicConfig(level=logging.INFO,\
+                format = '%(asctime)s %(message)s',)
+        root = os.path.join(OUTPUTS_PATH,'filter_weights')
+        cp = CollectParts(root)
+        flist = cp.all_parts_collect(head = head)
+        logging.info('\n'.join(flist))
+        
 class SparseInversion(SparseVecCollection):
     def __init__(self,  path: str,tol :float = 1e-2) -> None:
         self.path = path
