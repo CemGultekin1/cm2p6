@@ -18,9 +18,13 @@ class BaseFiltering(LinFun):
     def __init__(self,sigma,depth) -> None:
         self.sigma = sigma
         self.depth = depth
+        self.indim = 2700*3600
+        self.outdim = (2700/sigma)*(3600//sigma)
+        
     def post__init__(self,) -> None:
         grid = get_grid(self.sigma,self.depth)
         self.grid = grid
+        
         # self.grid['wet_mask'] = self.grid['wet_mask']*0 + 1
         self.indim = grid.lat.size * grid.lon.size
         
@@ -28,6 +32,7 @@ class BaseFiltering(LinFun):
         self.inshape = (grid.lat.size,grid.lon.size)
         self.outshape = (grid.lat.size//self.sigma,grid.lon.size//self.sigma)
         self.coarse_graining = coarse_grain_class(self.sigma,self.grid)
+        self.wet_inds = np.where(self.grid.wet_mask.values.flatten()>0)[0]
     @property
     def nlat(self,):
         return self.grid.lat.size 
@@ -83,7 +88,7 @@ class BaseFiltering(LinFun):
         
         x = xr.DataArray(
             data = x,dims = dims, coords = coords
-        ).expand_dims({'depth':[0]},axis = 0)
+        ).expand_dims({'depth':[self.grid.depth.values.item()]},axis = 0)
          
         rolldict,slc,backrolldict = self.centralization(ilat,ilon)
         subgrid = self.grid.roll(**rolldict).isel(**slc)
@@ -136,10 +141,14 @@ class BaseFiltering(LinFun):
 def get_grid(sigma:int,depth:int,**isel_kwargs):
     args = f'--sigma {sigma} --depth {depth} --mode data --filtering gcm'.split()
     x, = get_data(args,torch_flag=False,data_loaders=False,groups = ('train',))
-    x0 = x.per_depth[0]
+    if depth == 0:
+        x0 = x.per_depth[0]
+    else:
+        i = np.argmin(np.abs(x.ds.depth.values - depth))
+        x0 = x.per_depth[i]
     ugrid = x0.ugrid
     ugrid = ugrid.isel(**isel_kwargs).drop('time co2'.split())
-    return ugrid
+    return ugrid.load()
     m = 80
     return ugrid.isel(lat = slice(1000,1000+m),lon = slice(1000,1000+m))
 
@@ -149,21 +158,25 @@ def main():
     parti = int(args[0])
     partm = int(args[1])
     sigma = int(args[2])
-    ncpu = int(args[3])
+    depth = int(args[3])
+    ncpu = int(args[4])
     foldername = os.path.join(OUTPUTS_PATH,'filter_weights')
     if not os.path.exists(foldername):
         os.makedirs(foldername)
-    bf = BaseFiltering(sigma,0)
+    bf = BaseFiltering(sigma,depth)
     
-    fileroot = f'gcm-dpth-{0}-sgm-{sigma}'
-    pathroot = os.path.join(foldername,fileroot)
+    root = f'gcm-dpth-{depth}-sgm-{sigma}-parts'
+    root = os.path.join(foldername,root)
     flushed_print(
         f'parti = {parti}\tpartm = {partm}\tsigma = {sigma}\tncpu = {ncpu}\t'
     )
+    if not os.path.exists(root):
+        os.makedirs(root)
+    fileroot = os.path.join(root,'parallel')
     flushed_print(
-        f'pathroot = {pathroot}'
+        f'root = {root}'
     )
-    spvc = SparseVecCollection(bf,pathroot,partition = (parti,partm),ncpu=ncpu,tol = 1e-19)
+    spvc = SparseVecCollection(bf,fileroot,partition = (parti,partm),ncpu=ncpu,tol = 1e-19)
     spvc.collect_basis_elements()
     
 # def main():
@@ -232,5 +245,4 @@ def main():
 if __name__ == '__main__':
     main()
     
-
 

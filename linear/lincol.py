@@ -81,7 +81,7 @@ def single_cpu_process(kwargsdict):
         x[i] = 1
         return x    
     dok_array = sp.dok_array((lf.outdim,lf.indim))
-    parts = partition_a_range(np.arange(lf.indim),part_ind,tot_parts)
+    parts = partition_a_range(lf.wet_inds,part_ind,tot_parts)
     for enumi,i in enumerate(parts):
         # be = basis_element(i)
         yi = lf(i)
@@ -92,9 +92,9 @@ def single_cpu_process(kwargsdict):
             for yii,indsi in zip(yi,inds):
                 dok_array[indsi,i] = yii
         if (dok_array.nnz - last_num_el)/ (last_num_el + 1) > 1e-1 or enumi%50 == 0:
-            if cpu_ind == 0:                
+            if cpu_ind > -1:                
                 formatter = "{:.2e}"
-                logging.info(f'\t\t{i - parts[0]}/{len(parts)} = {formatter.format((i - parts[0])/len(parts))},\t total # of entries = {dok_array.nnz}')
+                logging.info(f'{multiprocessing.current_process().name}\t\t{i - parts[0]}/{len(parts)} = {formatter.format((i - parts[0])/len(parts))},\t total # of entries = {dok_array.nnz}')
             if enumi%200 == 0 and dok_array.nnz>0:
                 sp.save_npz(path,dok_array.tocsc())
             last_num_el = dok_array.nnz
