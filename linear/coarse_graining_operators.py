@@ -1,5 +1,4 @@
 from copy import deepcopy
-import itertools
 import logging
 from transforms.coarse_graining import GreedyCoarseGrain, GcmFiltering
 from data.load import get_data
@@ -19,7 +18,7 @@ class BaseFiltering(LinFun):
         self.sigma = sigma
         self.depth = depth
         self.indim = 2700*3600
-        self.outdim = (2700/sigma)*(3600//sigma)
+        self.outdim = (2700//sigma)*(3600//sigma)
         
     def post__init__(self,) -> None:
         grid = get_grid(self.sigma,self.depth)
@@ -138,7 +137,7 @@ class BaseFiltering(LinFun):
                 ax.set_title(title)
             fig.savefig(f'image-{i}.png')
             
-def get_grid(sigma:int,depth:int,**isel_kwargs):
+def get_grid(sigma:int,depth:int):
     args = f'--sigma {sigma} --depth {depth} --mode data --filtering gcm'.split()
     x, = get_data(args,torch_flag=False,data_loaders=False,groups = ('train',))
     if depth == 0:
@@ -147,7 +146,7 @@ def get_grid(sigma:int,depth:int,**isel_kwargs):
         i = np.argmin(np.abs(x.ds.depth.values - depth))
         x0 = x.per_depth[i]
     ugrid = x0.ugrid
-    ugrid = ugrid.isel(**isel_kwargs).drop('time co2'.split())
+    ugrid = ugrid.drop('time co2'.split())
     return ugrid.load()
     m = 80
     return ugrid.isel(lat = slice(1000,1000+m),lon = slice(1000,1000+m))

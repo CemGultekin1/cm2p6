@@ -6,6 +6,7 @@ import numpy as np
 import scipy.sparse as sp
 from scipy.ndimage import gaussian_filter as gfilt
 import multiprocessing
+import time
 
 class LinFun:
     indim:int
@@ -64,7 +65,8 @@ def single_cpu_process(kwargsdict):
     cpu_ind = defdict['cpu_ind']
     tot_parts = defdict['tot_parts']
     path = defdict['path']
-    last_num_el = 1
+    # wait_time = defdict['wait_time']
+    queue = defdict['queue']
     '''
     cpu_ind
     part_ind
@@ -74,32 +76,55 @@ def single_cpu_process(kwargsdict):
     tol
     path
     '''
+    logging.info(f'{multiprocessing.current_process().name} has started')
     lf = linfuncls.from_picklable_arguments(*args)
     lf.post__init__()
-    def basis_element(i:int):
-        x = np.zeros((lf.indim,))
-        x[i] = 1
-        return x    
-    dok_array = sp.dok_array((lf.outdim,lf.indim))
+     
     parts = partition_a_range(lf.wet_inds,part_ind,tot_parts)
-    for enumi,i in enumerate(parts):
-        # be = basis_element(i)
-        yi = lf(i)
+    lrow = lf.outdim
+    lcol = lf.indim
+    for enumi,coli in enumerate(parts):
+        yi = lf(coli)
         if yi is not None:
             yi = np.where(np.abs(yi)>tol,yi,0)
-            inds = np.where(yi != 0,)[0]
-            yi = yi[inds]
-            for yii,indsi in zip(yi,inds):
-                dok_array[indsi,i] = yii
-        if (dok_array.nnz - last_num_el)/ (last_num_el + 1) > 1e-1 or enumi%50 == 0:
-            if cpu_ind > -1:                
-                formatter = "{:.2e}"
-                logging.info(f'{multiprocessing.current_process().name}\t\t{i - parts[0]}/{len(parts)} = {formatter.format((i - parts[0])/len(parts))},\t total # of entries = {dok_array.nnz}')
-            if enumi%200 == 0 and dok_array.nnz>0:
-                sp.save_npz(path,dok_array.tocsc())
-            last_num_el = dok_array.nnz
-    sp.save_npz(path,dok_array.tocsc())
-    return dok_array
+            rowi = np.where(yi != 0,)[0]
+            rowi = rowi.flatten()
+            yi = yi[rowi].flatten()
+            
+            if enumi % 100 == 0:
+                logging.info(f'{multiprocessing.current_process().name} - \t\t{enumi}/{len(parts)}')
+            
+            if len(yi) == 0:
+                continue
+            # if enumi == 8:
+            #     break
+            queue.put([yi.flatten(),rowi,np.array([coli]*len(rowi)),lrow,lcol])
+    return queue.put(None)
+
+def consumer(ncpu,path,queue):
+    coomat = None
+    finished_processors = 0
+    while True:
+        if finished_processors == ncpu:
+            break
+        x = queue.get()
+        if x is None:
+            finished_processors+=1
+            continue
+        data,rows,cols,lr,lc = x
+        # logging.info(f'consumer:\t\t row = {cols[0]},')
+        newmat = sp.coo_matrix((data, (rows,cols)),shape = (lr, lc))
+        if coomat is None:
+            coomat = newmat
+        else:
+            coomat += newmat
+        
+        
+    logging.info(f'consumer:\t\t if coomat is None:')
+    if coomat is None:
+        return
+    logging.info(f'consumer:\t\t sp.save_npz({path},coomat.tocsc())')
+    sp.save_npz(path,coomat.tocsc())
 
 class SparseVecCollection:
     def __init__(self,linfun:LinFun,fileroot:str,tol = 1e-5,ncpu:int = multiprocessing.cpu_count(),partition:Tuple[int,int] = (0,1)) -> None:
@@ -113,9 +138,10 @@ class SparseVecCollection:
         
         logging.info(f'ncpu ={ncpu}')
         self.partition = partition
-    def single_cpu_kwargs(self,i:int):
+    def single_cpu_kwargs(self,i:int,queue):
         part_ind = self.partition[0] * self.ncpu + i
         tot_parts = self.ncpu*self.partition[1]
+        wait_time = self.ncpu*10
         kwargs = dict(
                 cpu_ind = i,
                 part_ind = part_ind,
@@ -123,15 +149,29 @@ class SparseVecCollection:
                 linfuncls = self.linfun.__class__,
                 tot_parts = tot_parts,
                 tol = self.tol,
-                path = CollectParts.to_filename(self.fileroot,part_ind,tot_parts)
-                #self.fileroot.split('.')[0] + f'-part-{part_ind}-{tot_parts}.npz',
+                path = CollectParts.to_filename(self.fileroot,part_ind,tot_parts),
+                wait_time= wait_time,
+                queue = queue,
         )
         return kwargs
     def collect_basis_elements(self,):
-        kwargss = [self.single_cpu_kwargs(i) for i in range(self.ncpu)]
+        queue = multiprocessing.Queue()
+        pcss = []
+        for i in range(self.ncpu):
+            kwargs = self.single_cpu_kwargs(i,queue)
+            producer_process = multiprocessing.Process(target=single_cpu_process, args=(kwargs,))
+            time.sleep(10)
+            producer_process.start()
+            pcss.append(producer_process)
         
-        pool = multiprocessing.Pool(self.ncpu)
-        _ = list(pool.map(single_cpu_process, kwargss,))
+        
+        path = CollectParts.to_filename(self.fileroot,self.partition[0],self.partition[1])
+        consumer_process = multiprocessing.Process(target=consumer, args=(self.ncpu,path,queue))        
+        consumer_process.start()        
+        for producer_process in pcss:
+            producer_process.join()        
+        consumer_process.join()
+        
         
     def basis_element(self,i:int):
         x = np.zeros((self.linfun.indim,))
@@ -194,7 +234,7 @@ class CollectParts:
     @classmethod
     def latest_united_file(cls,path:str,head:str):
         files = os.listdir(path)
-        nfiles = [fl for fl in files if not CollectParts.is_conformal(fl) and head in fl and '.npz' in fl]
+        nfiles = [fl for fl in files if not CollectParts.is_conformal(fl) and head in fl and '.npz' in fl and 'inv' not in fl]
         if not bool(nfiles):
             return ''
         partnum = [fl.replace(head,'').split('-')[-1].replace('.npz','') for fl in nfiles]

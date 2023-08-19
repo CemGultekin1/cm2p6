@@ -23,7 +23,9 @@ class BaseSubgridForcing(BaseTransform):
     def compute_flux(self,hresdict:dict,):
         '''
         Takes high resolution U-grid variables in dictionary uvars and T-grid variables in dictionary tvars
+        
         Takes their fine-grid derivatives across latitude and longitude
+        
         Returns the fine-grid objects and their coarse-grid counterparts and their coarse-grid derivatives across latitude and longitude 
         '''
         dlat = {f"dlat_{x}":forward_difference(y,self.grid[self.grid_separation[0]],self.dims[0]) for x,y in hresdict.items()}

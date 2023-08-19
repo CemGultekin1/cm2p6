@@ -150,7 +150,7 @@ class HierarchicalMatrixInverter:
         '''
         at 'level'
         mat[ind,ind] <- A^{-1}
-        mat[ind+1,ind+] <- (D - C@A^{-1}@B)^{-1}
+        mat[ind+1,ind+1] <- (D - C@A^{-1}@B)^{-1}
         '''
         mat = self[arr[:-1]]
         ainv,b,c,d = self.divide(mat)
@@ -258,7 +258,24 @@ def coo_submatrix_pull(matr, rows, cols):
     return sp.coo_matrix((matr.data[newelem], np.array([gr[newrows],
         gc[newcols]])),(lr, lc))
 
-
+def remove_below_tol(mat,tol:float = 0):
+    if type(mat) != sp.coo_matrix:        
+        raise TypeError(f'Matrix must be sparse COOrdinate format, type is {type(mat)}')
+    
+    mrow = mat.row
+    mcol = mat.col
+    data = mat.data
+    
+    mask = np.abs(data)>tol
+    
+    mrow = mrow[mask]
+    mcol = mcol[mask]
+    data = data[mask]
+    
+    lr,lc = mat.shape
+    return sp.coo_matrix((data, np.array([mrow,
+        mcol])),(lr, lc))
+    
 def coo_submatrix_push(mat,matr, r0, c0):
     """
     Pulls out an arbitrary i.e. non-contiguous submatrix out of
@@ -322,10 +339,13 @@ class SparseHierarchicalInversion(SizeChagingHierarchicalInversion):
                 mat = mat_
             else:
                 self.continue_flag = False
-            
+        
         super().__init__(mat, invertible_size,**kwargs)
+        
         self.org_size = self_org_size
         self.tol = tol
+        
+        self.mat = remove_below_tol(self.mat,self.tol)
 
         self.milestones = milestones
         self.cur_milestone_index = 0
@@ -366,14 +386,15 @@ class SparseHierarchicalInversion(SizeChagingHierarchicalInversion):
         slc = self.arr2slc(arr)
         x = np.arange(slc.start,slc.stop)
         return coo_submatrix_pull(self.mat,x,x)
-        # matarr = self.mat.toarray()
-        # return sp.coo_matrix(matarr[slc,slc])
+    
+    
     def __setitem__(self,arr:Tuple[int,...],mat:sp.csr_matrix):
         if not bool(arr):
             self.mat = mat
             return
         slc = self.arr2slc(arr)
-        self.mat =  coo_submatrix_push(self.mat,mat.tocoo(),slc.start,slc.start)
+        mat = remove_below_tol(mat.tocoo(),tol = self.tol)
+        self.mat =  coo_submatrix_push(self.mat,mat,slc.start,slc.start)
         
         
     @staticmethod

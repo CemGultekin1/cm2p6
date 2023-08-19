@@ -1,11 +1,11 @@
 #!/bin/bash
-#SBATCH --time=9:00:00
-#SBATCH --array=881
-#SBATCH --mem=50GB
+#SBATCH --time=16:00:00
+#SBATCH --array=522,868-872
+#SBATCH --mem=20GB
 #SBATCH --job-name=filtweights
 #SBATCH --output=/scratch/cg3306/climate/outputs/slurm_logs/filtweights_%A_%a.out
 #SBATCH --error=/scratch/cg3306/climate/outputs/slurm_logs/filtweights_%A_%a.err
-#SBATCH --cpus-per-task=20
+#SBATCH --cpus-per-task=4
 echo "$(date)"
 ARGS=$(sed -n "$SLURM_ARRAY_TASK_ID"p /scratch/cg3306/climate/cm2p6/jobs/filtweights.txt)
 module purge

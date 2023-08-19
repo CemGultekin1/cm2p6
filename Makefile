@@ -3,15 +3,15 @@
 .DEFAULT_GOAL := setup-greene
 
 MEMORY = 15
-MEMORY2 = 2
+MEMORY2 = 15
 GZBANK = /scratch/work/public/overlay-fs-ext3
 
 GZFILE = overlay-$(MEMORY)GB-500K.ext3.gz
 EXTFILE = overlay-$(MEMORY)GB-500K.ext3
 GZPATH = $(GZBANK)/$(GZFILE)
 
-GZFILE2 = overlay-$(MEMORY2)GB-100K.ext3.gz
-EXTFILE2 = overlay-$(MEMORY2)GB-100K.ext3
+GZFILE2 = overlay-$(MEMORY2)GB-500K.ext3.gz
+EXTFILE2 = overlay-$(MEMORY2)GB-500K.ext3
 GZPATH2 = $(GZBANK)/$(GZFILE2)
 
 CUDA_SINGULARITY = /scratch/work/public/singularity/cuda10.1-cudnn7-devel-ubuntu18.04.sif
@@ -60,16 +60,19 @@ setup-conda-env:
 		pip install zarr xarray fsspec aiohttp requests;
 		pip install gcm_filters;
 		python -m pip install "xarray[io]";
+		pip install torch;
+		conda install cartopy;
 	"
 
 setup-conda-env-2:
 	singularity exec --overlay $(EXTFILE2) $(CUDA_SINGULARITY) /bin/bash -c "\
 		source /ext3/env.sh;
-		conda install cartopy
+		pip install -r requirements.txt;
 		pip install zarr xarray fsspec aiohttp requests;
 		pip install gcm_filters;
 		python -m pip install "xarray[io]";
-		pip install torch
+		pip install torch;
+		conda install cartopy;
 	"
 
 setup-greene: 
@@ -83,6 +86,11 @@ setup-greene-2:
 	make setup-conda-env-2
 
 interactive-singularity-writing-permitted:	
+	echo run \"source /ext3/env.sh\"
+	echo print \"exit\" to exit
+	singularity exec --nv --overlay $(EXTFILE):rw $(CUDA_SINGULARITY) /bin/bash
+
+interactive-singularity-writing-permitted-2:	
 	echo run \"source /ext3/env.sh\"
 	echo print \"exit\" to exit
 	singularity exec --nv --overlay $(EXTFILE2):rw $(CUDA_SINGULARITY) /bin/bash
