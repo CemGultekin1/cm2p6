@@ -249,7 +249,8 @@ class CollectParts:
         logging.info(f'\t\t load_npz {i}/{len(files)}\t {files[i].split("/")[-1]} nnz = {dok_arr.nnz}, density = {formatter.format(dok_arr.nnz/np.prod(dok_arr.shape))}')
         for i in range(1, len(files)):            
             dok_arr += sp.load_npz(files[i])
-            logging.info(f'\t\t load_npz {i}/{len(files)}\t {files[i].split("/")[-1]} nnz = {dok_arr.nnz}, density = {formatter.format(dok_arr.nnz/np.prod(dok_arr.shape))}')
+            if i%32 == 0:
+                logging.info(f'\t\t load_npz {i}/{len(files)}\t {files[i].split("/")[-1]} nnz = {dok_arr.nnz}, density = {formatter.format(dok_arr.nnz/np.prod(dok_arr.shape))}')
         for i in range(len(files)):
             os.remove(files[i])
         return dok_arr

@@ -62,6 +62,7 @@ setup-conda-env:
 		python -m pip install "xarray[io]";
 		pip install torch;
 		conda install cartopy;
+		python -m pip install "dask[distributed]" --upgrade;
 	"
 
 setup-conda-env-2:

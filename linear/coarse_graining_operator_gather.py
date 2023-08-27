@@ -22,34 +22,36 @@ def path_and_bucket_hash(line):
     npz_name = f'parallel-part-{parsed["parti"]}-{parsed["partm"]}.npz'
     foldername = f'gcm-dpth-{parsed["depth"]}-sgm-{parsed["sigma"]}-parts'
     return foldername,npz_name
-# def get_associated_file(line_index,line):
-#     parsed = parse_line(line)
-#     foldername = f'gcm-dpth-{parsed["depth"]}-sgm-{parsed["sigma"]}-parts'
-#     root = os.path.join(FILTER_WEIGHTS,foldername)
-#     if not os.path.exists(root):
-#         return None
-#     npz_name = f'parallel-part-{parsed["parti"]}-{parsed["partm"]}.npz'
-#     path = os.path.join(root,npz_name)
-#     if not os.path.exists(path):
-#         return None
-#     flag,_ = check_by_taskid('filtweights',line_index)
-#     if flag:
-#         return path
-#     else:
-#         return None
+def are_buckets_full(path_buckets):
+    bucket_flags = {}
+    for key,vals in path_buckets.items():
+        bucket_flags[key] = True
+        for val in vals:
+            path = os.path.join(FILTER_WEIGHTS,key,val)
+            if not os.path.exists(path):
+                bucket_flags[key] = False
+            break
+    return bucket_flags
+
 def main():
     logging.basicConfig(level=logging.INFO,format = '%(asctime)s %(message)s',)
     from utils.slurm import ArgsReader
     fed = ArgsReader('filtweights.txt')
     fed.read_model_list()
     path_buckets = defaultdict(lambda : [])
-    for i,line in enumerate(fed.lines[:512]):
+    for i,line in enumerate(fed.lines):#fed.lines[:512]):
         hsh,path = path_and_bucket_hash(line)
         path_buckets[hsh].append(path)
-    for key,val in path_buckets.items():
-        print(f'{key}: {len(val)}')
+    bucket_flags = are_buckets_full(path_buckets)
+    for key,val in bucket_flags.items():
+        print(key,'\t\t\t bucket is full: ',val)
+    full_buckets = [key for key,val in bucket_flags.items() if val]
+    
     for foldername,paths in path_buckets.items():
+        if foldername not in full_buckets:
+            continue
         head = foldername.replace('-parts','')
+        logging.info(f'FOLDERNAME = {foldername}')
         paths = [os.path.join(FILTER_WEIGHTS,foldername,path) for path in paths]
         CollectParts.unite_all(FILTER_WEIGHTS,head,paths)
             

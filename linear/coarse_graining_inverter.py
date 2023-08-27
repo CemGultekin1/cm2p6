@@ -1,62 +1,14 @@
 import logging
-from linear.coarse_graining_operators import  get_grid,coarse_grain_class
 from linear.lincol import  CollectParts
-from linear.nonrecursive_hierchinv import SparseHierarchicalInversion,coo_submatrix_pull
+from linear.nonrecursive_hierchinv import SparseHierarchicalInversion
 import numpy as np
-from constants.paths import FILTER_WEIGHTS, OUTPUTS_PATH
+from constants.paths import FILTER_WEIGHTS
 import os
 import scipy.sparse as sp
-import sys
 import xarray as xr
 import itertools
 
-class RowPick:
-    def __init__(self,rows:np.ndarray,nrows:int) -> None:
-        self.nnzrows = rows
-        self.nrows = nrows
-    def pick_rows(self,mat ):
-        expmat = self.sprase_expansion_mat()        
-        return expmat.T @ mat
-        # return coo_submatrix_pull(mat.tocoo(),self.nnzrows,np.arange(mat.shape[1]))
-    def sprase_expansion_mat(self,):
-        x = sp.lil_matrix((self.nrows,len(self.nnzrows)))
-        for i,nnz in enumerate(self.nnzrows):
-            x[nnz,i] = 1
-        x = x.tocsr()
-        return x
-    def expand_with_zero_rows(self,mat,):
-        assert mat.shape[0] == len(self.nnzrows)
-        x = self.sprase_expansion_mat()
-        return x @ mat
-class ColPick(RowPick):
-    def pick_cols(self, mat):
-        return super().pick_rows(mat.T).T
-    def expand_with_zero_cols(self, mat):
-        return super().expand_with_zero_rows(mat.T).T
-class RemoveZeroRows(RowPick):
-    def __init__(self,mat,) -> None:
-        x = np.ones(mat.shape[1],)
-        y = mat@x
-        nnzrows = np.where(np.abs(y)> 0)[0]
-        nrows = mat.shape[0]
-        super().__init__(nnzrows,nrows)
-    def pick_rows(self,mat ):
-        expmat = self.sprase_expansion_mat()        
-        return expmat.T @ mat
-        # return coo_submatrix_pull(mat.tocoo(),self.nnzrows,np.arange(mat.shape[1]))
-    def sprase_expansion_mat(self,):
-        x = sp.lil_matrix((self.nrows,len(self.nnzrows)))
-        for i,nnz in enumerate(self.nnzrows):
-            x[nnz,i] = 1
-        x = x.tocsr()
-        return x
-    def expand_with_zero_rows(self,mat,):
-        assert mat.shape[0] == len(self.nnzrows)
-        x = self.sprase_expansion_mat()
-        return x @ mat
-        
-        
-        
+
 class NormalEquations:
     def __init__(self,path,filtering:str = 'gcm',depth:int = 0, sigma:int = 16) -> None:
         self.sigma = sigma
@@ -72,12 +24,6 @@ class NormalEquations:
         self.rzr = None
         self.leftinvmat = None
         
-    def cut_zero_rows(self,):
-        logging.info(f'self.mat.nrows = {self.mat.shape[0]}')
-        rzr = RemoveZeroRows(self.mat)        
-        self.mat = rzr.pick_rows(self.mat)
-        logging.info(f'...self.mat.nrows = {self.mat.shape[0]}')
-        self.rzr = rzr
         
     def load(self,):
         logging.info(f'CollectParts.load_spmat({self.path}).tocsr()')
@@ -116,16 +62,7 @@ class NormalEquations:
         CollectParts.save_spmat(self.inverse_path, self.qinvmat)
     def save_left_inverse(self,):
         CollectParts.save_spmat(self.inverse_path, self.leftinvmat)        
-    def apply_mask(self,):
-        grid = get_grid(self.sigma,self.depth)
-        coarse_graining = coarse_grain_class(self.sigma,grid)
-        wet_density = coarse_graining.coarse_wet_density
-        cwet_mask = (wet_density.fillna(0).values >= 0.5).astype(float)
-        logging.info(f'cwet_mask density = {np.sum(cwet_mask)/np.sum(cwet_mask*0 + 1)}')
-        spcwet = sp.diags(cwet_mask.flatten())
-        logging.info(f'mat density = {self.mat.nnz/ (self.mat.shape[0]*self.mat.shape[1])}')
-        self.mat = spcwet@self.mat
-        logging.info(f'mat density = {self.mat.nnz/ (self.mat.shape[0]*self.mat.shape[1])}')
+    
 class CoarseGrainingInverter(NormalEquations):
     def __init__(self,filtering:str = 'gcm',depth:int = 0, sigma:int = 16) -> None:
         print(f'CoarseGrainingInverter.__init__ {filtering,depth,sigma}')
@@ -229,70 +166,3 @@ class CoarseGrainingInverter(NormalEquations):
         return xr.DataArray(
             data = cus, dims = dims,coords = nnll
         )
-
-def main():
-    args = sys.argv[1:]
-    filtering = args[0]
-    depth = int(args[1])
-    sigma = int(args[2])
-    head = f'{filtering}-dpth-{depth}-sgm-{sigma}' 
-    
-    
-    
-    logging.basicConfig(level=logging.INFO,format = '%(asctime)s %(message)s',)
-    root = os.path.join(OUTPUTS_PATH,'filter_weights')
-    
-    
-    
-    path = CollectParts.latest_united_file(root,head)
-    if not bool(path):
-        CollectParts.collect(head)
-        path = CollectParts.latest_united_file(root,head)
-        assert bool(path)
-        
-    logging.info(f'loading path : {path}')
-    neq = NormalEquations(path,sigma = sigma,depth = depth,filtering = filtering)   
-    logging.info('neq.load()...')
-    neq.load()
-    logging.info('\t\t\t\t done.')
-    
-    
-    logging.info('neq.apply_mask()...')
-    neq.apply_mask()
-    # neq.cut_zero_rows()    
-    logging.info('\t\t\t\t done.')
-    
-    
-    logging.info(f'shape = {neq.mat.shape}')
-    logging.info('neq.compute_quadratic_mat()...')
-    neq.compute_quadratic_mat()
-    logging.info('\t\t\t\t done.')    
-    
-    save_dir = os.path.join(root,head)
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
-    
-    logging.info('neq.compute_quad_inverse()...')
-    neq.compute_quad_inverse(save_dir,tol = 1e-11,verbose=True)
-    logging.info('\t\t\t\t done.')
-    logging.info('neq.save_inverse()...')
-    neq.save_inverse()
-    logging.info('\t\t\t\t done.')
-    
-    
-    
-    # logging.info('neq.compute_left_inverse()...')
-    # neq.compute_left_inverse()
-    # logging.info('\t\t\t\t done.')
-    
-    # logging.info('neq.save_left_inverse()...')
-    # neq.save_left_inverse()
-    # logging.info('\t\t\t\t done.')
-    
-    
-
-if __name__ == '__main__':
-    main()
-    
-
-

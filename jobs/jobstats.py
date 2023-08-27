@@ -119,6 +119,8 @@ def to_continuous(partinds:np.ndarray):
             last_train.append(i)
         else:
             trains.append([i])
+    if not bool(trains[0]):
+        return []
     for i in range(len(trains)):
         a,b = trains[i][0],trains[i][-1]
         trains[i] = [a,b]
@@ -137,7 +139,7 @@ def array_string(inds):
 
 def main():
    inds = check_task('filtweights')
-   seq_str = array_string(inds[:512])
+   seq_str = array_string(inds)
    print(seq_str)
     
         

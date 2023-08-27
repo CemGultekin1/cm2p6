@@ -1,8 +1,10 @@
+import logging
 from typing import Callable, List
+from linear.coarse_graining_inverter import CoarseGrainingInverter
 from utils.xarray_oper import concat,  tonumpydict
 import xarray as xr
 from transforms.grids import get_grid_vars, ugrid2tgrid_interpolation
-from transforms.subgrid_forcing import BaseLSRPSubgridForcing, filtering_classes
+from transforms.subgrid_forcing import BaseSubgridForcing, filtering_classes
 import numpy as np
 class HighResCm2p6:
     def __init__(self,ds:xr.Dataset,sigma,*args,section = [0,1],**kwargs):
@@ -75,7 +77,13 @@ class HighResCm2p6perDepth:
         t1 = int(time_secs[a+1])        
         self.ds = self.ds.isel(time = slice(t0,t1))
         self.wet_mask_compute_flag = a == 0
-
+        self._cginv = None
+    @property
+    def cginv(self,):
+        if self._cginv is None:
+            self._cginv = CoarseGrainingInverter(filtering = 'gcm',depth = int(self.depth),sigma = self.sigma)
+            self._cginv.load_parts() 
+        return self._cginv
     @property
     def depth(self,):
         return self.ds.depth
@@ -108,15 +116,15 @@ class HighResCm2p6perDepth:
         _,tgrid = get_grid_vars(ds)
         return tgrid
     @property
-    def ugrid_subgrid_forcing(self,)-> BaseLSRPSubgridForcing:
+    def ugrid_subgrid_forcing(self,)-> BaseSubgridForcing:
         if self._ugrid_subgrid_forcing is None:
-            self._ugrid_subgrid_forcing : BaseLSRPSubgridForcing = self.forcing_class(self.sigma,self.ugrid)
+            self._ugrid_subgrid_forcing : BaseSubgridForcing = self.forcing_class(self.sigma,self.ugrid)
         return self._ugrid_subgrid_forcing
     
     @property
-    def tgrid_subgrid_forcing(self,)-> BaseLSRPSubgridForcing:
+    def tgrid_subgrid_forcing(self,)-> BaseSubgridForcing:
         if self._tgrid_subgrid_forcing is None:
-            self._tgrid_subgrid_forcing :BaseLSRPSubgridForcing =self.forcing_class(self.sigma,self.tgrid)
+            self._tgrid_subgrid_forcing :BaseSubgridForcing =self.forcing_class(self.sigma,self.tgrid)
         return self._tgrid_subgrid_forcing
 
     @property
@@ -131,9 +139,17 @@ class HighResCm2p6perDepth:
         u = u.rename(ulat = "lat",ulon = "lon")
         v = v.rename(ulat = "lat",ulon = "lon")
         temp = temp.rename(tlat = "lat",tlon = "lon")
+        
+        temp['lat'] = u.lat.values
+        temp['lon'] = u.lon.values
+        
         u.name = 'u'
         v.name = 'v'
         temp.name = 'temp'
+        
+        mask = xr.where(np.isnan(u) + np.isnan(temp),0,1)
+        u,v,temp = [kg.fillna(0)*mask for kg in [u,v,temp]]
+        # logging.info(f'u,v,temp.shape = {u.shape,v.shape,temp.shape}')
         return u.fillna(0),v.fillna(0),temp.fillna(0)
    
 
@@ -171,11 +187,7 @@ class HighResCm2p6perDepth:
         return coarse_wet_density.compute(),coarse_interior_wet_mask.compute()
     def get_forcings(self,i):
         u,v,temp = self._base_get_hres(i)
-        # print(u)
-        # plot_ds(dict(u=u,v=v,),f'get_forcings_uv.png',ncols = 1)
-        # plot_ds(dict(temp = temp),f'get_forcings_temp.png',ncols = 1)
-        # raise Exception
-        ff =  self.fields2forcings(i,u,v,temp)
+        ff =  self.new_fields2forcings(i,u,v,temp)
         return ff
     def fields2forcings(self,i,u,v,temp,):
         u_t,v_t = self.grid_interpolation(u,v)
@@ -206,6 +218,18 @@ class HighResCm2p6perDepth:
        
         tvars = pass_gridvals(tvars,uvars)
         fvars =  dict(uvars,**tvars)
+        fvars = self.expand_dims(i,fvars,time = True)#,depth = True)
+        return concat(**fvars)
+    
+    def new_fields2forcings(self,i,u,v,temp,):
+        hvars = dict(u=u,v=v,temp = temp)
+        hvars0 = {}
+        for key,val in hvars.items():
+            hvars0[key] = self.cginv.project(val)
+        forcings,(cvars,_) = self.ugrid_subgrid_forcing(hvars,'u v temp'.split(),'Su Sv Stemp'.split())
+        forcings0, _  = self.ugrid_subgrid_forcing(hvars0,'u v temp'.split(),'Su Sv Stemp'.split())
+        forcings0 = {key + '_linear' : val for key,val in forcings0.items()}
+        fvars =  dict(forcings,**cvars,**forcings0)
         fvars = self.expand_dims(i,fvars,time = True)#,depth = True)
         return concat(**fvars)
     

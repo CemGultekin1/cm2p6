@@ -1,4 +1,5 @@
 import itertools
+import logging
 import numpy as np
 import xarray as xr
 
@@ -166,6 +167,8 @@ def get_grid_vars(grid:xr.Dataset,):
                 depth = grid['depth'].values,lat = grid[name_lat].values,lon = grid[name_lon].values,
             ),
         )
+        # for key,val in kwargs['coords'].items():
+        #     logging.info(f"key,val = {key}, {val}")
         dx = xr.DataArray(
             data = grid[dlon].values,
             **kwargs,name = 'dx'

@@ -178,17 +178,17 @@ class KrylovSubgridForcing(BaseLSRPSubgridForcing):
 
 
 
-# class GcmSubgridForcing(BaseSubgridForcing):
-#     filtering_class = GcmFiltering
-#     coarse_grain_class = GreedyCoarseGrain
+class GcmSubgridForcing(BaseSubgridForcing):
+    filtering_class = GcmFiltering
+    coarse_grain_class = GreedyCoarseGrain
 
-# class ScipySubgridForcing(BaseSubgridForcing):
-#     filtering_class = ScipyFiltering
-#     coarse_grain_class =  PlainCoarseGrain
+class ScipySubgridForcing(BaseSubgridForcing):
+    filtering_class = ScipyFiltering
+    coarse_grain_class =  GreedyCoarseGrain
 
-# class GreedyScipySubgridForcing(ScipySubgridForcing):
-#     filtering_class = GreedyScipyFiltering
-#     coarse_grain_class =  GreedyCoarseGrain
+class GreedyScipySubgridForcing(ScipySubgridForcing):
+    filtering_class = ScipyFiltering
+    coarse_grain_class =  GreedyCoarseGrain
 
 
 
@@ -213,8 +213,14 @@ class GcmSubgridForcingWithLSRP(BaseLSRPSubgridForcing):
 
 
         
+# filtering_classes = {
+#     "gcm":GcmSubgridForcingWithLSRP,\
+#     "gaussian":ScipySubgridForcingWithLSRP,\
+#     "greedy_gaussian":GreedyScipySubgridForcingWithLSRP
+# }
+
 filtering_classes = {
-    "gcm":GcmSubgridForcingWithLSRP,\
-    "gaussian":ScipySubgridForcingWithLSRP,\
-    "greedy_gaussian":GreedyScipySubgridForcingWithLSRP
+    "gcm":GcmSubgridForcing,\
+    "gaussian":ScipySubgridForcing,\
+    "greedy_gaussian":GreedyScipySubgridForcing
 }

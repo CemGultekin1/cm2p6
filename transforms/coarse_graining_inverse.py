@@ -189,4 +189,3 @@ class MatMultMaskedFiltering(MatMultFiltering):
             cx = cx/self.non_zero_division_coarse_wet_density
         return cx
 
-

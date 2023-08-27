@@ -1,3 +1,4 @@
+import logging
 import sys
 from data.paths import  get_preliminary_low_res_data_location
 from data.load import get_data
@@ -7,6 +8,7 @@ from utils.xarray_oper import plot_ds
 from utils.slurm import flushed_print
 import xarray as xr
 import torch
+
 def torch2numpy(data_vars,coords):
     for key in data_vars:
         dims,val = data_vars[key]
@@ -26,8 +28,9 @@ def drop_timeless(ds:xr.Dataset):
     return ds
 
 def run():
+    logging.basicConfig(level=logging.INFO,format = '%(asctime)s %(message)s',)
     datargs = sys.argv[1:]
-    datargs = '--minibatch 1 --depth 0 --sigma 16 --section 0 20 --co2 False --mode data --num_workers 1 --filtering gcm'.split()
+    datargs = '--minibatch 1 --depth 0 --sigma 16 --section 0 20 --co2 False --mode data --num_workers 2 --filtering gcm'.split()
     filename = get_preliminary_low_res_data_location(datargs)
     flushed_print(f'filename = {filename}')
     # return
@@ -45,7 +48,7 @@ def run():
         chk = {k:len(ds[k]) for k in list(ds.coords)}
         ds = ds.chunk(chunks=chk)
         
-        ds.to_zarr(filename.replace('.zarr','_non_greedy.zarr'),mode='w')
+        ds.to_zarr(filename.replace('.zarr','_linear.zarr'),mode='w')
         # ds.to_zarr(filename,mode='w')
         # depth = int(ds.depth.values[0])
         # ds = ds.isel(time = 0,)

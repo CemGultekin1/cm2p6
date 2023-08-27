@@ -4,7 +4,7 @@ from utils.arguments import options
 import itertools
 from models.load import get_statedict
 from constants.paths import ONLINE_MODELS
-from utils.slurm import read_args
+from utils.slurm import ArgsReader
 import os
 import torch
 from datetime import date
@@ -36,9 +36,12 @@ def main():
 
     models_dict = {}
     names = []
+    argread = ArgsReader('trainjob.txt')
+    argread.read_model_list()
     for argnum in argnums:
-        args_ = read_args(argnum)
+        args_ = argread.lines[argnum]
         print(args_)
+        return
         name = 'gaussian_four_regions'
         modelargs,modelid = options(args_,key = 'model')
         modelargsdict = {
