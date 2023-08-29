@@ -29,6 +29,8 @@ class ModelMetricsGathering(PartitionedArgsReader):
         return ds
     def gather_evals(self,):        
         for i,(index,line) in enumerate(self.iterate_lines()):
+            # if i != 2:
+            #     continue
             logging.info(f'\t {i}/{len(self)} - {index}')# - {line}')
             # continue
             wmm = VariableWetMaskedMetrics(line.split(),self.wet_masks,ocean_interior = self.ocean_interior_variation)
@@ -154,7 +156,7 @@ def main():
     mmg = ModelMetricsGathering(model_list,\
                 part_id,num_parts,\
                 model = model,\
-                date = '2023-07-18',\
+                date = '2023-08-28',\
                 ocean_interior_variation=[1,3,5,7,11,15,21])
     logging.info(f'mmg.target_path() = {mmg.target_path()}')
     logging.info(f'mmg.target_file_name() = {mmg.target_file_name()}')

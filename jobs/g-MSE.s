@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --time=36:00:00
-#SBATCH --array=33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,179,183,187,191,195,199,203,207,211,215,219,223,227,231,235,239,243,247,251,255,259,263,267,271,275,279,283,287,291,295,299,303
+#SBATCH --array=121-176
 #SBATCH --mem=80GB
 #SBATCH --job-name=g-MSE
 #SBATCH --output=/scratch/cg3306/climate/outputs/slurm_logs/g-MSE_%A_%a.out

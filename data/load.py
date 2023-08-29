@@ -348,7 +348,7 @@ def get_wet_mask_location(datargs):
     
 def load_wet_mask(datargs):
     wet_mask_location = get_wet_mask_location(datargs)
-    print(wet_mask_location)
+    # print(wet_mask_location)
     return xr.open_zarr(wet_mask_location)
 
 def populate_dataset(dataset:MultiDomainDataset,groups = ("train","validation"),**kwargs):

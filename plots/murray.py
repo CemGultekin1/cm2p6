@@ -321,7 +321,7 @@ class MurrayPlotter2:
 class MurrayWithSubplots(SubplotAxes):
     def __init__(self, nrows, ncols, xmargs=(0.05, 0.03, 0), ymargs=(0.05, 0.01, 0.01), sizes=None,figsize = (10.5,8)):
         super().__init__(nrows, ncols, xmargs, ymargs, sizes)
-        self.murrayplt = MurrayPlotter2()
+        self.murrayplt = MurrayPlotter2(sigma = (1,4,8,12,16))
         self.fig = plt.figure(figsize = figsize)
     def plot(self,irow,icol,xrvar,**kwargs):
         dims = self.get_ax_dims(irow,icol)        

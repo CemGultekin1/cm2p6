@@ -152,13 +152,13 @@ def plot(stats,lsrp,filenametag):
     if 'heteroscedastic' in filenametag:
         axs[0].set_xlabel('Test depths (m)')
         axs[1].set_xlabel('Test depths (m)')
-    fig.savefig(os.path.join(target_folder,f'depth_{r2corr_str}_{filenametag}.png'),transparent=True)
+    fig.savefig(os.path.join(target_folder,f'depth_{r2corr_str}_{filenametag}.png'),transparent=False)
     print(os.path.join(target_folder,f'depth_{r2corr_str}_{filenametag}.png'))
     plt.close()
     # raise Exception
 
 def main():
-    linear = ReadMergedMetrics(model = 'linear',date='2023-07-18')
+    linear = ReadMergedMetrics(model = 'linear',date='2023-08-28')
     fcnn = ReadMergedMetrics(model = 'fcnn',date='2023-07-18')
 
     linear.reduce_coord('filtering','ocean_interior')

@@ -1,4 +1,5 @@
 import itertools
+import logging
 import os
 from typing import Dict, List, Tuple
 from constants.paths import EVALS
@@ -55,6 +56,7 @@ class MergeMetrics(ModelMetric):
     def file_exists(self,):
         return os.path.exists(self.filename)
     def load(self,):
+        logging.info(f'path = {self.filename}')
         self.metrics = xr.open_dataset(self.filename,)
         # met = self.metrics.isel(co2 = 0,depth = 0)
         # from utils.xarray_oper import plot_ds

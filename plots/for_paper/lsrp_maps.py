@@ -24,7 +24,7 @@ from plots.for_paper.saliency import SubplotAxes
 def load_r2map():
     args = '--model lsrp:0 --sigma 4'.split()
     _,_,_,modelid = get_statedict(args)
-    path =  os.path.join(EVALS,modelid + '.nc')
+    path =  os.path.join(EVALS,modelid + '_.nc')
     assert os.path.exists(path)
     ds = xr.open_dataset(path).isel(depth = 0,co2 = 0)
     return metrics_dataset(ds,dim = [])

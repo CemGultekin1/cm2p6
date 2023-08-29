@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH --time=48:00:00
-#SBATCH --array=1-8
+#SBATCH --time=24:00:00
+#SBATCH --array=9,10
 #SBATCH --mem=30GB
 #SBATCH --job-name=lintest
 #SBATCH --output=/scratch/cg3306/climate/outputs/slurm_logs/lintest_%A_%a.out

@@ -1,15 +1,31 @@
+    
+import itertools
+import logging
 import os
 import sys
 from data.exceptions import RequestDoesntExist
-from plots.metrics_ import moments_dataset
+from plots.metrics_ import moments_dataset_xr
+from run.train import Timer
 import torch
 from data.load import get_data
+from data.vars import get_var_mask_name
+from models.load import load_model, load_old_model
+import matplotlib.pyplot as plt
 from utils.arguments import options, populate_data_options
-from constants.paths import EVALS
+from utils.parallel import get_device
+from constants.paths import EVALS,TEMPORARY_DATA
 from utils.slurm import flushed_print
+import numpy as np
 from utils.xarray_oper import fromtensor, fromtorchdict, fromtorchdict2tensor, plot_ds
 import xarray as xr
 from utils.arguments import replace_params
+from utils.slurm import basic_config_logging
+
+def get_lsrp_modelid(args):
+    runargs,_ = options(args)
+    args = f'--model lsrp:0 --sigma {runargs.sigma} --filtering {runargs.filtering}'.split()
+    _,lsrpid = options(args,key = "model")
+    return True, lsrpid
 
 def lsrp_pred(respred,tr):
     keys= list(respred.data_vars.keys())
@@ -25,101 +41,87 @@ def lsrp_pred(respred,tr):
     lsrp = xr.Dataset(data_vars =data_vars,coords = coords)
     return (respred,lsrp),tr
 def update_stats(stats,prd,tr,key):
-    stats_ = moments_dataset(prd,tr)
+    stats_ = moments_dataset_xr(prd,tr)
     if key not in stats:
         stats[key] = stats_
     else:
         stats[key] = stats[key] + stats_
     return stats
-def get_lsrp_modelid(args):
-    runargs,_ = options(args)
-    args = f'--model lsrp:0 --sigma {runargs.sigma} --filtering {runargs.filtering}'.split()
-    _,lsrpid = options(args,key = "model")
-    return True, lsrpid
+
+def dataset_split(ds):
+    dv = 'Su Sv Stemp'.split()
+    dropkeys = [key for key in ds.data_vars.keys() if key not in dv]
+    ds0 = ds.drop(dropkeys)
+    
+    dv1 = [d + '_linear' for d in dv]
+    dropkeys = [key for key in ds.data_vars.keys() if key not in dv1]
+    ds1 = ds.drop(dropkeys)
+    ds1 = ds1.rename(dict(tuple(zip(dv1,dv))))
+    return ds0,ds1
 
 
 def main():
     args = sys.argv[1:]
-    # coarse_graining_factor = int(sys.argv[1])
-    args = f'--model lsrp:0 --sigma 12 --lsrp True --num_workers 1 --temperature True --filtering gcm --mode eval'.split()
+    args = f'--model lsrp:0 --sigma {args[0]} --lsrp True --num_workers 1 --temperature True --filtering gcm --mode eval'.split()
+    args = replace_params(args,'mode','eval','lsrp',1,'temperature','True',)    
+    basic_config_logging()
     
-    # from utils.slurm import read_args
-    # args = read_args(289,filename = 'offline_sweep.txt')
-    args = replace_params(args,'mode','eval','lsrp',1,'temperature','True',)
-    
+    runargs,_ = options(args,key = 'run')
+
     lsrp_flag, lsrpid = get_lsrp_modelid(args)
     
-    non_static_params=['depth','co2','filtering']
+
+    
+    assert runargs.mode == "eval"
+    non_static_params=['depth','co2',]
     multidatargs = populate_data_options(args,non_static_params=non_static_params,domain = 'global',interior = False)
     # multidatargs = [args]
     allstats = {}
     for datargs in multidatargs:
-        try:
-            test_generator, = get_data(datargs,half_spread = 0, torch_flag = False, data_loaders = True,groups = ('test',))
-        except RequestDoesntExist:
-            print('data not found!')
-            print(datargs)
-            test_generator = None
-        if test_generator is None:
+        runargs,_ = options(datargs)
+        if runargs.co2:
+            filename = f'linear_sgm_{runargs.sigma}_dpth_{int(runargs.depth)}_co2.zarr'
+        else:
+            filename = f'linear_sgm_{runargs.sigma}_dpth_{int(runargs.depth)}.zarr'        
+        path = os.path.join(TEMPORARY_DATA,filename)
+        if not os.path.exists(path):
             continue
+        if runargs.filtering not in 'gcm gaussian'.split():
+            continue
+        logging.info(filename)
+        ds = xr.open_zarr(path)
+        ds = ds.fillna(0)
+        # ds = ds.isel(time = slice(0,16))
+        ds0,ds1 = dataset_split(ds)
         stats = {}
-        nt = 0
-        # timer = Timer()
-        for fields,forcings,forcing_mask,_,forcing_coords in test_generator:
-            fields_tensor = fromtorchdict2tensor(fields).type(torch.float32)
-            # for key,val in forcing_coords.items():
-            #     if np.isscalar(val) or isinstance(val,str):
-            #         print(f'{key} : {val}')
-            #     else:
-            #         if len(val.shape)>=1:
-            #             print(f'{key} : {val.shape}')
-            #         else:
-            #             print(f'{key} : {val}')
-            depth = forcing_coords['depth'].item()
-            co2 = forcing_coords['co2'].item()
-            if abs(depth - 5)>1 or co2 > 0:
-                break
-            kwargs = dict(contained = '' if not lsrp_flag else 'res', \
-                expand_dims = {key:forcing_coords[key].item() for key in non_static_params},\
-                drop_normalization = True,
-                masking = False
-                )
-            if nt ==  0:
-                flushed_print(depth,co2)
-            mean = fields_tensor*0
-            mean = mean[:,:3]
+        stats = update_stats(stats,ds1,ds0,lsrpid)
+        coords = dict(
+            depth = runargs.depth,
+            co2 = 0.01 if runargs.co2  else 0.,
+            filtering = runargs.filtering,
+        )
 
-
-            predicted_forcings = fromtensor(mean,forcings,forcing_coords, forcing_mask,denormalize = True,**kwargs)
-            true_forcings = fromtorchdict(forcings,forcing_coords,forcing_mask,denormalize = True,**kwargs)
-            (predicted_forcings,lsrp_forcings),true_forcings = lsrp_pred(predicted_forcings,true_forcings)
-            from utils.xarray_oper import plot_ds
-            plot_ds(true_forcings,'true_forcings.png',ncols = 3)
-            print(lsrp_forcings)
-            # # return
-            plot_ds(lsrp_forcings,'lsrp_forcings.png',ncols = 3)
-            stats = update_stats(stats,lsrp_forcings,true_forcings,lsrpid)                        
-            plot_ds(stats[lsrpid],'eval_interp.png',ncols = 3)
-
-            raise Exception
-            nt += 1
-            if nt%20 == 0:
-                flushed_print(nt)
-
-
+        ds = stats[lsrpid].compute().load()
+        for key in coords:
+            if key not in ds.coords:
+                ds = ds.expand_dims({key:[coords[key]]},axis = 0)
+            else:
+                ds[key] = [coords[key]]
+        stats[lsrpid] = ds
         for key in stats:
-            stats[key] = stats[key]/nt
             if key not in allstats:
                 allstats[key] = []
             allstats[key].append(stats[key].copy())
-    
+            
+        
     for key in allstats:
-        filename = os.path.join(EVALS,key+'.nc')
-        print(filename)
-        # xr.merge(allstats[key]).to_netcdf(filename,mode = 'w')
+        filename = os.path.join(EVALS,key+'_.nc')
+        logging.info(f'merging...')
         ds = xr.merge(allstats[key])
-        print(ds)
+        logging.info(f'saving to {filename}')
         ds.to_netcdf(filename,mode = 'w')
+        logging.info(f'\t\t...{filename} is saved')
+        logging.info(ds)
 
 
             

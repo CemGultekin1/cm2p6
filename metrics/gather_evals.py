@@ -29,6 +29,8 @@ class ModelMetricsGathering(PartitionedArgsReader):
         return ds
     def gather_evals(self,):        
         for i,(index,line) in enumerate(self.iterate_lines()):
+            if i != 0:
+                continue
             logging.info(f'\t {i}/{len(self)} - {index}')# - {line}')
             # continue
             wmm = VariableWetMaskedMetrics(line.split(),self.wet_masks,ocean_interior = self.ocean_interior_variation)
@@ -144,7 +146,9 @@ def main():
     num_parts = int(args[1])
     part_id = int(args[2])
     
-    
+    from utils.slurm import basic_config_logging
+    basic_config_logging()
+    logging.info(MODEL_PARAMS['model']['choices'])
     model_list_file_names = dict((
         (MODEL_PARAMS['model']['choices'][-1],('lsrpjob.txt','linear')),
         (MODEL_PARAMS['model']['choices'][0],('offline_sweep2.txt','fcnn')),
@@ -154,8 +158,8 @@ def main():
     mmg = ModelMetricsGathering(model_list,\
                 part_id,num_parts,\
                 model = model,\
-                date = '2023-07-18',\
-                ocean_interior_variation=[1,3,5,7,11,15,21])
+                date = '2023-08-27',\
+                ocean_interior_variation=[21])
     logging.info(f'mmg.target_path() = {mmg.target_path()}')
     logging.info(f'mmg.target_file_name() = {mmg.target_file_name()}')
     logging.info(f'mmg.merged_target_name = {mmg.merged_target_name}')
@@ -169,8 +173,8 @@ def main():
     #     logging.info(key,val)
     # logging.info(ds)
     # return
-    # mmg.gather_evals()
+    mmg.gather_evals()
     # mmg.merge_write_this_partition()
-    mmg.merge_write_all_partitions()
+    # mmg.merge_write_all_partitions()
 if __name__=='__main__':
     main()

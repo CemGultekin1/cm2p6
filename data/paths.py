@@ -67,8 +67,8 @@ def get_low_res_data_location(args,silent :bool = False):
     #     filename = filename.replace('.zarr','_.zarr')
     if prms.spacing == 'long_flat':
         filename = filename.replace('.zarr','_flat.zarr')
-    if not silent:
-        print(filename)
+    # if not silent:
+    #     print(filename)
     return filename
 
 def get_preliminary_low_res_data_location(args):

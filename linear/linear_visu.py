@@ -101,12 +101,15 @@ class  LinearForcingCompute:
         
         forcings , (cres,_) = self.gcmsub(hres,'u v temp'.split(), 'Su Sv Stemp'.split())
         forcings0,  _       = self.gcmsub(hres0,'u v temp'.split(), 'Su Sv Stemp'.split())
+        hres0 = {key + '0':val for key,val in hres0.items()}
+        
+        hds = concat(**hres0,**hres)
         
         forcings0 = {key + '_linear' : val for key,val in forcings0.items()}
         ds = concat(**forcings,**forcings0,**cres)
         tmv =  self.ds.time.values
         ds = ds.expand_dims({"time":[tmv[i]]},axis = 0)
-        return ds
+        return ds,hds
         # .to_zarr('linear_recovery.zarr')
         
 def plot(path):
@@ -123,36 +126,16 @@ def plot(path):
 
 
 def main():    
-    sigma,depth,co2,start = sys.argv[1:]
-    sigma,depth,start = tuple(map(int,(sigma,depth,start)))
+    
     logging.basicConfig(level=logging.INFO,format = '%(asctime)s %(message)s',)
-    if co2.lower() == 'true':
-        filename = f'linear_sgm_{sigma}_dpth_{depth}_co2.zarr'
-    else:
-        filename = f'linear_sgm_{sigma}_dpth_{depth}.zarr'
-
-    path = os.path.join(TEMPORARY_DATA,filename)
-    logging.info(path)
+   
+    for sigma  in [4,8,12,16]:
+        lfc = LinearForcingCompute(sigma,0,'False')     
+        ds,hds = lfc[0]        
+        logging.info(f'lres_sample_sgm_{sigma}.nc')
+        ds.to_netcdf(f'lres_sample_sgm_{sigma}.nc')
+        hds.to_netcdf(f'hres_sample_sgm_{sigma}.nc')
     
-    lfc = LinearForcingCompute(sigma,depth,co2)
-    
-    n = len(lfc)
-    times = np.arange(n)
-    times = times[slice(int(n*TIMES['test'][0]),n)]
-    np.random.seed(0)
-    np.random.shuffle(times)
-    times = times[start:]
-    # times = np.sort(times)
-    n = len(times)
-    formatter = '{:.2e}'
-    for i,t in enumerate(times):
-        ds = lfc[t]        
-        prg = formatter.format(i/n)
-        logging.info(f'{i}/{n} = {prg},\t time = {ds.time.values.item()}')
-        if i == 0:
-            ds.to_zarr(path,mode = 'w')
-        else:
-            ds.to_zarr(path,mode = 'a',append_dim = 'time')
             
     
 if __name__ == '__main__':

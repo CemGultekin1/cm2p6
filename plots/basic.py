@@ -149,8 +149,8 @@ def plot(stats_ns,filenametag):
 
 
 def main():    
-    linear = ReadMergedMetrics(model = 'linear',date='2023-07-18')
-    fcnn = ReadMergedMetrics(model = 'fcnn',date='2023-07-18')
+    linear = ReadMergedMetrics(model = 'linear',date='2023-08-28')
+    fcnn = ReadMergedMetrics(model = 'fcnn',date='2023-08-28')#'2023-07-18')
 
     linear.reduce_coord('filtering','ocean_interior')
     

@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH --time=6:00:00
-#SBATCH --array=5-28
-#SBATCH --mem=50GB
+#SBATCH --time=16:00:00
+#SBATCH --array=5
+#SBATCH --mem=150GB
 #SBATCH --job-name=matinv
 #SBATCH --output=/scratch/cg3306/climate/outputs/slurm_logs/matinv_%A_%a.out
 #SBATCH --error=/scratch/cg3306/climate/outputs/slurm_logs/matinv_%A_%a.err

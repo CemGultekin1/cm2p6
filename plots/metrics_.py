@@ -1,3 +1,4 @@
+import logging
 import numpy as np
 import xarray as xr
 from utils.xarray_oper import plot_ds
@@ -9,6 +10,19 @@ moment_names = {
     (0,2): 'pred_mom2',
     (1,1): 'cross'
 }
+
+def moments_dataset_xr(prd,tr):
+    evals = {}
+    evals[(1,0)] = prd.mean(dim = "time")
+    evals[(2,0)] = np.square(prd).mean(dim = "time")
+    evals[(0,1)] = tr.mean(dim = "time")
+    evals[(0,2)] = np.square(tr).mean(dim = "time")
+    evals[(1,1)] = (prd*tr).mean(dim = "time")
+    evals = {moment_names[key]:val for key,val in evals.items()}
+    for ev,val in evals.items():
+        evals[ev] = val.rename({key:f'{key}_{ev}' for key in val.data_vars})
+    ds = xr.merge(list(evals.values()))
+    return ds
 
 def moments_dataset(prd,tr):
     evals = {}

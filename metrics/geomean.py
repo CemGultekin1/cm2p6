@@ -1,4 +1,5 @@
 import itertools
+import logging
 from typing import List, Tuple
 from data.load import get_data
 from data.low_res import SingleDomain
@@ -78,9 +79,27 @@ class WetMaskedMetrics(MergeMetrics):
         return self.wet_mask_collector.get_wet_mask(sigma,ocean_interior)
     def reduce_moments_metrics(self,ocean_interior :int= 0):
         metrics = self.metrics.copy()
+        if metrics.lon.values[0] < -180:
+            lons = metrics.lon.values
+            diff = np.abs(lons + 180)
+            diff[lons < -180] = np.inf
+            loni = np.argmin(diff)
+            metrics = metrics.roll(lon = -loni,roll_coords = True)
+            lons = metrics.lon.values
+            lons = (lons+180)%360 - 180
+            metrics['lon'] = lons
+            self.metrics = metrics
+            
         wetmask = self.get_mask(ocean_interior = ocean_interior)
+        # print(f'metrics.lat.values[[0,-1]],len(metrics.lat) = {metrics.lat.values[[0,-1]],len(metrics.lat)}')
+        # print(f'metrics.lon.values[[0,-1]],len(metrics.lon) = {metrics.lon.values[[0,-1]],len(metrics.lon)}')
+        # print(f'wetmask.lat.values[[0,-1]],len(wetmask.lat) = {wetmask.lat.values[[0,-1]],len(wetmask.lat)}')
+        # print(f'wetmask.lon.values[[0,-1]],len(wetmask.lon) = {wetmask.lon.values[[0,-1]],len(wetmask.lon)}')
+
         wetmask = select_coords_by_extremum(wetmask,metrics.coords,'lat lon'.split())
         wetmask = select_coords_by_value(wetmask,metrics.coords,'depth')        
+        # print(f'wetmask.lat.values[[0,-1]],len(wetmask.lat) = {wetmask.lat.values[[0,-1]],len(wetmask.lat)}')
+        # print(f'wetmask.lon.values[[0,-1]],len(wetmask.lon) = {wetmask.lon.values[[0,-1]],len(wetmask.lon)}')
         metrics = xr.where(wetmask,metrics,np.nan)    
         metrics = moments_metrics_reduction(metrics,dim = 'lat lon'.split())        
         return metrics
